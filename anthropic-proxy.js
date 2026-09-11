@@ -12,7 +12,7 @@ export default {
       // Tighten this to your actual github.io URL once you know it, e.g.
       // 'https://yourusername.github.io', instead of '*' — otherwise any
       // website could use your Worker (and your API credits) from a browser.
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': 'https://s0k0s.github.io',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
