@@ -1,0 +1,156 @@
+-top:3px;}
+  .daypicker button.active{border-color:var(--lime);background:var(--surface2);}
+  .daypicker button.active .lbl{color:var(--lime);}
+  .daypicker button .donebadge{position:absolute;top:10px;right:12px;color:var(--success);font-size:13px;}
+
+  .exercise-card{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius-md);padding:14px;margin-bottom:10px;transition:opacity .25s ease;}
+  .exercise-card.checked{opacity:.55;}
+  .exercise-card .icon{flex:none;width:36px;height:36px;color:var(--cat-color,var(--amber));}
+  .exercise-card .info{flex:1;min-width:0;}
+  .exercise-card .info .name{font-weight:700;font-size:14.5px;}
+  .exercise-card .info .meta{display:flex;gap:12px;margin-top:5px;font-size:12px;color:var(--text-dim);
+    flex-wrap:wrap;align-items:center;font-variant-numeric:tabular-nums;}
+  .exercise-card .done-tag{display:none;align-items:center;gap:4px;margin-top:6px;font-size:11.5px;
+    font-weight:700;color:var(--success);}
+  .exercise-card.checked .done-tag{display:flex;}
+  .exercise-card .checkwrap{flex:none;}
+  input[type=checkbox]{width:24px;height:24px;accent-color:var(--lime);cursor:pointer;}
+  .timerbtn{background:var(--surface2);border:1px solid var(--line);color:var(--text-dim);font-size:11.5px;
+    border-radius:99px;padding:4px 10px;cursor:pointer;}
+  .timerbtn.running{color:#101214;background:var(--amber);border-color:var(--amber);font-weight:700;}
+
+  .finishbar{position:sticky;bottom:70px;background:var(--bg);padding-top:10px;margin-top:4px;
+    display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  @media(min-width:900px){ .finishbar{position:static;background:transparent;} }
+  .finishbar .progress{font-size:12.5px;color:var(--text-dim);font-weight:600;}
+  button.primary{background:var(--lime);color:#101214;border:none;font-weight:800;font-size:13.5px;
+    padding:12px 20px;border-radius:var(--radius-sm);cursor:pointer;}
+  button.primary:disabled{background:var(--surface2);color:var(--text-dim);cursor:not-allowed;}
+
+  /* ---------- nutrition ---------- */
+  .targets{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+  @media(min-width:560px){ .targets{grid-template-columns:repeat(4,1fr);} }
+  .targets .t{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:12px 8px;text-align:center;}
+  .targets .t .v{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amber);}
+  .targets .t .l{font-size:10.5px;color:var(--text-dim);margin-top:2px;}
+
+  .mealgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  @media(max-width:480px){ .mealgrid{grid-template-columns:1fr;} }
+  .mealtab{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:14px;cursor:pointer;}
+  .mealtab.open{border-color:var(--lime);background:var(--surface2);}
+  .mealtab .title{font-weight:700;font-size:14px;}
+  .mealtab .goal{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .mealoptions{list-style:none;margin:10px 0 0;padding:0;}
+  .mealoptions li{font-size:13px;line-height:1.5;padding:6px 0;border-top:1px solid var(--line);color:#d9d4c8;}
+  .mealoptions li:first-child{border-top:none;}
+
+  .logformdisplay:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius-md);padding:12px;margin-bottom:16px;}
+  .logform input{background:var(--surface2);border:1px solid var(--line);color:var(--text);border-radius:8px;
+    padding:9px;font-size:13px;}
+  .logform input[name=name]{flex:2;min-width:140px;}
+  .logform input[type=number]{flex:1;min-width:70px;}
+  .logtable{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px;}
+  .logtable th{text-align:left;color:var(--text-dim);font-weight:600;font-size:11px;letter-spacing:.3px;
+    padding:6px 8px;border-bottom:1px solid var(--line);}
+  .logtable td{padding:7px 8px;border-bottom:1px solid var(--line);}
+  .logtable td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .logtable .del{cursor:pointer;color:var(--danger);font-size:12px;background:none;border:none;}
+  @media(max-width:480px){
+    .logtable thead{display:none;}
+    .logtable, .logtable tbody, .logtable tr, .logtable td{display:block;width:100%;}
+    .logtable tr{border:1px solid var(--line);border-radius:var(--radius-sm);margin-bottom:8px;padding:8px 10px;}
+    .logtable td{border:none;padding:2px 0;display:flex;justify-content:space-between;}
+    .logtable td.num::before{content:attr(data-label);color:var(--text-dim);}
+  }
+  .runningtotal{display:flex;gap:16px;font-size:12px;color:var(--text-dim);margin-bottom:16px;flex-wrap:wrap;}
+  .runningtotal b{color:var(--text);}
+
+  .historyday{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);
+    padding:12px 14px;margin-bottom:8px;}
+  .historyday .hdate{font-weight:700;font-size:13px;}
+  .historyday .hrow{font-size:12px;color:var(--text-dim);margin-top:4px;}
+  .empty{color:var(--text-dim);font-size:13px;padding:20px 0;text-align:center;}
+
+  .aicoach textarea{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--text);
+    border-radius:var(--radius-md);padding:12px;font-size:13px;min-height:60px;resize:vertical;}
+  .airesponse{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--lime);
+    border-radius:var(--radius-md);padding:14px;margin-top:12px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;}
+  .airesponse.error{border-left-color:var(--danger);color:#f0c9c2;}
+  .loading{color:var(--text-dim);font-size:13px;font-style:italic;}
+  .suggbtns{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;}
+  button.ghost{background:var(--surface);border:1px solid var(--line);color:var(--text);font-size:12px;
+    padding:9px 13px;border-radius:99px;cursor:pointer;}
+  button.ghost:hover{border-color:var(--lime);color:var(--lime);}
+
+  /* ---------- sign-in gate ---------- */
+  #signin-gate{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;
+    justify-content:center;padding:24px;}
+  #signin-gate.hidden{display:none;}
+  .signin-card{max-width:340px;text-align:center;}
+  .signin-card .brandmark{font-size:11px;letter-spacing:3px;color:var(--text-dim);font-weight:700;margin-bottom:10px;}
+  .signin-card h1{font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;margin:0 0 8px;}
+  .signin-card p{font-size:13.5px;color:var(--text-dim);margin:0 0 24px;line-height:1.5;}
+  .signin-btn{display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
+    color:var(--text);font-size:14px;font-weight:700;padding:13px 22px;border-radius:99px;cursor:pointer;}
+  .signin-btn:hover{border-color:var(--lime);}
+  .signin-btn svg{width:18px;height:18px;}
+  .signin-error{color:var(--danger);font-size:12.5px;margin-top:14px;}
+  .signout-link{font-size:11.5px;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:2px 0;margin-top:4px;}
+  .signout-link:hover{color:var(--danger);}
+</style>
+</head>
+<body>
+
+<div id="signin-gate">
+  <div class="signin-card">
+    <div class="brandmark">PROGRAMMA</div>
+    <h1>Σύνδεση</h1>
+    <p>Συνδέσου με Google account σου για να βλέπεις το ίδιο ιστορικό προπόνησης και διατροφής σε κάθε συσκευή.</p>
+    <button class="signin-btn" id="googleSignInBtn" type="button">
+      <svg viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.27-1.6 3.73-5.5 3.73-3.31 0-6.02-2.74-6.02-6.13S8.19 5.57 11.5 5.57c1.89 0 3.16.8 3.88 1.5l2.64-2.55C16.36 2.83 14.1 1.8 11.5 1.8 6.3 1.8 2.06 6.03 2.06 11.23S6.3 20.66 11.5 20.66c6.62 0 8.83-4.63 8.83-8.02 0-.54-.06-.95-.13-1.36H12z"/></svg>
+      Σύνδεση με Google
+    </button>
+    <div class="signin-error" id="signinError" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="app-shell" id="appShell" style="display:none;">
+
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard" class="active">
+    <div class="dash-header">
+      <div>
+        <div class="brandmark">PROGRAMMA</div>
+        <div class="greet" id="greetLabel">Καλημέρα, Sokratis</div>
+        <div class="date" id="todayLabel"></div>
+        <button class="signout-link" id="signOutBtn" type="button">Αποσύνδεση</button>
+      </div>
+      <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><path d="M9 15l2 2 4-4"/></svg>
+    </div>
+
+    <div class="dashboard-grid">
+      <div>
+        <div class="hero-card">
+          <div class="hero-label">Προπόνηση σήμερα</div>
+          <div class="hero-title-row">
+            <div class="hero-title" id="heroTitle">—</div>
+            <div class="hero-badge" id="heroBadge">0/0</div>
+          </div>
+          <div class="hero-progress-row">
+            <div class="progress-track">
+              <div class="progress-fill" id="heroProgressFill" style="width:0%"></div>
+              <div class="progress-dot" id="heroProgressDot" style="left:0%">✓</div>
+            </div>
+          </div>
+          <div class="hero-body">
+            <div class="hero-ring-wrap">
+              <svg viewBox="0 0 104 104">
+                <circle class="track" cx="52" cy="52" r="46" fill="none" stroke-width="9"/>
+                <circle class="fill" id="heroRingFill" cx="52" cy="52" r="46" fill="none" stroke-width="9" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/>
+              </svg>
+              <div class="hero-ring-num">
+                <div class="n" id="heroRingNum">0<small>/0</small></div>
+                <div class="l">Ασκήσεις</div>
+     
