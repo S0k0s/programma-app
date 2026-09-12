@@ -24,6 +24,18 @@ export default {
       return new Response('Method not allowed', { status: 405, headers: cors });
     }
 
+    // CORS above only stops browsers from letting other *websites* call this
+    // — it does nothing against a direct curl/script hit, since CORS is a
+    // browser-enforced convention, not a server-side check. This origin
+    // check closes that gap for casual abuse. It's not real authentication
+    // (a deliberate attacker can fake the Origin header), just a free,
+    // no-billing-required floor — Firebase App Check is the real fix, and
+    // needs upgrading the Firebase project off the free Spark plan first.
+    const origin = request.headers.get('Origin') || '';
+    if (origin !== 'https://s0k0s.github.io') {
+      return new Response(JSON.stringify({ error: 'forbidden_origin' }), { status: 403, headers: cors });
+    }
+
     let body;
     try {
       body = await request.json();
