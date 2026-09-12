@@ -308,7 +308,7 @@
 
     <form id="emailAuthForm" class="email-auth-form">
       <input type="email" id="emailAuthEmail" placeholder="Email" autocomplete="email" required>
-      <input type="password" id="emailAuthPassword" placeholder="Κωδικός (τουλάχιστον 6 χαρακτήρες)" autocomplete="current-password" required>
+      <input type="password" id="emailAuthPassword" placeholder="Κωδικός (8+ χαρακτήρες, κεφαλαίο, πεζό, αριθμό, σύμβολο)" autocomplete="current-password" required>
       <div class="email-auth-btns">
         <button class="primary" type="submit" id="emailSignInBtn">Σύνδεση</button>
         <button class="ghost" type="button" id="emailRegisterBtn">Εγγραφή</button>
@@ -596,12 +596,27 @@ document.getElementById('emailAuthForm').addEventListener('submit', async (e)=>{
     showSigninError(authErrorMessage(err));
   }
 });
+// Firebase itself only requires 6 characters — enforce a real strength bar
+// ourselves before ever calling createUserWithEmailAndPassword.
+function passwordStrengthError(password){
+  if(password.length < 8) return 'Ο κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες.';
+  if(!/[a-z]/.test(password)) return 'Ο κωδικός πρέπει να έχει τουλάχιστον ένα πεζό γράμμα (a-z).';
+  if(!/[A-Z]/.test(password)) return 'Ο κωδικός πρέπει να έχει τουλάχιστον ένα κεφαλαίο γράμμα (A-Z).';
+  if(!/[0-9]/.test(password)) return 'Ο κωδικός πρέπει να έχει τουλάχιστον έναν αριθμό.';
+  if(!/[^A-Za-z0-9]/.test(password)) return 'Ο κωδικός πρέπει να έχει τουλάχιστον ένα σύμβολο (π.χ. ! @ # $ %).';
+  return null;
+}
 document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>{
   const email = document.getElementById('emailAuthEmail').value.trim();
   const password = document.getElementById('emailAuthPassword').value;
   document.getElementById('signinError').style.display = 'none';
-  if(!email || password.length < 6){
-    showSigninError('Βάλε ένα έγκυρο email και κωδικό τουλάχιστον 6 χαρακτήρων.');
+  if(!email){
+    showSigninError('Βάλε ένα έγκυρο email.');
+    return;
+  }
+  const strengthError = passwordStrengthError(password);
+  if(strengthError){
+    showSigninError(strengthError);
     return;
   }
   try{
