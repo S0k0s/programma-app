@@ -45,3 +45,20 @@ The app supports multiple people, each with their own private workout/nutrition/
 **The admin account is hardcoded** as `sokratispoun@gmail.com` in both `index.html` (`ADMIN_EMAIL`) and `firestore.rules` (`isAdmin()`) — that account is the only one that can revoke/restore other users' access. If you ever need to change the admin email, update it in both places.
 
 **Important — you must republish the updated `firestore.rules`** for any of this to work: Firestore Console → your project → **Firestore Database → Rules** → paste in the contents of `firestore.rules` from this repo → **Publish**. Without this, the new sign-up flow and per-user data isolation won't be enforced correctly.
+
+## Admin: fully deleting another user's account
+
+"Αφαίρεση πρόσβασης" (above) only blocks a user — it doesn't delete their Firebase Auth account or data. There's now also a **"Διαγραφή λογαριασμού"** button per user in the same admin panel, which does actually delete everything (their Firestore data, and their sign-in account itself). Deleting the Firebase *sign-in* record for someone other than yourself isn't something any client app can do directly — Firebase only allows a signed-in user to delete their *own* account — so this goes through the Cloudflare Worker with a Google Cloud **service account** that has permission to do it. One-time setup, on the free Spark plan (no billing needed):
+
+1. Go to https://console.cloud.google.com/iam-admin/serviceaccounts, select your Firebase project, **Create Service Account** (any name, e.g. `admin-delete-worker`).
+2. Grant it the role **Firebase Authentication Admin**.
+3. Open the new service account → **Keys** tab → **Add Key → Create new key → JSON** → this downloads a `.json` file. Treat it like a password — it grants real admin power over your users.
+4. Go to your Cloudflare Worker (the same one used for the AI Coach) → **Settings → Variables and Secrets → Add** → name it `FIREBASE_SERVICE_ACCOUNT_KEY`, type **Secret**, paste in the *entire contents* of that downloaded `.json` file → **Save**.
+5. Paste the updated `anthropic-proxy.js` from this repo into the Worker's **Edit code** view → **Deploy** (same manual copy-paste step as any other Worker update — see above).
+6. Publish the updated `firestore.rules` from this repo too (see above) — it now lets the admin account read/write/delete *any* user's data, not just their own, which the "delete account" button relies on.
+
+Once that's done, deleting an account from the admin panel removes both their data and their ability to sign in again — permanently, with no undo.
+
+## Password reset now happens inside the app
+
+Clicking "Ξέχασες τον κωδικό;" sends a reset email whose link opens back inside this app (instead of Firebase's plain generic page), so the new password goes through the same strength rules as sign-up and a stale/reused link shows a clear message instead of a confusing rejection. Nothing to configure — this works as soon as `index.html` is deployed, since `PASSWORD_RESET_CONTINUE_URL` in the file already points at `https://s0k0s.github.io/programma-app/`. If you ever move the app to a different URL, update that constant to match.

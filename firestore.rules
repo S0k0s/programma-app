@@ -25,10 +25,19 @@ service cloud.firestore {
     }
 
     // Per-user app data: locked to the owning uid AND requires an approved
-    // access request (the admin's own uid is always allowed).
+    // access request — except the admin, who can also read/write/delete any
+    // user's data directly (needed for the admin panel's "delete account"
+    // moderation action, which wipes a target user's data via this same
+    // client-side deleteAllUserData() the self-delete flow already uses).
     match /users/{userId}/data/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId &&
-                          (isAdmin() || isApproved(userId));
+      allow read, write: if request.auth != null &&
+                          ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
+    }
+    // The (mostly unused) parent user doc — same admin-or-self rule, so the
+    // best-effort `db.collection('users').doc(uid).delete()` cleanup call
+    // succeeds instead of silently no-op'ing under default-deny.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
   }
 }
