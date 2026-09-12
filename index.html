@@ -279,6 +279,14 @@
     border-radius:99px;padding:12px 16px;font-size:13.5px;}
   .onboard-wrap .dash-link{display:block;text-align:center;margin-top:14px;}
 
+  /* ---------- AI coach chat (reuses .msg / .onboard-inputrow styles) ---------- */
+  .ai-chat-thread{min-height:160px;max-height:56vh;overflow-y:auto;background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;margin-bottom:0;
+    display:flex;flex-direction:column;gap:10px;}
+  .ai-chat-thread .empty{margin:auto;}
+  .aicoach .onboard-inputrow{margin:12px 0 10px;}
+  .aicoach .dash-link{display:block;text-align:center;}
+
   /* ---------- profile / admin ---------- */
   .profile-block{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;}
 </style>
@@ -448,15 +456,18 @@
   <!-- AI COACH -->
   <section id="tab-ai" class="aicoach">
     <div class="screen-header">AI Coach</div>
-    <p style="font-size:13px;color:var(--text-dim);margin-top:0;">Ζήτα από τον AI coach προτάσεις γευμάτων ή έλεγχο προόδου με βάση το ιστορικό σου.</p>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:0;">Ζήτα από τον AI coach προτάσεις γευμάτων ή έλεγχο προόδου με βάση το ιστορικό σου. Η συνομιλία συνεχίζεται και θυμάται τι έχετε πει.</p>
     <div class="suggbtns">
       <button class="ghost" type="button" id="suggMeal">Πρότεινέ μου γεύμα</button>
       <button class="ghost" type="button" id="suggProgress">Έλεγξε την πρόοδό μου</button>
       <button class="ghost" type="button" id="suggPostWorkout">Τι να φάω μετά την προπόνηση;</button>
     </div>
-    <textarea id="aiQuestion" placeholder="Ή γράψε τη δική σου ερώτηση, π.χ. «τι να φάω απόψε αν έχω ήδη φάει 2200 kcal;»" aria-label="Ερώτηση προς τον AI coach"></textarea>
-    <div style="margin-top:8px;"><button class="primary" id="askAiBtn" type="button">Ρώτα</button></div>
-    <div id="aiOutput"><div class="empty">Κάνε μια ερώτηση ή διάλεξε μια γρήγορη πρόταση παραπάνω.</div></div>
+    <div class="ai-chat-thread" id="aiChatThread"><div class="empty">Κάνε μια ερώτηση ή διάλεξε μια γρήγορη πρόταση παραπάνω.</div></div>
+    <div class="onboard-inputrow">
+      <input id="aiQuestion" type="text" placeholder="Γράψε το μήνυμά σου… π.χ. «τι να φάω απόψε αν έχω ήδη φάει 2200 kcal;»" aria-label="Μήνυμα προς τον AI coach">
+      <button class="primary" id="askAiBtn" type="button">Στείλε</button>
+    </div>
+    <button class="dash-link" type="button" id="newAiChatBtn">Νέα συνομιλία →</button>
   </section>
 
   <!-- PROFILE -->
@@ -1026,6 +1037,7 @@ function switchTab(name){
   if(name==='dashboard') renderDashboard();
   if(name==='history') renderHistory();
   if(name==='profile') renderProfileTab();
+  if(name==='ai') loadAiChatHistory();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.navbtn').forEach(btn=>{
@@ -1522,49 +1534,111 @@ async function consumeAiQuota(){
   return true;
 }
 
-async function askAI(question){
-  const out = document.getElementById('aiOutput');
-  if(!(await consumeAiQuota())){
-    out.innerHTML = `<div class="airesponse error">Έφτασες το όριο των ${AI_DAILY_LIMIT} μηνυμάτων στον AI Coach για σήμερα. Δοκίμασε ξανά αύριο.</div>`;
+// ---------- AI Coach: persistent multi-turn chat ----------
+const AI_CHAT_KEY = 'ai-chat-history';
+const AI_HISTORY_STORE_LIMIT = 60; // capped so the Firestore doc / UI don't grow forever
+const AI_HISTORY_API_PAIRS = 10;   // only the last N exchanges go to the model each call
+let aiMessages = [];
+
+function aiStripUpdateBlocks(text){
+  return String(text||'').replace(/```profile-update[\s\S]*?```/g,'').replace(/```exercise-update[\s\S]*?```/g,'').trim();
+}
+
+function appendAiBubble(cls, text){
+  const wrap = document.getElementById('aiChatThread');
+  const empty = wrap.querySelector('.empty');
+  if(empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.innerHTML = escapeHtml(text).replace(/\n/g,'<br>');
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function renderAiChat(){
+  const wrap = document.getElementById('aiChatThread');
+  wrap.innerHTML = '';
+  if(!aiMessages.length){
+    wrap.innerHTML = '<div class="empty">Κάνε μια ερώτηση ή διάλεξε μια γρήγορη πρόταση παραπάνω.</div>';
     return;
   }
-  out.innerHTML = '<div class="loading">Σκέφτεται…</div>';
-  const context = await buildContextSummary();
-  const sys = buildCoachSystemPrompt();
-  const userMsg = `Πρόσφατο ιστορικό:\n${context}\n\nΕρώτηση: ${question}`;
+  aiMessages.forEach(m=>{
+    const text = m.role === 'assistant' ? aiStripUpdateBlocks(m.content) : m.content;
+    if(!text) return;
+    appendAiBubble(m.role === 'user' ? 'user' : 'assistant', text);
+  });
+}
+
+async function loadAiChatHistory(){
   try{
+    const r = await storage.get(AI_CHAT_KEY);
+    aiMessages = JSON.parse(r.value) || [];
+  }catch(e){ aiMessages = []; }
+  renderAiChat();
+}
+
+async function saveAiChatHistory(){
+  aiMessages = aiMessages.slice(-AI_HISTORY_STORE_LIMIT);
+  try{ await storage.set(AI_CHAT_KEY, JSON.stringify(aiMessages)); }catch(e){ console.error(e); }
+}
+
+// Keeps only the last N complete exchanges (always cutting in user+assistant
+// pairs) plus the just-asked question, so a long-running chat still starts
+// with a user turn and strictly alternates — required by the Messages API.
+function recentAiMessagesForApi(all, maxPairs){
+  const pending = all.length && all[all.length-1].role === 'user' ? all[all.length-1] : null;
+  const completed = pending ? all.slice(0,-1) : all.slice();
+  const keep = maxPairs*2;
+  const trimmed = completed.length > keep ? completed.slice(-keep) : completed;
+  return pending ? trimmed.concat([pending]) : trimmed;
+}
+
+async function askAI(question){
+  if(!(await consumeAiQuota())){
+    appendAiBubble('assistant error', `Έφτασες το όριο των ${AI_DAILY_LIMIT} μηνυμάτων στον AI Coach για σήμερα. Δοκίμασε ξανά αύριο.`);
+    return;
+  }
+  aiMessages.push({role:'user', content:question});
+  appendAiBubble('user', question);
+  const loadingEl = appendAiBubble('assistant loading', 'Σκέφτεται…');
+  try{
+    const context = await buildContextSummary();
+    const sys = buildCoachSystemPrompt();
+    const recent = recentAiMessagesForApi(aiMessages, AI_HISTORY_API_PAIRS);
+    const messagesToSend = recent.map((m,i)=>{
+      if(i === recent.length-1 && m.role==='user'){
+        return {role:'user', content:`Πρόσφατο ιστορικό:\n${context}\n\nΕρώτηση: ${m.content}`};
+      }
+      return {role:m.role, content:m.content};
+    });
     const response = await fetch(WORKER_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:600,
-        system: sys,
-        messages:[{role:'user', content:userMsg}]
-      })
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:600, system: sys, messages: messagesToSend })
     });
     if(!response.ok){ throw new Error('bad status'); }
     const data = await response.json();
-    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n') || 'Δεν ελήφθη απάντηση.';
+    loadingEl.remove();
+    aiMessages.push({role:'assistant', content:text});
+    await saveAiChatHistory();
+    appendAiBubble('assistant', aiStripUpdateBlocks(text));
+
     const profileMatch = text.match(/```profile-update\s*([\s\S]*?)```/);
     const exerciseMatch = text.match(/```exercise-update\s*([\s\S]*?)```/);
-    const cutAt = [profileMatch, exerciseMatch].filter(Boolean).reduce((min,m)=>Math.min(min,m.index), text.length);
-    const displayText = text.slice(0, cutAt).trim();
-    out.innerHTML = `<div class="airesponse">${escapeHtml(displayText||'Δεν ελήφθη απάντηση.')}</div>`;
     if(profileMatch){
       const applied = await applyProfileUpdate(profileMatch[1]);
-      if(applied){
-        out.innerHTML += `<div class="airesponse" style="border-left-color:var(--success);margin-top:10px;">✅ Ενημέρωσα το πρόγραμμά σου: ${escapeHtml(SPLIT_LABELS[currentProfile.splitKey]||'')}. Δες την καρτέλα «Προπόνηση».</div>`;
-      }
+      if(applied) appendAiBubble('assistant', `✅ Ενημέρωσα το πρόγραμμά σου: ${SPLIT_LABELS[currentProfile.splitKey]||''}. Δες την καρτέλα «Προπόνηση».`);
     }
     if(exerciseMatch){
       const dayLabel = await applyExerciseUpdate(exerciseMatch[1]);
-      if(dayLabel){
-        out.innerHTML += `<div class="airesponse" style="border-left-color:var(--success);margin-top:10px;">✅ Ενημέρωσα τις ασκήσεις στη μέρα «${escapeHtml(dayLabel)}». Δες την καρτέλα «Προπόνηση».</div>`;
-      }
+      if(dayLabel) appendAiBubble('assistant', `✅ Ενημέρωσα τις ασκήσεις στη μέρα «${dayLabel}». Δες την καρτέλα «Προπόνηση».`);
     }
   }catch(e){
-    out.innerHTML = `<div class="airesponse error">Κάτι πήγε στραβά με τη σύνδεση στον AI coach. Δοκίμασε ξανά σε λίγο.</div>`;
+    loadingEl.remove();
+    aiMessages.pop(); // roll back the unanswered question so the next send doesn't break user/assistant alternation
+    appendAiBubble('assistant error', 'Κάτι πήγε στραβά με τη σύνδεση στον AI coach. Δοκίμασε ξανά σε λίγο.');
   }
 }
 
@@ -1572,9 +1646,20 @@ document.getElementById('suggMeal').addEventListener('click', ()=>askAI('Πρό�
 document.getElementById('suggProgress').addEventListener('click', ()=>askAI('Έλεγξε το ιστορικό προπόνησης και διατροφής μου και δώσε μου σύντομο feedback προόδου και τι να προσέξω.'));
 document.getElementById('suggPostWorkout').addEventListener('click', ()=>askAI('Τι να φάω μετά την προπόνηση σήμερα;'));
 document.getElementById('askAiBtn').addEventListener('click', ()=>{
-  const q = document.getElementById('aiQuestion').value.trim();
+  const input = document.getElementById('aiQuestion');
+  const q = input.value.trim();
   if(!q) return;
+  input.value = '';
   askAI(q);
+});
+document.getElementById('aiQuestion').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); document.getElementById('askAiBtn').click(); }
+});
+document.getElementById('newAiChatBtn').addEventListener('click', async ()=>{
+  if(!confirm('Θα διαγραφεί το ιστορικό της τρέχουσας συνομιλίας με τον AI Coach. Συνέχεια;')) return;
+  aiMessages = [];
+  try{ await storage.set(AI_CHAT_KEY, JSON.stringify([])); }catch(e){ console.error(e); }
+  renderAiChat();
 });
 
 // ---------- AI onboarding chat ----------
