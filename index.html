@@ -186,6 +186,10 @@
   .exercise-card .weight-row input{width:56px;background:var(--surface2);border:1px solid var(--line);color:var(--text);
     border-radius:8px;padding:4px 6px;font-size:12.5px;font-variant-numeric:tabular-nums;}
   .exercise-card .weight-row input:focus{outline:none;border-color:var(--lime);}
+  .weight-trend{font-size:13px;font-weight:800;min-width:12px;}
+  .weight-trend.up{color:var(--success);}
+  .weight-trend.down{color:var(--danger);}
+  .weight-prev-avg{font-size:11px;color:var(--text-dim);opacity:.8;}
 
   .finishbar{position:sticky;bottom:70px;background:var(--bg);padding-top:10px;margin-top:4px;
     display:flex;justify-content:space-between;align-items:center;gap:12px;}
@@ -752,6 +756,7 @@ const I18N = {
     nav_home:'Αρχική', nav_training:'Προπόνηση', nav_nutrition:'Διατροφή',
     training_finish:'Ολοκλήρωση προπόνησης', training_logged:'Καταγράφηκε ✓',
     rest_label:'Διάλειμμα', completed_tag:'Ολοκληρώθηκε', complete_exercise_aria:'Ολοκλήρωση', weight_label:'Κιλά',
+    weight_prev_month_avg:'μ.ό. προηγ. μήνα: {avg}kg',
     nutrition_supplements:'Συμπληρώματα: whey 1-2 μεζούρες/ημέρα · κρεατίνη μονοϋδρική 5g/ημέρα (χωρίς φόρτωση)',
     nutrition_extra_link:'Καταγραφή έξτρα φαγητού →',
     extra_back:'← Πίσω στη Διατροφή', extra_title:'Έξτρα φαγητό',
@@ -848,6 +853,7 @@ const I18N = {
     nav_home:'Home', nav_training:'Training', nav_nutrition:'Nutrition',
     training_finish:'Finish workout', training_logged:'Logged ✓',
     rest_label:'Rest', completed_tag:'Completed', complete_exercise_aria:'Complete', weight_label:'Weight',
+    weight_prev_month_avg:'last month avg: {avg}kg',
     nutrition_supplements:'Supplements: whey 1-2 scoops/day · creatine monohydrate 5g/day (no loading)',
     nutrition_extra_link:'Log extra food →',
     extra_back:'← Back to Nutrition', extra_title:'Extra food',
@@ -1083,6 +1089,7 @@ function signOutCleanup(){
   currentProfile = null;
   checkedState = {};
   exerciseWeights = {};
+  exerciseWeightHistory = {};
   // Clear the in-memory AI chat too, so a tab left open on the AI Coach
   // across a sign-out doesn't keep showing the previous account's messages.
   aiMessages = [];
@@ -1649,9 +1656,9 @@ let DAYS = TEMPLATES.gym_upperLower4;
 let currentDay = Object.keys(DAYS)[0];
 let checkedState = {}; // {exerciseId: true}
 
-// Last weight lifted per exercise — deliberately just the latest value, not
-// a logged history over time, per the user's request. Global across days
-// (not per-date) since the same exercise id should remember one current number.
+// Last weight lifted per exercise — just the latest value, not a logged
+// history over time, per the user's request. Global across days (not
+// per-date) since the same exercise id should remember one current number.
 let exerciseWeights = {}; // {exerciseId: kg}
 async function loadExerciseWeights(){
   try{
@@ -1661,6 +1668,50 @@ async function loadExerciseWeights(){
 }
 async function saveExerciseWeights(){
   try{ await storage.set('exercise-weights', JSON.stringify(exerciseWeights)); }catch(e){ console.error(e); }
+}
+
+// Rolling monthly averages, kept separately from the "latest value" above so
+// there's still a sense of trend over time without logging every single
+// entry forever — size is bounded (see the 12-month trim below) regardless
+// of how often any one user updates their weights, which is the point:
+// {exerciseId: {"YYYY-MM": {sum, count}}} — avg = sum/count.
+let exerciseWeightHistory = {};
+async function loadExerciseWeightHistory(){
+  try{
+    const r = await storage.get('exercise-weight-history');
+    exerciseWeightHistory = JSON.parse(r.value) || {};
+  }catch(e){ exerciseWeightHistory = {}; }
+}
+async function saveExerciseWeightHistory(){
+  try{ await storage.set('exercise-weight-history', JSON.stringify(exerciseWeightHistory)); }catch(e){ console.error(e); }
+}
+function monthKey(d=new Date()){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function prevMonthKey(d=new Date()){ return monthKey(new Date(d.getFullYear(), d.getMonth()-1, 1)); }
+function recordWeightForMonth(id, weight){
+  const mk = monthKey();
+  if(!exerciseWeightHistory[id]) exerciseWeightHistory[id] = {};
+  const entry = exerciseWeightHistory[id][mk] || {sum:0, count:0};
+  entry.sum += weight;
+  entry.count += 1;
+  exerciseWeightHistory[id][mk] = entry;
+  // Keep only the most recent 12 months per exercise — a years-old account
+  // still stores at most 12 tiny {sum,count} pairs per exercise, never more.
+  const keys = Object.keys(exerciseWeightHistory[id]).sort();
+  if(keys.length > 12) keys.slice(0, keys.length-12).forEach(k=>delete exerciseWeightHistory[id][k]);
+}
+function monthlyAverage(id, mk){
+  const entry = exerciseWeightHistory[id] && exerciseWeightHistory[id][mk];
+  return entry ? Math.round((entry.sum/entry.count)*10)/10 : null;
+}
+function findExerciseName(id){
+  if(EX[id]) return L2(EX[id].name);
+  if(typeof DAYS !== 'undefined' && DAYS){
+    for(const key of Object.keys(DAYS)){
+      const found = (DAYS[key].exercises||[]).find(e=>e.id===id);
+      if(found) return L2(found.name);
+    }
+  }
+  return id;
 }
 
 function renderTodayLabel(){
@@ -1726,6 +1777,7 @@ function renderExercises(){
     card.style.setProperty('--cat-color', cat.color);
     const exName = L2(ex.name);
     const savedWeight = exerciseWeights[ex.id];
+    const prevAvg = monthlyAverage(ex.id, prevMonthKey());
     card.innerHTML = `
       <div class="icon">${ICONS[ex.id] || FALLBACK_ICON}</div>
       <div class="info">
@@ -1739,6 +1791,8 @@ function renderExercises(){
           <label for="weight-${ex.id}">${t('weight_label')}:</label>
           <input type="number" id="weight-${ex.id}" class="weight-input" inputmode="decimal" step="0.5" min="0" max="500" data-id="${ex.id}" placeholder="kg" value="${savedWeight!=null?savedWeight:''}">
           <span>kg</span>
+          <span class="weight-trend"></span>
+          ${prevAvg!=null ? `<span class="weight-prev-avg">${t('weight_prev_month_avg',{avg:prevAvg})}</span>` : ''}
         </div>
         <div class="done-tag">✓ ${t('completed_tag')}</div>
       </div>
@@ -1759,13 +1813,28 @@ function renderExercises(){
   list.querySelectorAll('.weight-input').forEach(inp=>{
     inp.addEventListener('change', ()=>{
       const id = inp.dataset.id;
-      if(inp.value === ''){ delete exerciseWeights[id]; }
-      else{
-        const v = Number(inp.value);
-        if(isNaN(v) || v<0 || v>500){ inp.value = exerciseWeights[id]!=null ? exerciseWeights[id] : ''; return; }
-        exerciseWeights[id] = v;
+      const prevValue = exerciseWeights[id];
+      const trendEl = inp.closest('.weight-row').querySelector('.weight-trend');
+      if(inp.value === ''){
+        delete exerciseWeights[id];
+        saveExerciseWeights();
+        return;
       }
+      const v = Number(inp.value);
+      if(isNaN(v) || v<0 || v>500){ inp.value = prevValue!=null ? prevValue : ''; return; }
+      exerciseWeights[id] = v;
+      recordWeightForMonth(id, v);
       saveExerciseWeights();
+      saveExerciseWeightHistory();
+      // Transient up/down flash comparing to the value it just replaced — not
+      // persisted anywhere, just a quick sense of direction at a glance.
+      if(trendEl && prevValue!=null && v !== prevValue){
+        trendEl.textContent = v > prevValue ? '▲' : '▼';
+        trendEl.className = 'weight-trend ' + (v > prevValue ? 'up' : 'down');
+        trendEl.title = `${prevValue}kg → ${v}kg`;
+        clearTimeout(trendEl._fadeTimer);
+        trendEl._fadeTimer = setTimeout(()=>{ trendEl.textContent=''; trendEl.className='weight-trend'; }, 5000);
+      }
     });
   });
   list.querySelectorAll('.timerbtn').forEach(btn=>{
@@ -2101,18 +2170,24 @@ async function buildContextSummary(){
   try{
     const ids = Object.keys(exerciseWeights);
     if(ids.length){
-      const findExerciseName = (id)=>{
-        if(EX[id]) return L2(EX[id].name);
-        if(typeof DAYS !== 'undefined' && DAYS){
-          for(const key of Object.keys(DAYS)){
-            const found = (DAYS[key].exercises||[]).find(e=>e.id===id);
-            if(found) return L2(found.name);
-          }
-        }
-        return id;
-      };
       const parts = ids.map(id=>`${findExerciseName(id)}: ${exerciseWeights[id]}kg`);
       lines.push((lang==='en' ? 'Current weights (last logged): ' : 'Τρέχοντα βάρη (τελευταία καταγραφή): ') + parts.join(', '));
+    }
+  }catch(e){}
+  try{
+    const thisMk = monthKey();
+    const lastMk = prevMonthKey();
+    const rows = Object.keys(exerciseWeightHistory).map(id=>{
+      const cur = monthlyAverage(id, thisMk);
+      const prev = monthlyAverage(id, lastMk);
+      if(cur==null && prev==null) return null;
+      const name = findExerciseName(id);
+      const curTxt = cur!=null ? `${cur}kg (${lang==='en'?'this month':'τρέχων μήνας'})` : null;
+      const prevTxt = prev!=null ? `${prev}kg (${lang==='en'?'last month':'προηγ. μήνας'})` : null;
+      return `${name}: ${[prevTxt, curTxt].filter(Boolean).join(' → ')}`;
+    }).filter(Boolean);
+    if(rows.length){
+      lines.push((lang==='en' ? 'Monthly weight averages: ' : 'Μηνιαίοι μέσοι όροι βαρών: ') + rows.join(' | '));
     }
   }catch(e){}
   return lines.join('\n') || (lang==='en' ? 'No history recorded yet.' : 'Δεν υπάρχει ακόμα ιστορικό καταγεγραμμένο.');
@@ -2731,7 +2806,7 @@ let appInitialized = false;
 function refreshAppData(){
   loadTodayWorkout();
   renderFoodLog();
-  loadExerciseWeights().then(()=>{ if(typeof renderExercises === 'function') renderExercises(); });
+  Promise.all([loadExerciseWeights(), loadExerciseWeightHistory()]).then(()=>{ if(typeof renderExercises === 'function') renderExercises(); });
 }
 function initApp(){
   if(appInitialized) return;
