@@ -642,7 +642,18 @@ function showGate(id){
 
 let accessUnsub = null;
 
+// Bumped on every real auth transition (sign-in, sign-out, account switch).
+// Any async flow that spans real time — a Firestore round-trip, a Worker/AI
+// call, a setTimeout — captures this at the start and checks it again right
+// before touching shared state (currentProfile, DAYS, storage writes) or
+// showing a gate. If it no longer matches, a newer sign-in has taken over in
+// the meantime and the stale flow must not act — otherwise data meant for
+// account A can get written to, or displayed for, account B if the user
+// switches accounts while that flow is still in flight.
+let authEpoch = 0;
+
 auth.onAuthStateChanged(user=>{
+  authEpoch++;
   currentUser = user;
   if(accessUnsub){ accessUnsub(); accessUnsub = null; }
   if(!user){
@@ -689,12 +700,14 @@ function watchAccess(user){
 }
 
 async function onAccessApproved(){
+  const epochAtStart = authEpoch;
   let profile = null;
   try{
     const res = await storage.get('profile');
     profile = migrateProfile(JSON.parse(res.value));
     if(profile) await storage.set('profile', JSON.stringify(profile));
   }catch(e){ profile = null; }
+  if(authEpoch !== epochAtStart) return; // a newer sign-in/out happened while this was loading
   if(!profile){
     showGate('onboarding-gate');
     startOnboardingChat();
@@ -1662,6 +1675,7 @@ function recentAiMessagesForApi(all, maxPairs){
 }
 
 async function askAI(question){
+  const epochAtStart = authEpoch;
   if(!(await consumeAiQuota())){
     appendAiBubble('assistant error', `Έφτασες το όριο των ${AI_DAILY_LIMIT} μηνυμάτων στον AI Coach για σήμερα. Δοκίμασε ξανά αύριο.`);
     return;
@@ -1686,6 +1700,7 @@ async function askAI(question){
     });
     if(!response.ok){ throw new Error('bad status'); }
     const data = await response.json();
+    if(authEpoch !== epochAtStart) return; // signed-in account changed while waiting — don't save/show this reply against the wrong account
     const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n') || 'Δεν ελήφθη απάντηση.';
     loadingEl.remove();
     aiMessages.push({role:'assistant', content:text});
@@ -1708,6 +1723,7 @@ async function askAI(question){
       if(applied) appendAiBubble('assistant', `✅ Ενημέρωσα τη διατροφή σου. Δες την καρτέλα «Διατροφή».`);
     }
   }catch(e){
+    if(authEpoch !== epochAtStart) return;
     loadingEl.remove();
     aiMessages.pop(); // roll back the unanswered question so the next send doesn't break user/assistant alternation
     appendAiBubble('assistant error', 'Κάτι πήγε στραβά με τη σύνδεση στον AI coach. Δοκίμασε ξανά σε λίγο.');
@@ -1783,6 +1799,7 @@ function appendChatBubble(cls, text){
 }
 
 async function sendOnboardingTurn(userText){
+  const epochAtStart = authEpoch;
   const sendBtn = document.getElementById('onboardSendBtn');
   if(userText){
     onboardMessages.push({role:'user', content:userText});
@@ -1808,6 +1825,7 @@ async function sendOnboardingTurn(userText){
     });
     if(!response.ok) throw new Error('bad status');
     const data = await response.json();
+    if(authEpoch !== epochAtStart) return; // signed-in account changed while waiting for the AI — drop this response, don't act on the wrong account
     const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
     loadingEl.remove();
     const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
@@ -1819,9 +1837,11 @@ async function sendOnboardingTurn(userText){
       if(!ok) appendChatBubble('assistant', 'Κάτι δεν πήγε καλά με τα στοιχεία — πες μου ξανά τι χρειάζεται να διορθώσουμε.');
     }
   }catch(e){
+    if(authEpoch !== epochAtStart) return;
     loadingEl.remove();
     appendChatBubble('assistant error', 'Κάτι πήγε στραβά με τη σύνδεση στον AI coach. Δοκίμασε ξανά, ή πάτησε «Παράλειψη για τώρα».');
   }
+  if(authEpoch !== epochAtStart) return;
   sendBtn.disabled = false;
   document.getElementById('onboardInput').focus();
 }
@@ -1854,9 +1874,15 @@ function tryFinalizeOnboarding(jsonText){
 }
 
 async function finalizeProfile(profile){
+  // Captured here rather than passed in: this runs synchronously right after
+  // sendOnboardingTurn's own epoch check, so it's still the same value — but
+  // capturing it locally keeps this function safe to call from anywhere.
+  const epochAtStart = authEpoch;
   try{ await storage.set('profile', JSON.stringify(profile)); }catch(e){ console.error(e); }
+  if(authEpoch !== epochAtStart) return; // don't save a "success" message or apply this profile to a now-different signed-in account
   appendChatBubble('assistant', `Τέλεια! Το πρόγραμμά σου είναι έτοιμο: ~${profile.targets.kcal} kcal/ημέρα, ${SPLIT_LABELS[profile.splitKey]}. Ας ξεκινήσουμε!`);
   setTimeout(()=>{
+    if(authEpoch !== epochAtStart) return;
     applyProfile(profile);
     showGate(null);
     if(appInitialized) refreshAppData(); else initApp();
@@ -1874,8 +1900,10 @@ document.getElementById('onboardInput').addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); document.getElementById('onboardSendBtn').click(); }
 });
 document.getElementById('onboardSkipBtn').addEventListener('click', async ()=>{
+  const epochAtStart = authEpoch;
   const profile = defaultProfile();
   try{ await storage.set('profile', JSON.stringify(profile)); }catch(e){ console.error(e); }
+  if(authEpoch !== epochAtStart) return; // account changed while saving — don't apply it to whoever is signed in now
   applyProfile(profile);
   showGate(null);
   if(appInitialized) refreshAppData(); else initApp();
