@@ -264,6 +264,15 @@
     border-radius:var(--radius-sm);padding:11px 13px;font-size:16px;width:100%;}
   .email-auth-btns{display:flex;gap:8px;margin-top:2px;}
   .email-auth-btns button{flex:1;}
+  .linklike{background:none;border:none;color:var(--lime);cursor:pointer;padding:0;font-size:inherit;font-family:inherit;text-decoration:underline;}
+  .legal-disclaimer{font-size:11px;color:var(--text-dim);margin-top:16px;line-height:1.5;}
+  .legal-content{max-width:520px;width:100%;margin:0 auto;text-align:left;padding:0 4px 40px;}
+  .legal-content h1{font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;margin:14px 0 2px;}
+  .legal-updated{font-size:12px;color:var(--text-dim);margin:0 0 20px;}
+  .legal-text{font-size:13px;line-height:1.65;color:#d9d4c8;}
+  .legal-text h2{color:var(--text);font-size:14.5px;font-weight:800;margin:22px 0 6px;}
+  .legal-text h2:first-child{margin-top:0;}
+  .legal-text p{margin:0 0 4px;}
 
   /* ---------- onboarding chat ---------- */
   .onboard-wrap{max-width:440px;width:100%;max-height:92vh;display:flex;flex-direction:column;}
@@ -317,6 +326,53 @@
     </form>
 
     <div class="signin-error" id="signinError" style="display:none;"></div>
+
+    <p class="legal-disclaimer">Συνδεόμενος/η ή εγγραφόμενος/η αποδέχεσαι τους
+      <button type="button" class="linklike" id="showTermsBtn">Όρους Χρήσης &amp; Πολιτική Απορρήτου</button>.</p>
+  </div>
+</div>
+
+<div id="legal-gate" class="gate hidden" style="align-items:flex-start;overflow-y:auto;padding-top:32px;">
+  <div class="legal-content">
+    <button class="backlink" type="button" id="legalBackBtn">← Πίσω</button>
+    <h1>Όροι Χρήσης &amp; Πολιτική Απορρήτου</h1>
+    <p class="legal-updated">Τελευταία ενημέρωση: Σεπτέμβριος 2026</p>
+    <div class="legal-text">
+
+<h2>Τι είναι το PROGRAMMA</h2>
+<p>Το PROGRAMMA είναι μια προσωπική εφαρμογή προπόνησης και διατροφής. Δημιουργεί εξατομικευμένο πρόγραμμα προπόνησης και στόχους διατροφής με τη βοήθεια ενός AI βοηθού, και σου επιτρέπει να καταγράφεις την πρόοδό σου.</p>
+
+<h2>Τι δεδομένα συλλέγουμε</h2>
+<p>Email διεύθυνση (για σύνδεση και επικοινωνία)· στοιχεία σώματος και στόχους που δίνεις οικειοθελώς (ηλικία, ύψος, βάρος, φύλο, στόχος, επίπεδο δραστηριότητας, τυχόν τραυματισμούς/διατροφικούς περιορισμούς)· ιστορικό προπονήσεων και καταγραφών φαγητού που καταχωρείς· και το περιεχόμενο των συνομιλιών σου με τον AI Coach.</p>
+
+<h2>Πώς χρησιμοποιούνται</h2>
+<p>Χρησιμοποιούμε αυτά τα δεδομένα αποκλειστικά για να λειτουργήσει η εφαρμογή για εσένα: να υπολογίσουμε το πρόγραμμά σου και τους διατροφικούς σου στόχους, να δείξουμε το ιστορικό σου, και να απαντήσει ο AI Coach στις ερωτήσεις σου με βάση το δικό σου προφίλ. Δεν πουλάμε ή μοιραζόμαστε τα δεδομένα σου με τρίτους για διαφημιστικούς σκοπούς.</p>
+
+<h2>Τρίτοι πάροχοι υπηρεσιών</h2>
+<p>Τα δεδομένα σου αποθηκεύονται στην υποδομή της Google (Firebase/Firestore), με πρόσβαση κλειδωμένη ώστε μόνο εσύ (και, σε περιορισμένο βαθμό, ο διαχειριστής της εφαρμογής για λόγους διαχείρισης λογαριασμών) να μπορεί να δει τα δικά σου δεδομένα — κανένας άλλος χρήστης δεν έχει πρόσβαση σε αυτά. Όταν χρησιμοποιείς τον AI Coach, το ερώτημά σου μαζί με μια σύντομη περίληψη του προφίλ/ιστορικού σου αποστέλλεται στην Anthropic (την εταιρεία πίσω από το μοντέλο Claude) μέσω ενός ενδιάμεσου server, αποκλειστικά για να παραχθεί η απάντηση — δεν χρησιμοποιείται για να εκπαιδευτούν μοντέλα τρίτων εκτός αν η Anthropic ορίζει διαφορετικά στη δική της πολιτική.</p>
+
+<h2>Διατήρηση &amp; διαγραφή δεδομένων</h2>
+<p>Τα δεδομένα σου παραμένουν όσο διατηρείς τον λογαριασμό σου ενεργό. Μπορείς να διαγράψεις μόνιμα τον λογαριασμό σου και όλα τα δεδομένα σου ανά πάσα στιγμή από την καρτέλα Προφίλ. Η διαγραφή είναι οριστική και δεν μπορεί να αναιρεθεί.</p>
+
+<h2>Ασφάλεια</h2>
+<p>Η πρόσβαση στα δεδομένα ελέγχεται από κανόνες ασφαλείας στο επίπεδο της βάσης δεδομένων, όχι μόνο από τον κώδικα της εφαρμογής — δηλαδή κανένας χρήστης δεν μπορεί τεχνικά να διαβάσει τα δεδομένα άλλου χρήστη, ούτε παρακάμπτοντας την εφαρμογή.</p>
+
+<h2>Ιατρική αποποίηση ευθύνης</h2>
+<p>Το PROGRAMMA και ο AI Coach του δεν παρέχουν ιατρική, διαιτολογική ή άλλη επαγγελματική συμβουλή υγείας. Οι προτάσεις είναι γενικού χαρακτήρα. Συμβουλέψου γιατρό ή διαιτολόγο πριν ξεκινήσεις οποιοδήποτε πρόγραμμα άσκησης ή διατροφής, ειδικά αν έχεις προϋπάρχουσες παθήσεις.</p>
+
+<h2>Ηλικιακό όριο</h2>
+<p>Η χρήση της εφαρμογής προϋποθέτει ότι είσαι τουλάχιστον 16 ετών.</p>
+
+<h2>Αποδεκτή χρήση</h2>
+<p>Η εγγραφή είναι ελεύθερη, αλλά ο διαχειριστής διατηρεί το δικαίωμα να αφαιρέσει την πρόσβαση οποιουδήποτε λογαριασμού χρησιμοποιείται καταχρηστικά (π.χ. υπερβολική χρήση του AI Coach πέρα από το ημερήσιο όριο μέσω τεχνικών παρακάμψεων, ή προσπάθεια πρόσβασης σε δεδομένα άλλων χρηστών).</p>
+
+<h2>Αλλαγές</h2>
+<p>Αυτοί οι όροι μπορεί να ενημερωθούν. Η συνέχιση της χρήσης της εφαρμογής μετά από αλλαγές σημαίνει αποδοχή των νέων όρων.</p>
+
+<h2>Επικοινωνία</h2>
+<p>Για ερωτήσεις, αίτημα διαγραφής δεδομένων, ή οτιδήποτε σχετικό: sokratispoun@gmail.com</p>
+
+    </div>
   </div>
 </div>
 
@@ -482,7 +538,9 @@
       <p style="font-size:12px;color:var(--text-dim);margin:0 0 10px;">Η εγγραφή είναι ελεύθερη — εδώ μπορείς να αφαιρέσεις πρόσβαση από κάποιον αν χρειαστεί.</p>
       <div id="userList"></div>
     </div>
-    <button class="ghost" type="button" id="profileSignOutBtn" style="margin-top:28px;color:var(--danger);border-color:var(--danger);">Αποσύνδεση</button>
+    <button class="dash-link" type="button" id="showTermsFromProfileBtn" style="margin-top:24px;">Όροι Χρήσης &amp; Πολιτική Απορρήτου →</button>
+    <button class="ghost" type="button" id="profileSignOutBtn" style="margin-top:14px;color:var(--danger);border-color:var(--danger);">Αποσύνδεση</button>
+    <button class="dash-link" type="button" id="deleteAccountBtn" style="margin-top:18px;color:var(--danger);">Διαγραφή λογαριασμού →</button>
   </section>
 
 </div>
@@ -620,7 +678,8 @@ document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>
     return;
   }
   try{
-    await auth.createUserWithEmailAndPassword(email, password);
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    try{ await cred.user.sendEmailVerification(); }catch(e){ console.error('verification email failed', e); }
   }catch(err){
     showSigninError(authErrorMessage(err));
   }
@@ -654,6 +713,87 @@ function signOutCleanup(){
 document.getElementById('signOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
 document.getElementById('accessSignOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
 document.getElementById('profileSignOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
+
+// ---------- legal page (Terms & Privacy) ----------
+let legalGateReturnTo = 'signin-gate';
+document.getElementById('showTermsBtn').addEventListener('click', ()=>{
+  legalGateReturnTo = 'signin-gate';
+  showGate('legal-gate');
+  document.getElementById('legal-gate').scrollTop = 0;
+});
+document.getElementById('showTermsFromProfileBtn').addEventListener('click', ()=>{
+  legalGateReturnTo = null; // return to the app, not the sign-in screen
+  showGate('legal-gate');
+  document.getElementById('legal-gate').scrollTop = 0;
+});
+document.getElementById('legalBackBtn').addEventListener('click', ()=>{
+  showGate(legalGateReturnTo);
+});
+
+// ---------- account deletion ----------
+async function deleteAllUserData(uid){
+  const dataCol = db.collection('users').doc(uid).collection('data');
+  const dataSnap = await dataCol.get();
+  const docs = dataSnap.docs;
+  const chunkSize = 400; // stay well under Firestore's 500-write batch limit
+  for(let i=0; i<docs.length; i+=chunkSize){
+    const batch = db.batch();
+    docs.slice(i, i+chunkSize).forEach(d=>batch.delete(d.ref));
+    await batch.commit();
+  }
+  try{ await db.collection('users').doc(uid).delete(); }catch(e){ /* implicit doc, fine if missing */ }
+  await db.collection('access').doc(uid).delete();
+}
+
+async function reauthenticateCurrentUser(){
+  const providerId = currentUser.providerData[0] && currentUser.providerData[0].providerId;
+  if(providerId === 'google.com'){
+    await currentUser.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+  } else {
+    const password = prompt('Για ασφάλεια, ξαναγράψε τον κωδικό σου για να επιβεβαιώσεις τη διαγραφή:');
+    if(!password) throw new Error('reauth-cancelled');
+    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+    await currentUser.reauthenticateWithCredential(cred);
+  }
+}
+
+document.getElementById('deleteAccountBtn').addEventListener('click', async ()=>{
+  const sure = confirm('Αυτό θα διαγράψει ΜΟΝΙΜΑ τον λογαριασμό σου και όλα τα δεδομένα σου — προπονήσεις, διατροφή, προφίλ, συνομιλίες με το AI. Δεν μπορεί να αναιρεθεί.\n\nΣυνέχεια;');
+  if(!sure) return;
+  const typed = prompt('Πληκτρολόγησε ΔΙΑΓΡΑΦΗ (με κεφαλαία) για να επιβεβαιώσεις:');
+  if(typed !== 'ΔΙΑΓΡΑΦΗ'){
+    if(typed !== null) alert('Δεν ταίριαξε — η διαγραφή ακυρώθηκε.');
+    return;
+  }
+  const uid = currentUser.uid;
+  try{
+    await deleteAllUserData(uid);
+  }catch(e){
+    console.error('account data delete failed', e);
+    alert('Κάτι πήγε στραβά κατά τη διαγραφή των δεδομένων σου. Δοκίμασε ξανά.');
+    return;
+  }
+  try{
+    await currentUser.delete();
+  }catch(e){
+    if(e && e.code === 'auth/requires-recent-login'){
+      try{
+        await reauthenticateCurrentUser();
+        await currentUser.delete();
+      }catch(e2){
+        console.error('reauth/delete failed', e2);
+        alert('Τα δεδομένα σου διαγράφηκαν, αλλά χρειάζεται να επιβεβαιώσεις ξανά την ταυτότητά σου για να ολοκληρωθεί η διαγραφή του λογαριασμού. Αποσυνδέσου, ξανασυνδέσου, και δοκίμασε «Διαγραφή λογαριασμού» ξανά.');
+        return;
+      }
+    } else {
+      console.error('account delete failed', e);
+      alert('Κάτι πήγε στραβά κατά τη διαγραφή του λογαριασμού. Δοκίμασε ξανά.');
+      return;
+    }
+  }
+  // auth.onAuthStateChanged(null) fires automatically once the account is
+  // gone and handles showing the sign-in screen — nothing else to do here.
+});
 
 // ---------- gates: signin -> access request -> onboarding -> app ----------
 function showGate(id){
@@ -700,7 +840,10 @@ function watchAccess(user){
           email: user.email || '',
           name: user.displayName || '',
           status: 'approved',
-          requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+          requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          // First-ever sign-in/sign-up implies acceptance of the Terms &
+          // Privacy Policy linked on the sign-in screen — record when.
+          termsAcceptedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
       }catch(e){ console.error('access request error', e); }
       return; // onSnapshot fires again once the doc exists
@@ -1961,7 +2104,15 @@ let usersUnsub = null;
 function renderProfileTab(){
   const p = currentProfile || defaultProfile();
   const t = p.targets || {};
+  const isPasswordAccount = !!(currentUser && currentUser.providerData && currentUser.providerData.some(pd=>pd.providerId==='password'));
+  const needsVerification = isPasswordAccount && currentUser && !currentUser.emailVerified;
   document.getElementById('profileSummary').innerHTML = `
+    ${needsVerification ? `
+    <div class="profile-block" style="border-color:var(--amber);">
+      <div class="stat-label">Επιβεβαίωση email</div>
+      <div style="font-size:12.5px;margin-top:4px;color:var(--text-dim);">Σου στείλαμε email επιβεβαίωσης στο ${escapeHtml(currentUser.email||'')}. Δεν είναι υποχρεωτικό για να χρησιμοποιήσεις την εφαρμογή, αλλά χρειάζεται για ανάκτηση πρόσβασης.</div>
+      <button class="ghost" type="button" id="resendVerificationBtn" style="margin-top:8px;">Ξαναστείλε το email</button>
+    </div>` : ''}
     <div class="profile-block">
       <div class="stat-label">Στόχος</div>
       <div style="font-weight:700;margin-top:4px;">${escapeHtml(GOAL_LABELS[p.goal]||'-')}</div>
@@ -1984,6 +2135,21 @@ function renderProfileTab(){
         <div class="t"><div class="v">${t.carbs||'-'}g</div><div class="l">Υδατ.</div></div>
       </div>
     </div>`;
+
+  if(needsVerification){
+    document.getElementById('resendVerificationBtn').addEventListener('click', async (e)=>{
+      e.target.disabled = true;
+      e.target.textContent = 'Στέλνεται…';
+      try{
+        await currentUser.sendEmailVerification();
+        e.target.textContent = 'Στάλθηκε ✓';
+      }catch(err){
+        console.error('resend verification failed', err);
+        e.target.textContent = 'Απέτυχε — δοκίμασε ξανά';
+        e.target.disabled = false;
+      }
+    });
+  }
 
   const adminPanel = document.getElementById('adminPanel');
   if(currentUser && currentUser.email === ADMIN_EMAIL){

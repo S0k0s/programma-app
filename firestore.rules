@@ -19,7 +19,9 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == uid &&
                     request.resource.data.status == 'approved';
       allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // A user can delete their own record (part of self-service account
+      // deletion); the admin can delete anyone's (moderation cleanup).
+      allow delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
     }
 
     // Per-user app data: locked to the owning uid AND requires an approved
