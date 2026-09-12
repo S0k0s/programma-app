@@ -9,15 +9,15 @@ service cloud.firestore {
              get(/databases/$(database)/documents/access/$(uid)).data.status == 'approved';
     }
 
-    // Access requests: a signed-in user can create their own pending request
-    // and read their own status. Only the admin can approve/deny (update)
-    // or list the queue of requests.
+    // Access records: sign-up is open — a signed-in user creates their own
+    // record as 'approved' immediately (no manual admin gate). Only the
+    // admin can change status afterwards (e.g. set 'denied' to revoke a
+    // specific account), read anyone else's record, or list all records.
     match /access/{uid} {
       allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());
       allow list: if isAdmin();
       allow create: if request.auth != null && request.auth.uid == uid &&
-                    (request.resource.data.status == 'pending' ||
-                     (isAdmin() && request.resource.data.status == 'approved'));
+                    request.resource.data.status == 'approved';
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }

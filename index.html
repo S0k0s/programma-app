@@ -253,8 +253,16 @@
   .signin-btn:hover{border-color:var(--lime);}
   .signin-btn svg{width:18px;height:18px;}
   .signin-error{color:var(--danger);font-size:12.5px;margin-top:14px;}
+  .signin-success{color:var(--success);font-size:12.5px;margin-top:14px;}
   .signout-link{font-size:11.5px;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:2px 0;margin-top:4px;}
   .signout-link:hover{color:var(--danger);}
+  .signin-divider{display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:11.5px;margin:20px 0 16px;}
+  .signin-divider::before,.signin-divider::after{content:'';flex:1;height:1px;background:var(--line);}
+  .email-auth-form{display:flex;flex-direction:column;gap:8px;text-align:left;}
+  .email-auth-form input{background:var(--surface);border:1px solid var(--line);color:var(--text);
+    border-radius:var(--radius-sm);padding:11px 13px;font-size:13.5px;width:100%;}
+  .email-auth-btns{display:flex;gap:8px;margin-top:2px;}
+  .email-auth-btns button{flex:1;}
 
   /* ---------- onboarding chat ---------- */
   .onboard-wrap{max-width:440px;width:100%;max-height:92vh;display:flex;flex-direction:column;}
@@ -281,11 +289,24 @@
   <div class="signin-card">
     <div class="brandmark">PROGRAMMA</div>
     <h1>Σύνδεση</h1>
-    <p>Συνδέσου με το Google account σου για να βλέπεις το ίδιο ιστορικό προπόνησης και διατροφής σε κάθε συσκευή.</p>
+    <p>Συνδέσου για να βλέπεις το ίδιο ιστορικό προπόνησης και διατροφής σε κάθε συσκευή.</p>
     <button class="signin-btn" id="googleSignInBtn" type="button">
       <svg viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.27-1.6 3.73-5.5 3.73-3.31 0-6.02-2.74-6.02-6.13S8.19 5.57 11.5 5.57c1.89 0 3.16.8 3.88 1.5l2.64-2.55C16.36 2.83 14.1 1.8 11.5 1.8 6.3 1.8 2.06 6.03 2.06 11.23S6.3 20.66 11.5 20.66c6.62 0 8.83-4.63 8.83-8.02 0-.54-.06-.95-.13-1.36H12z"/></svg>
       Σύνδεση με Google
     </button>
+
+    <div class="signin-divider"><span>ή με email</span></div>
+
+    <form id="emailAuthForm" class="email-auth-form">
+      <input type="email" id="emailAuthEmail" placeholder="Email" autocomplete="email" required>
+      <input type="password" id="emailAuthPassword" placeholder="Κωδικός (τουλάχιστον 6 χαρακτήρες)" autocomplete="current-password" required>
+      <div class="email-auth-btns">
+        <button class="primary" type="submit" id="emailSignInBtn">Σύνδεση</button>
+        <button class="ghost" type="button" id="emailRegisterBtn">Εγγραφή</button>
+      </div>
+      <button class="dash-link" type="button" id="forgotPasswordBtn" style="margin:6px auto 0;">Ξέχασες τον κωδικό;</button>
+    </form>
+
     <div class="signin-error" id="signinError" style="display:none;"></div>
   </div>
 </div>
@@ -445,8 +466,9 @@
     <div id="profileSummary"></div>
     <button class="dash-link" type="button" id="redoOnboardingBtn">Ξαναρώτησε το AI Coach για νέο πρόγραμμα →</button>
     <div id="adminPanel" class="hidden">
-      <h3 style="font-size:14px;font-weight:800;margin:24px 0 10px;">Αιτήματα πρόσβασης</h3>
-      <div id="pendingRequests"></div>
+      <h3 style="font-size:14px;font-weight:800;margin:24px 0 10px;">Χρήστες</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin:0 0 10px;">Η εγγραφή είναι ελεύθερη — εδώ μπορείς να αφαιρέσεις πρόσβαση από κάποιον αν χρειαστεί.</p>
+      <div id="userList"></div>
     </div>
   </section>
 
@@ -515,9 +537,76 @@ document.getElementById('googleSignInBtn').addEventListener('click', async ()=>{
     errEl.style.display = 'block';
   }
 });
+
+function authErrorMessage(e){
+  const map = {
+    'auth/invalid-email': 'Μη έγκυρο email.',
+    'auth/user-not-found': 'Δεν βρέθηκε λογαριασμός με αυτό το email. Πάτα «Εγγραφή» αν είναι η πρώτη φορά.',
+    'auth/wrong-password': 'Λάθος κωδικός.',
+    'auth/invalid-credential': 'Λάθος email ή κωδικός.',
+    'auth/email-already-in-use': 'Υπάρχει ήδη λογαριασμός με αυτό το email. Δοκίμασε «Σύνδεση» αντί για εγγραφή.',
+    'auth/weak-password': 'Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.',
+    'auth/too-many-requests': 'Πολλές αποτυχημένες προσπάθειες. Δοκίμασε ξανά σε λίγο.',
+    'auth/missing-email': 'Γράψε το email σου πρώτα.',
+  };
+  return map[e && e.code] || 'Κάτι πήγε στραβά. Δοκίμασε ξανά.';
+}
+function showSigninError(msg){
+  const errEl = document.getElementById('signinError');
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+  errEl.className = 'signin-error';
+}
+function showSigninSuccess(msg){
+  const errEl = document.getElementById('signinError');
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+  errEl.className = 'signin-success';
+}
+
+document.getElementById('emailAuthForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById('emailAuthEmail').value.trim();
+  const password = document.getElementById('emailAuthPassword').value;
+  document.getElementById('signinError').style.display = 'none';
+  try{
+    await auth.signInWithEmailAndPassword(email, password);
+  }catch(err){
+    showSigninError(authErrorMessage(err));
+  }
+});
+document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('emailAuthEmail').value.trim();
+  const password = document.getElementById('emailAuthPassword').value;
+  document.getElementById('signinError').style.display = 'none';
+  if(!email || password.length < 6){
+    showSigninError('Βάλε ένα έγκυρο email και κωδικό τουλάχιστον 6 χαρακτήρων.');
+    return;
+  }
+  try{
+    await auth.createUserWithEmailAndPassword(email, password);
+  }catch(err){
+    showSigninError(authErrorMessage(err));
+  }
+});
+document.getElementById('forgotPasswordBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('emailAuthEmail').value.trim();
+  document.getElementById('signinError').style.display = 'none';
+  if(!email){
+    showSigninError('Γράψε πρώτα το email σου στο πεδίο παραπάνω, μετά πάτα ξανά «Ξέχασες τον κωδικό;».');
+    return;
+  }
+  try{
+    await auth.sendPasswordResetEmail(email);
+    showSigninSuccess('Σου στείλαμε email με οδηγίες επαναφοράς κωδικού.');
+  }catch(err){
+    showSigninError(authErrorMessage(err));
+  }
+});
+
 function signOutCleanup(){
   if(accessUnsub){ accessUnsub(); accessUnsub = null; }
-  if(pendingUnsub){ pendingUnsub(); pendingUnsub = null; }
+  if(usersUnsub){ usersUnsub(); usersUnsub = null; }
   appInitialized = false;
   currentProfile = null;
 }
@@ -550,12 +639,14 @@ function watchAccess(user){
   const ref = db.collection('access').doc(user.uid);
   accessUnsub = ref.onSnapshot(async snap=>{
     if(!snap.exists){
-      const isAdmin = user.email === ADMIN_EMAIL;
+      // Anyone who signs up is auto-approved — no manual admin gate anymore.
+      // The admin can still revoke (deny) a specific account later from the
+      // Προφίλ tab if someone abuses it.
       try{
         await ref.set({
           email: user.email || '',
           name: user.displayName || '',
-          status: isAdmin ? 'approved' : 'pending',
+          status: 'approved',
           requestedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
       }catch(e){ console.error('access request error', e); }
@@ -603,6 +694,10 @@ const CATS = {
 };
 
 function svg(inner){ return `<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`; }
+
+// Generic dumbbell-figure icon for AI-added custom exercises that aren't in
+// either hand-drawn catalog below.
+const FALLBACK_ICON = svg(`<circle cx="20" cy="9" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="12" x2="20" y2="26"/><line x1="20" y1="16" x2="10" y2="16"/><rect x="6.14" y="13.4" width="3.64" height="5.2" rx="1.4" fill="currentColor" stroke="none"/><line x1="20" y1="16" x2="30" y2="16"/><rect x="30.14" y="13.4" width="3.64" height="5.2" rx="1.4" fill="currentColor" stroke="none"/><line x1="20" y1="26" x2="15" y2="35"/><line x1="20" y1="26" x2="25" y2="35"/>`);
 
 // One hand-drawn pose per exercise (keyed by exercise id) so the icon shows how the movement is actually performed.
 const ICONS = {
@@ -823,7 +918,14 @@ function migrateProfile(profile){
 
 function applyProfile(profile){
   currentProfile = profile;
-  DAYS = TEMPLATES[profile.splitKey] || TEMPLATES.gym_upperLower4;
+  const base = TEMPLATES[profile.splitKey] || TEMPLATES.gym_upperLower4;
+  // Merge in any per-user exercise overrides the AI Coach applied (see
+  // applyExerciseUpdate) without mutating the shared TEMPLATES object.
+  DAYS = {};
+  Object.keys(base).forEach(key=>{
+    const custom = profile.customDays && profile.customDays[key];
+    DAYS[key] = custom ? { label: base[key].label, sub: base[key].sub, exercises: custom } : base[key];
+  });
   currentDay = Object.keys(DAYS)[0];
   buildDayPicker();
   renderTargets();
@@ -969,7 +1071,7 @@ function renderExercises(){
     card.className = 'exercise-card' + (checkedState[ex.id] ? ' checked' : '');
     card.style.setProperty('--cat-color', cat.color);
     card.innerHTML = `
-      <div class="icon">${ICONS[ex.id]}</div>
+      <div class="icon">${ICONS[ex.id] || FALLBACK_ICON}</div>
       <div class="info">
         <div class="name">${ex.name}</div>
         <div class="meta">
@@ -1328,7 +1430,57 @@ function buildCoachSystemPrompt(){
 {"trainingLocation":"home"}
 \`\`\`
 Έγκυρα πεδία και τιμές: trainingLocation ("gym"|"home"), goal ("fat_loss"|"muscle_gain"|"recomp"|"maintenance"), daysPerWeek (αριθμός 1-7), activityLevel ("sedentary"|"light"|"moderate"|"active"|"very_active"), experience ("beginner"|"intermediate"|"advanced"), weightKg, heightCm, age (αριθμοί). Μην βάλεις αυτό το block για γενικές ερωτήσεις (π.χ. τι να φάει, πρόοδος, μια απλή πρόταση άσκησης) — ΜΟΝΟ όταν ζητάει ρητά να αλλάξει το πρόγραμμα/προφίλ του, αφού πρώτα του έχεις δώσει την κανονική απάντηση.`;
+  const dayList = (typeof DAYS !== 'undefined' && DAYS) ? Object.keys(DAYS).map(k=>`${k} (${DAYS[k].label})`).join(', ') : '';
+  if(dayList){
+    s += ` Το τρέχον πρόγραμμά του έχει αυτές τις ημέρες προπόνησης (keys): ${dayList}. Αν ζητήσει ρητά να αλλάξεις/αντικαταστήσεις/αφαιρέσεις/προσθέσεις συγκεκριμένη(-ες) άσκηση(-εις) σε μια ημέρα (π.χ. "δεν μου αρέσει το squat, δώσε μου κάτι άλλο" ή "πρόσθεσέ μου κάτι για δικέφαλους στην Upper A"), ΜΕΤΑ την κανονική απάντησή σου πρόσθεσε σε νέα γραμμή ΕΝΑ code block ως εξής:
+\`\`\`exercise-update
+{"day":"upperA","changes":[{"replaceId":"ua6","exercise":{"id":"custom_hammer_curl","name":"Hammer curl με αλτήρες","sets":3,"reps":"10","rest":60,"cat":"arms"}}]}
+\`\`\`
+Το "day" ΠΡΕΠΕΙ να είναι ακριβώς ένα από τα παραπάνω keys. Το "replaceId" είναι προαιρετικό — αν δοθεί και υπάρχει άσκηση με αυτό το id στη μέρα, αντικαθίσταται· αλλιώς η άσκηση προστίθεται. Το "cat" πρέπει να είναι ένα από: chest, back, shoulders, arms, legs, core. Μπορείς να βάλεις πολλά changes στο ίδιο block. Χρησιμοποίησε αυτό ΜΟΝΟ όταν ζητάει ρητά αλλαγή σε άσκηση/ασκήσεις συγκεκριμένης μέρας — όχι για γενική συζήτηση για ασκήσεις.`;
+  }
   return s;
+}
+
+// Applies an AI-Coach-proposed change to a specific training day's exercise
+// list (swap one exercise for another, or add a new one) so a suggestion
+// like "I don't like squats, give me something else" actually shows up in
+// the Προπόνηση tab instead of only existing as chat text.
+async function applyExerciseUpdate(jsonText){
+  let obj;
+  try{ obj = JSON.parse(jsonText); }catch(e){ return false; }
+  if(!obj || !obj.day || !DAYS[obj.day] || !Array.isArray(obj.changes) || !obj.changes.length) return false;
+  const day = obj.day;
+  const validCats = Object.keys(CATS);
+  let list = DAYS[day].exercises.map(e=>Object.assign({}, e));
+  let changed = false;
+  obj.changes.forEach(ch=>{
+    if(!ch || !ch.exercise) return;
+    const ex = ch.exercise;
+    if(!ex.id || !ex.name) return;
+    const clean = {
+      id: String(ex.id).slice(0,40),
+      name: String(ex.name).slice(0,120),
+      sets: Math.max(1, Math.min(10, Number(ex.sets)||3)),
+      reps: String(ex.reps||'10').slice(0,20),
+      rest: Math.max(15, Math.min(300, Number(ex.rest)||60)),
+      cat: validCats.includes(ex.cat) ? ex.cat : 'core',
+    };
+    if(ch.replaceId){
+      const idx = list.findIndex(e=>e.id===ch.replaceId);
+      if(idx>=0) list[idx] = clean; else list.push(clean);
+    } else {
+      list.push(clean);
+    }
+    changed = true;
+  });
+  if(!changed) return false;
+  if(!currentProfile) currentProfile = defaultProfile();
+  if(!currentProfile.customDays) currentProfile.customDays = {};
+  currentProfile.customDays[day] = list;
+  try{ await storage.set('profile', JSON.stringify(currentProfile)); }catch(e){ console.error(e); }
+  applyProfile(currentProfile);
+  if(appInitialized) refreshAppData();
+  return DAYS[day].label;
 }
 
 // Applies a partial profile update the AI Coach proposed (e.g. the user said
@@ -1357,8 +1509,25 @@ async function applyProfileUpdate(jsonText){
   return true;
 }
 
+// Sign-up is open to anyone now, and the AI calls hit the app owner's own
+// paid Anthropic API key via the Cloudflare Worker — cap usage per user per
+// day so an open door can't turn into an open-ended bill.
+const AI_DAILY_LIMIT = 40;
+async function consumeAiQuota(){
+  const key = 'ai-usage:'+todayKey();
+  let count = 0;
+  try{ const r = await storage.get(key); count = Number(r.value)||0; }catch(e){ count = 0; }
+  if(count >= AI_DAILY_LIMIT) return false;
+  try{ await storage.set(key, String(count+1)); }catch(e){ console.error(e); }
+  return true;
+}
+
 async function askAI(question){
   const out = document.getElementById('aiOutput');
+  if(!(await consumeAiQuota())){
+    out.innerHTML = `<div class="airesponse error">Έφτασες το όριο των ${AI_DAILY_LIMIT} μηνυμάτων στον AI Coach για σήμερα. Δοκίμασε ξανά αύριο.</div>`;
+    return;
+  }
   out.innerHTML = '<div class="loading">Σκέφτεται…</div>';
   const context = await buildContextSummary();
   const sys = buildCoachSystemPrompt();
@@ -1377,13 +1546,21 @@ async function askAI(question){
     if(!response.ok){ throw new Error('bad status'); }
     const data = await response.json();
     const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
-    const updateMatch = text.match(/```profile-update\s*([\s\S]*?)```/);
-    const displayText = (updateMatch ? text.slice(0, updateMatch.index) : text).trim();
+    const profileMatch = text.match(/```profile-update\s*([\s\S]*?)```/);
+    const exerciseMatch = text.match(/```exercise-update\s*([\s\S]*?)```/);
+    const cutAt = [profileMatch, exerciseMatch].filter(Boolean).reduce((min,m)=>Math.min(min,m.index), text.length);
+    const displayText = text.slice(0, cutAt).trim();
     out.innerHTML = `<div class="airesponse">${escapeHtml(displayText||'Δεν ελήφθη απάντηση.')}</div>`;
-    if(updateMatch){
-      const applied = await applyProfileUpdate(updateMatch[1]);
+    if(profileMatch){
+      const applied = await applyProfileUpdate(profileMatch[1]);
       if(applied){
         out.innerHTML += `<div class="airesponse" style="border-left-color:var(--success);margin-top:10px;">✅ Ενημέρωσα το πρόγραμμά σου: ${escapeHtml(SPLIT_LABELS[currentProfile.splitKey]||'')}. Δες την καρτέλα «Προπόνηση».</div>`;
+      }
+    }
+    if(exerciseMatch){
+      const dayLabel = await applyExerciseUpdate(exerciseMatch[1]);
+      if(dayLabel){
+        out.innerHTML += `<div class="airesponse" style="border-left-color:var(--success);margin-top:10px;">✅ Ενημέρωσα τις ασκήσεις στη μέρα «${escapeHtml(dayLabel)}». Δες την καρτέλα «Προπόνηση».</div>`;
       }
     }
   }catch(e){
@@ -1457,6 +1634,10 @@ async function sendOnboardingTurn(userText){
     // Anthropic's Messages API requires the conversation to start with a
     // user turn and strictly alternate — seed it, but don't show it in the UI.
     onboardMessages.push({role:'user', content:'Γεια!'});
+  }
+  if(!(await consumeAiQuota())){
+    appendChatBubble('assistant error', `Έφτασες το όριο των ${AI_DAILY_LIMIT} μηνυμάτων στον AI Coach για σήμερα. Δοκίμασε ξανά αύριο, ή πάτησε «Παράλειψη για τώρα».`);
+    return;
   }
   sendBtn.disabled = true;
   const loadingEl = appendChatBubble('assistant loading', 'Σκέφτεται…');
@@ -1549,7 +1730,7 @@ document.getElementById('redoOnboardingBtn').addEventListener('click', ()=>{
 });
 
 // ---------- profile tab + admin panel ----------
-let pendingUnsub = null;
+let usersUnsub = null;
 
 function renderProfileTab(){
   const p = currentProfile || defaultProfile();
@@ -1581,27 +1762,30 @@ function renderProfileTab(){
   const adminPanel = document.getElementById('adminPanel');
   if(currentUser && currentUser.email === ADMIN_EMAIL){
     adminPanel.classList.remove('hidden');
-    watchPendingRequests();
+    watchUserList();
   } else {
     adminPanel.classList.add('hidden');
   }
 }
 
-function watchPendingRequests(){
-  if(pendingUnsub) return;
-  pendingUnsub = db.collection('access').where('status','==','pending').onSnapshot(snap=>{
-    const el = document.getElementById('pendingRequests');
-    if(snap.empty){ el.innerHTML = '<div class="empty">Δεν υπάρχουν εκκρεμή αιτήματα.</div>'; return; }
+function watchUserList(){
+  if(usersUnsub) return;
+  usersUnsub = db.collection('access').onSnapshot(snap=>{
+    const el = document.getElementById('userList');
+    if(snap.empty){ el.innerHTML = '<div class="empty">Δεν υπάρχουν χρήστες ακόμα.</div>'; return; }
     el.innerHTML = '';
     snap.forEach(doc=>{
+      if(doc.id === (currentUser && currentUser.uid)) return; // don't let the admin ban themselves
       const d = doc.data();
+      const denied = d.status === 'denied';
       const row = document.createElement('div');
       row.className = 'historyday';
       row.innerHTML = `<div class="hdate">${escapeHtml(d.name || d.email || doc.id)}</div>
-        <div class="hrow">${escapeHtml(d.email||'')}</div>
+        <div class="hrow">${escapeHtml(d.email||'')} · ${denied ? '<span style="color:var(--danger)">Χωρίς πρόσβαση</span>' : '<span style="color:var(--success)">Ενεργός</span>'}</div>
         <div style="display:flex;gap:8px;margin-top:8px;">
-          <button class="primary" type="button" data-approve="${doc.id}">Έγκριση</button>
-          <button class="ghost" type="button" data-deny="${doc.id}">Απόρριψη</button>
+          ${denied
+            ? `<button class="primary" type="button" data-approve="${doc.id}">Επαναφορά πρόσβασης</button>`
+            : `<button class="ghost" type="button" data-deny="${doc.id}">Αφαίρεση πρόσβασης</button>`}
         </div>`;
       el.appendChild(row);
     });
@@ -1609,9 +1793,12 @@ function watchPendingRequests(){
       b.addEventListener('click', ()=>db.collection('access').doc(b.dataset.approve).update({status:'approved'}).catch(e=>console.error(e)));
     });
     el.querySelectorAll('[data-deny]').forEach(b=>{
-      b.addEventListener('click', ()=>db.collection('access').doc(b.dataset.deny).update({status:'denied'}).catch(e=>console.error(e)));
+      b.addEventListener('click', ()=>{
+        if(!confirm('Ο χρήστης θα χάσει πρόσβαση στην εφαρμογή. Συνέχεια;')) return;
+        db.collection('access').doc(b.dataset.deny).update({status:'denied'}).catch(e=>console.error(e));
+      });
     });
-  }, err=>console.error('pending requests watch error', err));
+  }, err=>console.error('user list watch error', err));
 }
 
 // ---------- init ----------

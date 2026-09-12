@@ -5,7 +5,7 @@ Three things need to be set up once, in this order. None of these steps involve 
 ## 1. Firebase (cross-device sync)
 
 1. Go to https://console.firebase.google.com → **Add project** → give it any name (e.g. `programma-app`).
-2. In the left menu: **Build > Authentication** → **Get started** → enable the **Google** sign-in provider.
+2. In the left menu: **Build > Authentication** → **Get started** → enable the **Google** sign-in provider AND the **Email/Password** sign-in provider (both are used).
 3. In the left menu: **Build > Firestore Database** → **Create database** → start in **production mode**.
 4. Still in Firestore: **Rules** tab → replace the contents with the file `firestore.rules` from this repo → **Publish**.
 5. Left menu: **Project settings** (gear icon) → scroll to **Your apps** → click the **</>** (web) icon → register an app (any nickname) → copy the `firebaseConfig` object it shows you.
@@ -32,14 +32,16 @@ Three things need to be set up once, in this order. None of these steps involve 
 - Open the site, sign in with Google — the same sign-in on your phone/tablet/laptop shows the same workout and food history everywhere, since it's stored in Firestore under your account, not the browser.
 - If the AI Coach shows a connection error, double-check `WORKER_URL` in `index.html` and the `ANTHROPIC_API_KEY` secret in the Worker.
 
-## Multi-user access requests
+## Multi-user sign-up
 
-The app now supports multiple people, each with their own private workout/nutrition/AI-coach data — no one can see anyone else's. New users go through:
+The app supports multiple people, each with their own private workout/nutrition/AI-coach data — no one can see anyone else's. Sign-up is **open**, with two sign-in methods:
 
-1. **Sign in with Google** → the app creates a pending `access` request for them and shows a "waiting for approval" screen.
-2. **You approve them** → open the app signed in as the admin account, go to the profile icon (top-right) → **Προφίλ** tab → **Αιτήματα πρόσβασης**, and click Έγκριση/Απόρριψη. The requester's screen updates automatically (no refresh needed) once you approve.
-3. **First-time AI onboarding** → once approved, a first-time user is greeted by an AI chat whose very first question is always **gym or home/outdoor training** (some people simply can't afford a gym membership) — everything else follows from that: goal, stats, training days/week, experience, and any dietary/injury notes. It then computes personalized calorie/macro targets and picks a location-appropriate training split (Full Body 3x, Upper/Lower 4x, or Push/Pull/Legs 6x depending on days available) — gym users get barbell/machine exercises, home/outdoor users get a bodyweight + resistance-band + park-bar program with its own icon set. They can skip this for a sensible default, and can always redo it later from the Προφίλ tab.
+1. **Google, or email + password** → either way, the account is created and immediately usable — no waiting for approval. Firebase Auth's built-in email/password flow handles password storage and "forgot password" reset emails itself; nothing custom to build or maintain there.
+2. **First-time AI onboarding** → a first-time user is greeted by an AI chat whose very first question is always **gym or home/outdoor training** (some people simply can't afford a gym membership) — everything else follows from that: goal, stats, training days/week, experience, and any dietary/injury notes. It then computes personalized calorie/macro targets and picks a location-appropriate training split (Full Body 3x, Upper/Lower 4x, or Push/Pull/Legs 6x depending on days available) — gym users get barbell/machine exercises, home/outdoor users get a bodyweight + resistance-band + park-bar program with its own icon set. They can skip this for a sensible default, and can always redo it later from the Προφίλ tab.
+3. **The AI Coach can also adjust the live program during a normal chat**, not just during onboarding — e.g. if someone tells it they don't go to a gym anymore, or asks it to swap out a specific exercise they don't like, the change is applied to their actual profile/Προπόνηση tab immediately, not just described in the chat reply.
 
-**The admin account is hardcoded** as `sokratispoun@gmail.com` in both `index.html` (`ADMIN_EMAIL`) and `firestore.rules` (`isAdmin()`) — that account is auto-approved on first sign-in and is the only one that can approve/deny other users. If you ever need to change the admin email, update it in both places.
+**Moderation, not gatekeeping**: since anyone can sign up, and the AI Coach calls your own paid Anthropic API key through the Cloudflare Worker, two safety nets are built in — a per-user daily cap on AI Coach messages (`AI_DAILY_LIMIT` in `index.html`, default 40/day), and an admin panel to revoke a specific account after the fact if needed. Open the app signed in as the admin account, go to the profile icon (top-right) → **Προφίλ** tab → **Χρήστες**, and click "Αφαίρεση πρόσβασης" on anyone who needs to be cut off (their session updates automatically, no refresh needed) — "Επαναφορά πρόσβασης" undoes it.
 
-**Important — you must republish the updated `firestore.rules`** for any of this to work: Firestore Console → your project → **Firestore Database → Rules** → paste in the contents of `firestore.rules` from this repo → **Publish**. Without this, access requests and per-user data isolation won't be enforced correctly.
+**The admin account is hardcoded** as `sokratispoun@gmail.com` in both `index.html` (`ADMIN_EMAIL`) and `firestore.rules` (`isAdmin()`) — that account is the only one that can revoke/restore other users' access. If you ever need to change the admin email, update it in both places.
+
+**Important — you must republish the updated `firestore.rules`** for any of this to work: Firestore Console → your project → **Firestore Database → Rules** → paste in the contents of `firestore.rules` from this repo → **Publish**. Without this, the new sign-up flow and per-user data isolation won't be enforced correctly.
