@@ -1,4 +1,4 @@
-# PROGRAMMA — deployment guide
+# AI Coach — deployment guide
 
 Three things need to be set up once, in this order. None of these steps involve giving anyone your API key or password except your own browser — do them yourself.
 

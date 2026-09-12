@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PROGRAMMA</title>
+<title>AI Coach</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#101214">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -163,7 +167,9 @@
   .exercise-card{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);
     border-radius:var(--radius-md);padding:14px;margin-bottom:10px;transition:opacity .25s ease;}
   .exercise-card.checked{opacity:.55;}
-  .exercise-card .icon{flex:none;width:36px;height:36px;color:var(--cat-color,var(--amber));}
+  .exercise-card .icon{flex:none;width:52px;height:52px;padding:8px;border-radius:50%;
+    color:var(--cat-color,var(--amber));background:color-mix(in srgb, var(--cat-color, var(--amber)) 16%, transparent);}
+  .exercise-card .icon svg{width:100%;height:100%;}
   .exercise-card .info{flex:1;min-width:0;}
   .exercise-card .info .name{font-weight:700;font-size:14.5px;}
   .exercise-card .info .meta{display:flex;gap:12px;margin-top:5px;font-size:12px;color:var(--text-dim);
@@ -299,13 +305,26 @@
 
   /* ---------- profile / admin ---------- */
   .profile-block{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;}
+
+  /* ---------- custom modal (replaces native confirm/prompt/alert) ---------- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(16,18,20,.78);z-index:300;
+    display:flex;align-items:center;justify-content:center;padding:24px;}
+  .modal-overlay.hidden{display:none;}
+  .modal-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:20px;max-width:360px;width:100%;box-shadow:0 20px 60px -20px rgba(0,0,0,.6);}
+  .modal-message{font-size:14px;line-height:1.55;margin:0 0 16px;white-space:pre-wrap;}
+  .modal-input{width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    border-radius:var(--radius-sm);padding:11px 13px;font-size:16px;margin-bottom:16px;}
+  .modal-btns{display:flex;gap:8px;justify-content:flex-end;}
+  .modal-btns button{flex:none;}
+  .modal-btns .danger-btn{color:var(--danger)!important;border-color:var(--danger)!important;background:transparent!important;}
 </style>
 </head>
 <body>
 
 <div id="signin-gate" class="gate">
   <div class="signin-card">
-    <div class="brandmark">PROGRAMMA</div>
+    <div class="brandmark">AI Coach</div>
     <h1>Σύνδεση</h1>
     <p>Συνδέσου για να βλέπεις το ίδιο ιστορικό προπόνησης και διατροφής σε κάθε συσκευή.</p>
     <button class="signin-btn" id="googleSignInBtn" type="button">
@@ -339,8 +358,8 @@
     <p class="legal-updated">Τελευταία ενημέρωση: Σεπτέμβριος 2026</p>
     <div class="legal-text">
 
-<h2>Τι είναι το PROGRAMMA</h2>
-<p>Το PROGRAMMA είναι μια προσωπική εφαρμογή προπόνησης και διατροφής. Δημιουργεί εξατομικευμένο πρόγραμμα προπόνησης και στόχους διατροφής με τη βοήθεια ενός AI βοηθού, και σου επιτρέπει να καταγράφεις την πρόοδό σου.</p>
+<h2>Τι είναι το AI Coach</h2>
+<p>Το AI Coach είναι μια προσωπική εφαρμογή προπόνησης και διατροφής. Δημιουργεί εξατομικευμένο πρόγραμμα προπόνησης και στόχους διατροφής με τη βοήθεια ενός AI βοηθού, και σου επιτρέπει να καταγράφεις την πρόοδό σου.</p>
 
 <h2>Τι δεδομένα συλλέγουμε</h2>
 <p>Email διεύθυνση (για σύνδεση και επικοινωνία)· στοιχεία σώματος και στόχους που δίνεις οικειοθελώς (ηλικία, ύψος, βάρος, φύλο, στόχος, επίπεδο δραστηριότητας, τυχόν τραυματισμούς/διατροφικούς περιορισμούς)· ιστορικό προπονήσεων και καταγραφών φαγητού που καταχωρείς· και το περιεχόμενο των συνομιλιών σου με τον AI Coach.</p>
@@ -358,7 +377,7 @@
 <p>Η πρόσβαση στα δεδομένα ελέγχεται από κανόνες ασφαλείας στο επίπεδο της βάσης δεδομένων, όχι μόνο από τον κώδικα της εφαρμογής — δηλαδή κανένας χρήστης δεν μπορεί τεχνικά να διαβάσει τα δεδομένα άλλου χρήστη, ούτε παρακάμπτοντας την εφαρμογή.</p>
 
 <h2>Ιατρική αποποίηση ευθύνης</h2>
-<p>Το PROGRAMMA και ο AI Coach του δεν παρέχουν ιατρική, διαιτολογική ή άλλη επαγγελματική συμβουλή υγείας. Οι προτάσεις είναι γενικού χαρακτήρα. Συμβουλέψου γιατρό ή διαιτολόγο πριν ξεκινήσεις οποιοδήποτε πρόγραμμα άσκησης ή διατροφής, ειδικά αν έχεις προϋπάρχουσες παθήσεις.</p>
+<p>Το AI Coach δεν παρέχει ιατρική, διαιτολογική ή άλλη επαγγελματική συμβουλή υγείας. Οι προτάσεις είναι γενικού χαρακτήρα. Συμβουλέψου γιατρό ή διαιτολόγο πριν ξεκινήσεις οποιοδήποτε πρόγραμμα άσκησης ή διατροφής, ειδικά αν έχεις προϋπάρχουσες παθήσεις.</p>
 
 <h2>Ηλικιακό όριο</h2>
 <p>Η χρήση της εφαρμογής προϋποθέτει ότι είσαι τουλάχιστον 16 ετών.</p>
@@ -378,7 +397,7 @@
 
 <div id="access-gate" class="gate hidden">
   <div class="signin-card">
-    <div class="brandmark">PROGRAMMA</div>
+    <div class="brandmark">AI Coach</div>
     <h1 id="accessTitle">Έλεγχος πρόσβασης…</h1>
     <p id="accessMsg"></p>
     <button class="signout-link" id="accessSignOutBtn" type="button">Αποσύνδεση</button>
@@ -387,7 +406,7 @@
 
 <div id="onboarding-gate" class="gate hidden">
   <div class="onboard-wrap">
-    <div class="brandmark" style="text-align:center;">PROGRAMMA</div>
+    <div class="brandmark" style="text-align:center;">AI Coach</div>
     <h1>Ας φτιάξουμε το πρόγραμμά σου</h1>
     <div class="onboard-chat" id="onboardChat"></div>
     <div class="onboard-inputrow">
@@ -404,7 +423,7 @@
   <section id="tab-dashboard" class="active">
     <div class="dash-header">
       <div>
-        <div class="brandmark">PROGRAMMA</div>
+        <div class="brandmark">AI Coach</div>
         <div class="greet" id="greetLabel">Καλημέρα, Sokratis</div>
         <div class="date" id="todayLabel"></div>
         <button class="signout-link" id="signOutBtn" type="button">Αποσύνδεση</button>
@@ -564,6 +583,17 @@
   </button>
 </nav>
 
+<div id="customModalOverlay" class="modal-overlay hidden">
+  <div class="modal-box">
+    <p id="modalMessage" class="modal-message"></p>
+    <input type="text" id="modalInput" class="modal-input hidden">
+    <div class="modal-btns">
+      <button type="button" id="modalCancelBtn" class="ghost">Άκυρο</button>
+      <button type="button" id="modalOkBtn" class="primary">OK</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ---------- config: fill in after deploying the Cloudflare Worker ----------
 // Replace with your deployed Worker URL, e.g. https://programma-ai.YOUR-SUBDOMAIN.workers.dev
@@ -612,6 +642,48 @@ const storage = {
 function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+// ---------- custom modal: replaces native confirm()/prompt()/alert() ----------
+// Native browser dialogs look out of place next to the app's own design, and
+// some native WebView wrappers (relevant once this ships to app stores)
+// render them inconsistently or not at all. This is a drop-in async
+// replacement with the same call shape (await instead of a blocking return).
+function showModal({message, mode='confirm', inputType='text', placeholder='', okLabel='OK', cancelLabel='Άκυρο', dangerous=false}){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('customModalOverlay');
+    const msgEl = document.getElementById('modalMessage');
+    const inputEl = document.getElementById('modalInput');
+    const okBtn = document.getElementById('modalOkBtn');
+    const cancelBtn = document.getElementById('modalCancelBtn');
+    const withInput = mode === 'prompt';
+    msgEl.textContent = message;
+    inputEl.classList.toggle('hidden', !withInput);
+    inputEl.type = inputType;
+    inputEl.value = '';
+    inputEl.placeholder = placeholder;
+    cancelBtn.classList.toggle('hidden', mode === 'alert');
+    okBtn.textContent = okLabel;
+    cancelBtn.textContent = cancelLabel;
+    okBtn.classList.toggle('danger-btn', dangerous);
+    overlay.classList.remove('hidden');
+    function cleanup(){
+      overlay.classList.add('hidden');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      inputEl.removeEventListener('keydown', onKeydown);
+    }
+    function onOk(){ const val = withInput ? inputEl.value : true; cleanup(); resolve(val); }
+    function onCancel(){ const val = withInput ? null : false; cleanup(); resolve(val); }
+    function onKeydown(e){ if(e.key==='Enter'){ e.preventDefault(); onOk(); } }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    inputEl.addEventListener('keydown', onKeydown);
+    setTimeout(()=>(withInput ? inputEl : okBtn).focus(), 50);
+  });
+}
+function customAlert(message){ return showModal({message, mode:'alert'}); }
+function customConfirm(message, opts={}){ return showModal({message, mode:'confirm', ...opts}); }
+function customPrompt(message, opts={}){ return showModal({message, mode:'prompt', ...opts}); }
 
 document.getElementById('googleSignInBtn').addEventListener('click', async ()=>{
   const errEl = document.getElementById('signinError');
@@ -762,7 +834,7 @@ async function reauthenticateCurrentUser(){
   if(providerId === 'google.com'){
     await currentUser.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
   } else {
-    const password = prompt('Για ασφάλεια, ξαναγράψε τον κωδικό σου για να επιβεβαιώσεις τη διαγραφή:');
+    const password = await customPrompt('Για ασφάλεια, ξαναγράψε τον κωδικό σου για να επιβεβαιώσεις τη διαγραφή:', {inputType:'password', okLabel:'Συνέχεια'});
     if(!password) throw new Error('reauth-cancelled');
     const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
     await currentUser.reauthenticateWithCredential(cred);
@@ -770,11 +842,11 @@ async function reauthenticateCurrentUser(){
 }
 
 document.getElementById('deleteAccountBtn').addEventListener('click', async ()=>{
-  const sure = confirm('Αυτό θα διαγράψει ΜΟΝΙΜΑ τον λογαριασμό σου και όλα τα δεδομένα σου — προπονήσεις, διατροφή, προφίλ, συνομιλίες με το AI. Δεν μπορεί να αναιρεθεί.\n\nΣυνέχεια;');
+  const sure = await customConfirm('Αυτό θα διαγράψει ΜΟΝΙΜΑ τον λογαριασμό σου και όλα τα δεδομένα σου — προπονήσεις, διατροφή, προφίλ, συνομιλίες με το AI. Δεν μπορεί να αναιρεθεί.', {okLabel:'Συνέχεια', dangerous:true});
   if(!sure) return;
-  const typed = prompt('Πληκτρολόγησε ΔΙΑΓΡΑΦΗ (με κεφαλαία) για να επιβεβαιώσεις:');
+  const typed = await customPrompt('Πληκτρολόγησε ΔΙΑΓΡΑΦΗ (με κεφαλαία) για να επιβεβαιώσεις:', {okLabel:'Διαγραφή', dangerous:true});
   if(typed !== 'ΔΙΑΓΡΑΦΗ'){
-    if(typed !== null) alert('Δεν ταίριαξε — η διαγραφή ακυρώθηκε.');
+    if(typed !== null) await customAlert('Δεν ταίριαξε — η διαγραφή ακυρώθηκε.');
     return;
   }
   const uid = currentUser.uid;
@@ -782,7 +854,7 @@ document.getElementById('deleteAccountBtn').addEventListener('click', async ()=>
     await deleteAllUserData(uid);
   }catch(e){
     console.error('account data delete failed', e);
-    alert('Κάτι πήγε στραβά κατά τη διαγραφή των δεδομένων σου. Δοκίμασε ξανά.');
+    await customAlert('Κάτι πήγε στραβά κατά τη διαγραφή των δεδομένων σου. Δοκίμασε ξανά.');
     return;
   }
   try{
@@ -794,12 +866,12 @@ document.getElementById('deleteAccountBtn').addEventListener('click', async ()=>
         await currentUser.delete();
       }catch(e2){
         console.error('reauth/delete failed', e2);
-        alert('Τα δεδομένα σου διαγράφηκαν, αλλά χρειάζεται να επιβεβαιώσεις ξανά την ταυτότητά σου για να ολοκληρωθεί η διαγραφή του λογαριασμού. Αποσυνδέσου, ξανασυνδέσου, και δοκίμασε «Διαγραφή λογαριασμού» ξανά.');
+        await customAlert('Τα δεδομένα σου διαγράφηκαν, αλλά χρειάζεται να επιβεβαιώσεις ξανά την ταυτότητά σου για να ολοκληρωθεί η διαγραφή του λογαριασμού. Αποσυνδέσου, ξανασυνδέσου, και δοκίμασε «Διαγραφή λογαριασμού» ξανά.');
         return;
       }
     } else {
       console.error('account delete failed', e);
-      alert('Κάτι πήγε στραβά κατά τη διαγραφή του λογαριασμού. Δοκίμασε ξανά.');
+      await customAlert('Κάτι πήγε στραβά κατά τη διαγραφή του λογαριασμού. Δοκίμασε ξανά.');
       return;
     }
   }
@@ -903,7 +975,7 @@ const CATS = {
   core:{color:'#B9BDC4'}
 };
 
-function svg(inner){ return `<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`; }
+function svg(inner){ return `<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`; }
 
 // Generic dumbbell-figure icon for AI-added custom exercises that aren't in
 // either hand-drawn catalog below.
@@ -1233,7 +1305,18 @@ const MEALS = {
 };
 
 // ---------- state / date ----------
-function todayKey(){ return new Date().toISOString().slice(0,10); }
+// toISOString() converts to UTC first — for anyone east of UTC (e.g. Greece,
+// UTC+2/+3) that rolls "today" over to the next calendar date hours before
+// local midnight, or keeps showing "yesterday" for a while after local
+// midnight, silently mis-filing workout/food logs under the wrong day. Build
+// the key from local date components instead.
+function formatLocalDate(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function todayKey(){ return formatLocalDate(new Date()); }
 let DAYS = TEMPLATES.gym_upperLower4;
 let currentDay = Object.keys(DAYS)[0];
 let checkedState = {}; // {exerciseId: true}
@@ -1514,7 +1597,7 @@ async function renderHistory(){
 }
 
 // ---------- dashboard ----------
-function dateOffset(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function dateOffset(n){ const d=new Date(); d.setDate(d.getDate()+n); return formatLocalDate(d); }
 
 function buildSparkline(values){
   // values: 7 numbers (oldest -> newest). Returns {pathD, lastX, lastY}
@@ -1934,7 +2017,7 @@ document.getElementById('aiQuestion').addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); document.getElementById('askAiBtn').click(); }
 });
 document.getElementById('newAiChatBtn').addEventListener('click', async ()=>{
-  if(!confirm('Θα διαγραφεί το ιστορικό της τρέχουσας συνομιλίας με τον AI Coach. Συνέχεια;')) return;
+  if(!(await customConfirm('Θα διαγραφεί το ιστορικό της τρέχουσας συνομιλίας με τον AI Coach. Συνέχεια;'))) return;
   aiMessages = [];
   try{ await storage.set(AI_CHAT_KEY, JSON.stringify([])); }catch(e){ console.error(e); }
   renderAiChat();
@@ -1947,7 +2030,7 @@ function onboardingSystemPrompt(firstName){
   const nameInstruction = firstName
     ? `Ο χρήστης λέγεται ${firstName} — χρησιμοποίησε το όνομά του/της για να τον/την προσφωνείς στη συνομιλία. Βάλε αυτό το όνομα και στο τελικό JSON ως "name".`
     : `Δεν ξέρουμε ακόμα πώς λέγεται ο χρήστης (π.χ. έκανε εγγραφή με email αντί για Google). Ρώτα το όνομά του/της στο ΠΡΩΤΟ σου μήνυμα, και χρησιμοποίησε το για να τον/την προσφωνείς στη συνέχεια.`;
-  return `Είσαι ο AI onboarding coach της εφαρμογής PROGRAMMA. Μιλάς Ελληνικά, φιλικά, φυσικά και σύντομα.
+  return `Είσαι ο onboarding coach της εφαρμογής AI Coach. Μιλάς Ελληνικά, φιλικά, φυσικά και σύντομα.
 ${nameInstruction} Σκοπός σου: να μάθεις όσα χρειάζεσαι για να φτιάξεις εξατομικευμένο πρόγραμμα προπόνησης και διατροφής — ΧΩΡΙΣ να κουράσεις τον χρήστη με πολλές ξεχωριστές ερωτήσεις. Ρώτα σε το ΠΟΛΥ 3 μηνύματα, ομαδοποιημένα ως εξής (μην τα σπάσεις σε περισσότερα):
 
 1ο μήνυμα: όνομα (αν δεν το ξέρεις ήδη) ΚΑΙ αν θα προπονείται σε γυμναστήριο ή σπίτι/ύπαιθρο (π.χ. γιατί δεν έχει τη δυνατότητα για συνδρομή γυμναστηρίου) — αυτό καθορίζει εντελώς διαφορετικό πρόγραμμα, οπότε χρειάζεται νωρίς.
@@ -2104,8 +2187,8 @@ document.getElementById('onboardSkipBtn').addEventListener('click', async ()=>{
   showGate(null);
   if(appInitialized) refreshAppData(); else initApp();
 });
-document.getElementById('redoOnboardingBtn').addEventListener('click', ()=>{
-  if(!confirm('Θα ξαναρχίσει η συνομιλία με το AI Coach για να φτιάξει νέο πρόγραμμα. Συνέχεια;')) return;
+document.getElementById('redoOnboardingBtn').addEventListener('click', async ()=>{
+  if(!(await customConfirm('Θα ξαναρχίσει η συνομιλία με το AI Coach για να φτιάξει νέο πρόγραμμα. Συνέχεια;'))) return;
   showGate('onboarding-gate');
   startOnboardingChat();
 });
@@ -2197,8 +2280,8 @@ function watchUserList(){
       b.addEventListener('click', ()=>db.collection('access').doc(b.dataset.approve).update({status:'approved'}).catch(e=>console.error(e)));
     });
     el.querySelectorAll('[data-deny]').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        if(!confirm('Ο χρήστης θα χάσει πρόσβαση στην εφαρμογή. Συνέχεια;')) return;
+      b.addEventListener('click', async ()=>{
+        if(!(await customConfirm('Ο χρήστης θα χάσει πρόσβαση στην εφαρμογή. Συνέχεια;', {dangerous:true}))) return;
         db.collection('access').doc(b.dataset.deny).update({status:'denied'}).catch(e=>console.error(e));
       });
     });
