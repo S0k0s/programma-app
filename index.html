@@ -44,6 +44,9 @@
   section.active{display:block;}
 
   .screen-header{font-size:19px;font-weight:800;margin:2px 0 16px;}
+  .screen-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .screen-header-row .screen-header{margin-bottom:0;}
+  .profile-shortcut-btn{background:none;border:none;cursor:pointer;padding:0;flex:none;}
   .backlink{display:inline-flex;align-items:center;gap:4px;color:var(--text-dim);font-size:12.5px;background:none;border:none;cursor:pointer;margin-bottom:10px;padding:4px 0;}
   .backlink:hover{color:var(--lime);}
   .dash-link{display:inline-flex;align-items:center;gap:4px;color:var(--text-dim);font-size:12.5px;background:none;border:none;cursor:pointer;padding:6px 0;}
@@ -427,7 +430,7 @@
         <div class="date" id="todayLabel"></div>
         <button class="signout-link" id="signOutBtn" type="button" data-i18n="signout">Αποσύνδεση</button>
       </div>
-      <button type="button" id="profileBtn" data-i18n-aria="profile_title" aria-label="Προφίλ" style="background:none;border:none;cursor:pointer;padding:0;">
+      <button type="button" id="profileBtn" class="profile-shortcut-btn" data-i18n-aria="profile_title" aria-label="Προφίλ">
         <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
       </button>
     </div>
@@ -482,7 +485,12 @@
 
   <!-- TRAINING -->
   <section id="tab-training">
-    <div class="screen-header" data-i18n="nav_training">Προπόνηση</div>
+    <div class="screen-header-row">
+      <div class="screen-header" data-i18n="nav_training">Προπόνηση</div>
+      <button type="button" class="profile-shortcut-btn" data-i18n-aria="profile_title" aria-label="Προφίλ">
+        <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      </button>
+    </div>
     <div class="daypicker" id="daypicker"></div>
     <div id="exerciseList"></div>
     <div class="finishbar">
@@ -493,7 +501,12 @@
 
   <!-- NUTRITION -->
   <section id="tab-nutrition">
-    <div class="screen-header" data-i18n="nav_nutrition">Διατροφή</div>
+    <div class="screen-header-row">
+      <div class="screen-header" data-i18n="nav_nutrition">Διατροφή</div>
+      <button type="button" class="profile-shortcut-btn" data-i18n-aria="profile_title" aria-label="Προφίλ">
+        <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      </button>
+    </div>
     <div class="targets" id="targetsGrid"></div>
     <div class="mealgrid" id="mealGrid"></div>
     <div style="font-size:12px;color:var(--text-dim);margin:2px 0 16px;" data-i18n="nutrition_supplements">Συμπληρώματα: whey 1-2 μεζούρες/ημέρα · κρεατίνη μονοϋδρική 5g/ημέρα (χωρίς φόρτωση)</div>
@@ -503,7 +516,12 @@
   <!-- EXTRA FOOD -->
   <section id="tab-extra">
     <button class="backlink" type="button" id="extraBackBtn" data-i18n="extra_back">← Πίσω στη Διατροφή</button>
-    <div class="screen-header" data-i18n="extra_title">Έξτρα φαγητό</div>
+    <div class="screen-header-row">
+      <div class="screen-header" data-i18n="extra_title">Έξτρα φαγητό</div>
+      <button type="button" class="profile-shortcut-btn" data-i18n-aria="profile_title" aria-label="Προφίλ">
+        <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      </button>
+    </div>
     <div class="logform">
       <input name="name" data-i18n-placeholder="extra_name_placeholder" placeholder="Τι έφαγες (π.χ. protein bar)" data-i18n-aria="extra_name_aria" aria-label="Όνομα τροφίμου">
       <input name="kcal" type="number" placeholder="kcal" data-i18n-aria="extra_kcal_aria" aria-label="Θερμίδες">
@@ -521,7 +539,12 @@
   <!-- HISTORY -->
   <section id="tab-history">
     <button class="backlink" type="button" id="historyBackBtn" data-i18n="history_back">← Πίσω στην Αρχική</button>
-    <div class="screen-header" data-i18n="history_title">Ιστορικό</div>
+    <div class="screen-header-row">
+      <div class="screen-header" data-i18n="history_title">Ιστορικό</div>
+      <button type="button" class="profile-shortcut-btn" data-i18n-aria="profile_title" aria-label="Προφίλ">
+        <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      </button>
+    </div>
     <h3 style="font-size:14px;font-weight:800;margin:0 0 10px;" data-i18n="history_workouts">Προπονήσεις</h3>
     <div id="workoutHistory"></div>
     <h3 style="font-size:14px;font-weight:800;margin:20px 0 10px;" data-i18n="history_food">Έξτρα φαγητό</h3>
@@ -530,7 +553,12 @@
 
   <!-- AI COACH -->
   <section id="tab-ai" class="aicoach">
-    <div class="screen-header">AI Coach</div>
+    <div class="screen-header-row">
+      <div class="screen-header">AI Coach</div>
+      <button type="button" class="profile-shortcut-btn" data-i18n-aria="profile_title" aria-label="Προφίλ">
+        <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      </button>
+    </div>
     <p style="font-size:13px;color:var(--text-dim);margin-top:0;" data-i18n="ai_intro">Ζήτα από τον AI coach προτάσεις γευμάτων ή έλεγχο προόδου με βάση το ιστορικό σου. Η συνομιλία συνεχίζεται και θυμάται τι έχετε πει.</p>
     <div class="suggbtns">
       <button class="ghost" type="button" id="suggMeal" data-i18n="ai_sugg_meal">Πρότεινέ μου γεύμα</button>
@@ -1880,7 +1908,7 @@ document.getElementById('historyBackBtn').addEventListener('click', ()=>switchTa
 document.getElementById('toExtraBtn').addEventListener('click', ()=>switchTab('extra'));
 document.getElementById('extraBackBtn').addEventListener('click', ()=>switchTab('nutrition'));
 document.getElementById('askCoachBtn').addEventListener('click', ()=>switchTab('ai'));
-document.getElementById('profileBtn').addEventListener('click', ()=>switchTab('profile'));
+document.querySelectorAll('.profile-shortcut-btn').forEach(b=>b.addEventListener('click', ()=>switchTab('profile')));
 document.getElementById('profileBackBtn').addEventListener('click', ()=>switchTab('dashboard'));
 
 // ---------- training ----------
