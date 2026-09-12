@@ -950,6 +950,7 @@ function applyProfile(profile){
   currentDay = Object.keys(DAYS)[0];
   buildDayPicker();
   renderTargets();
+  renderMealGrid();
   setGreeting();
 }
 
@@ -1173,28 +1174,35 @@ document.getElementById('finishBtn').addEventListener('click', async ()=>{
 
 // ---------- nutrition ----------
 const mealGrid = document.getElementById('mealGrid');
-Object.keys(MEALS).forEach(key=>{
-  const m = MEALS[key];
-  const card = document.createElement('div');
-  card.className = 'mealtab';
-  card.setAttribute('role','button');
-  card.tabIndex = 0;
-  card.innerHTML = `<div class="title">${m.label}</div><div class="goal">${m.goal}</div>`;
-  function toggle(){
-    const opening = !card.classList.contains('open');
-    document.querySelectorAll('.mealtab').forEach(c=>{ c.classList.remove('open'); const l=c.querySelector('.mealoptions'); if(l) l.remove(); });
-    if(opening){
-      card.classList.add('open');
-      const ul = document.createElement('ul');
-      ul.className = 'mealoptions';
-      m.options.forEach(o=>{ const li=document.createElement('li'); li.textContent=o; ul.appendChild(li); });
-      card.appendChild(ul);
+function getMealOptions(key){
+  return (currentProfile && currentProfile.customMeals && currentProfile.customMeals[key]) || MEALS[key].options;
+}
+function renderMealGrid(){
+  mealGrid.innerHTML = '';
+  Object.keys(MEALS).forEach(key=>{
+    const m = MEALS[key];
+    const card = document.createElement('div');
+    card.className = 'mealtab';
+    card.setAttribute('role','button');
+    card.tabIndex = 0;
+    card.innerHTML = `<div class="title">${m.label}</div><div class="goal">${m.goal}</div>`;
+    function toggle(){
+      const opening = !card.classList.contains('open');
+      document.querySelectorAll('.mealtab').forEach(c=>{ c.classList.remove('open'); const l=c.querySelector('.mealoptions'); if(l) l.remove(); });
+      if(opening){
+        card.classList.add('open');
+        const ul = document.createElement('ul');
+        ul.className = 'mealoptions';
+        getMealOptions(key).forEach(o=>{ const li=document.createElement('li'); li.textContent=o; ul.appendChild(li); });
+        card.appendChild(ul);
+      }
     }
-  }
-  card.addEventListener('click', toggle);
-  card.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); toggle(); } });
-  mealGrid.appendChild(card);
-});
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); toggle(); } });
+    mealGrid.appendChild(card);
+  });
+}
+renderMealGrid();
 
 // ---------- extra food log ----------
 async function loadFoodLog(){
@@ -1460,6 +1468,12 @@ function buildCoachSystemPrompt(){
 \`\`\`
 Το "day" ΠΡΕΠΕΙ να είναι ακριβώς ένα από τα παραπάνω keys. Το "replaceId" είναι προαιρετικό — αν δοθεί και υπάρχει άσκηση με αυτό το id στη μέρα, αντικαθίσταται· αλλιώς η άσκηση προστίθεται. Το "cat" πρέπει να είναι ένα από: chest, back, shoulders, arms, legs, core. Μπορείς να βάλεις πολλά changes στο ίδιο block. Χρησιμοποίησε αυτό ΜΟΝΟ όταν ζητάει ρητά αλλαγή σε άσκηση/ασκήσεις συγκεκριμένης μέρας — όχι για γενική συζήτηση για ασκήσεις.`;
   }
+  const mealList = Object.keys(MEALS).map(k=>`${k} (${MEALS[k].label})`).join(', ');
+  s += ` Η καρτέλα Διατροφή έχει αυτές τις κατηγορίες γεύματος (keys): ${mealList}. Αν ζητήσει ρητά αλλαγή στη διατροφή του — π.χ. να αλλάξεις τους θερμιδικούς/μακροθρεπτικούς στόχους απευθείας, ή να δώσεις νέες/διαφορετικές επιλογές φαγητού για συγκεκριμένο γεύμα (π.χ. "δεν τρώω κρέας, δώσε μου χορτοφαγικές επιλογές για μεσημεριανό", "θέλω λιγότερα carbs") — ΜΕΤΑ την κανονική απάντησή σου πρόσθεσε σε νέα γραμμή ΕΝΑ code block ως εξής, με ΜΟΝΟ ό,τι πραγματικά αλλάζει:
+\`\`\`nutrition-update
+{"targets":{"carbs":300},"meals":{"lunch":{"options":["Επιλογή 1 με λεπτομέρειες","Επιλογή 2 με λεπτομέρειες"]}}}
+\`\`\`
+Το "targets" είναι προαιρετικό partial override πάνω στους στόχους (πεδία: kcal, protein, fat, carbs — αριθμοί). Το "meals" είναι προαιρετικό — key ΠΡΕΠΕΙ να είναι ένα από τα παραπάνω meal keys, και "options" είναι η ΠΛΗΡΗΣ νέα λίστα επιλογών για αυτό το γεύμα (αντικαθιστά την παλιά, 3-7 ρεαλιστικές επιλογές, ελληνικά). Χρησιμοποίησε αυτό ΜΟΝΟ όταν ζητάει ρητά αλλαγή στη διατροφή/στόχους/επιλογές φαγητού, όχι για μια απλή ερώτηση τύπου "τι να φάω τώρα".`;
   return s;
 }
 
@@ -1503,6 +1517,45 @@ async function applyExerciseUpdate(jsonText){
   applyProfile(currentProfile);
   if(appInitialized) refreshAppData();
   return DAYS[day].label;
+}
+
+// Applies an AI-Coach-proposed change to nutrition — direct macro/calorie
+// overrides and/or new food options for a specific meal slot — so a request
+// like "no meat, give me vegetarian lunch options" actually shows up in the
+// Διατροφή tab instead of only existing as chat text.
+async function applyNutritionUpdate(jsonText){
+  let obj;
+  try{ obj = JSON.parse(jsonText); }catch(e){ return false; }
+  if(!currentProfile) currentProfile = defaultProfile();
+  let changed = false;
+  if(obj.targets && typeof obj.targets === 'object'){
+    const bounds = {kcal:[1200,6000], protein:[0,400], fat:[0,300], carbs:[0,800]};
+    const t = Object.assign({}, currentProfile.targets);
+    Object.keys(bounds).forEach(k=>{
+      if(obj.targets[k] !== undefined){
+        const v = Number(obj.targets[k]);
+        if(!isNaN(v) && v>=bounds[k][0] && v<=bounds[k][1]){ t[k] = Math.round(v); changed = true; }
+      }
+    });
+    currentProfile.targets = t;
+  }
+  if(obj.meals && typeof obj.meals === 'object'){
+    if(!currentProfile.customMeals) currentProfile.customMeals = {};
+    Object.keys(obj.meals).forEach(key=>{
+      if(!MEALS[key]) return;
+      const entry = obj.meals[key];
+      const opts = entry && Array.isArray(entry.options) ? entry.options.map(o=>String(o).slice(0,200)).filter(Boolean).slice(0,10) : null;
+      if(opts && opts.length){
+        currentProfile.customMeals[key] = opts;
+        changed = true;
+      }
+    });
+  }
+  if(!changed) return false;
+  try{ await storage.set('profile', JSON.stringify(currentProfile)); }catch(e){ console.error(e); }
+  renderTargets();
+  renderMealGrid();
+  return true;
 }
 
 // Applies a partial profile update the AI Coach proposed (e.g. the user said
@@ -1551,7 +1604,11 @@ const AI_HISTORY_API_PAIRS = 10;   // only the last N exchanges go to the model 
 let aiMessages = [];
 
 function aiStripUpdateBlocks(text){
-  return String(text||'').replace(/```profile-update[\s\S]*?```/g,'').replace(/```exercise-update[\s\S]*?```/g,'').trim();
+  return String(text||'')
+    .replace(/```profile-update[\s\S]*?```/g,'')
+    .replace(/```exercise-update[\s\S]*?```/g,'')
+    .replace(/```nutrition-update[\s\S]*?```/g,'')
+    .trim();
 }
 
 function appendAiBubble(cls, text){
@@ -1644,6 +1701,11 @@ async function askAI(question){
     if(exerciseMatch){
       const dayLabel = await applyExerciseUpdate(exerciseMatch[1]);
       if(dayLabel) appendAiBubble('assistant', `✅ Ενημέρωσα τις ασκήσεις στη μέρα «${dayLabel}». Δες την καρτέλα «Προπόνηση».`);
+    }
+    const nutritionMatch = text.match(/```nutrition-update\s*([\s\S]*?)```/);
+    if(nutritionMatch){
+      const applied = await applyNutritionUpdate(nutritionMatch[1]);
+      if(applied) appendAiBubble('assistant', `✅ Ενημέρωσα τη διατροφή σου. Δες την καρτέλα «Διατροφή».`);
     }
   }catch(e){
     loadingEl.remove();
