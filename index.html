@@ -30,6 +30,7 @@
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
   body{min-height:100vh;}
   button, input, textarea{font-family:'Inter',sans-serif;}
+  .hidden{display:none !important;}
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 
   .app-shell{max-width:480px;margin:0 auto;padding:18px 16px 96px;}
@@ -989,10 +990,19 @@ function renderTargets(){
     <div class="t"><div class="v">${t.carbs}g</div><div class="l">Υδατ.</div></div>`;
 }
 
+// Google sign-ins arrive with a displayName already; email/password ones
+// don't (Firebase never sets one on its own) — the onboarding chat asks for
+// a name in that case and stores it both on the Auth profile and here as a
+// fallback, so every reader of "the user's name" should go through this.
+function getFirstName(){
+  const dn = (currentUser && currentUser.displayName) || (currentProfile && currentProfile.name) || '';
+  return dn.trim().split(/\s+/)[0] || '';
+}
+
 function setGreeting(){
   const h = new Date().getHours();
   const g = h<12 ? 'Καλημέρα' : (h<18 ? 'Καλό απόγευμα' : 'Καλησπέρα');
-  const name = (currentUser && currentUser.displayName) ? currentUser.displayName.split(' ')[0] : '';
+  const name = getFirstName();
   document.getElementById('greetLabel').textContent = name ? `${g}, ${name}` : g;
 }
 
@@ -1462,7 +1472,7 @@ async function buildContextSummary(){
 function buildCoachSystemPrompt(){
   const p = currentProfile || defaultProfile();
   const t = p.targets || {};
-  const name = (currentUser && currentUser.displayName) ? currentUser.displayName.split(' ')[0] : '';
+  const name = getFirstName();
   const pronoun = p.sex === 'female' ? 'μια γυναίκα' : 'έναν άντρα';
   let s = `Είσαι προσωπικός γυμναστής και διαιτολόγος για ${name ? name+',' : ''} ${pronoun} ${p.age} ετών, ${p.heightCm}cm, ${p.weightKg}kg, στόχος: ${(GOAL_LABELS[p.goal]||'γενική φόρμα').toLowerCase()}. Προπονείται στο${p.trainingLocation==='home' ? ' σπίτι/ύπαιθρο, χωρίς πρόσβαση σε γυμναστήριο (μόνο σωματικό βάρος, λάστιχο αντίστασης, σακίδιο, μπάρα πάρκου ή καρέκλα/πάγκο) — ΜΗΝ προτείνεις ασκήσεις με όργανα γυμναστηρίου ή ελεύθερα βάρη που δεν έχει.' : ' γυμναστήριο, με πρόσβαση σε όργανα και ελεύθερα βάρη.'} Στόχοι διατροφής: ${t.kcal||'-'} kcal, ${t.protein||'-'}g πρωτεΐνη, ${t.fat||'-'}g λίπος, ${t.carbs||'-'}g υδατάνθρακες. Πρόγραμμα: ${SPLIT_LABELS[p.splitKey]||''}.`;
   if(p.dietaryNotes) s += ` Διατροφικές προτιμήσεις/περιορισμοί: ${p.dietaryNotes}.`;
@@ -1754,12 +1764,16 @@ document.getElementById('newAiChatBtn').addEventListener('click', async ()=>{
 let onboardMessages = [];
 
 function onboardingSystemPrompt(firstName){
+  const nameInstruction = firstName
+    ? `Ο χρήστης λέγεται ${firstName} — χρησιμοποίησε το όνομά του/της για να τον/την προσφωνείς στη συνομιλία. Βάλε αυτό το όνομα και στο τελικό JSON ως "name".`
+    : `Δεν ξέρουμε ακόμα πώς λέγεται ο χρήστης (π.χ. έκανε εγγραφή με email αντί για Google). Στην ΠΡΩΤΗ σου ερώτηση — μαζί με το αν προπονείται σε γυμναστήριο ή σπίτι — ρώτα τον και πώς λέγεται (μικρό όνομα ή ονοματεπώνυμο), και χρησιμοποίησε το όνομα για να τον/την προσφωνείς στη συνέχεια.`;
   return `Είσαι ο AI onboarding coach της εφαρμογής PROGRAMMA. Μιλάς Ελληνικά, φιλικά, φυσικά και σύντομα.
-Ο χρήστης λέγεται ${firstName || ''}. Σκοπός σου: να μάθεις όσα χρειάζεσαι για να φτιάξεις εξατομικευμένο πρόγραμμα προπόνησης και διατροφής.
+${nameInstruction} Σκοπός σου: να μάθεις όσα χρειάζεσαι για να φτιάξεις εξατομικευμένο πρόγραμμα προπόνησης και διατροφής.
 
-Η ΠΡΩΤΗ ερώτηση που θα κάνεις, πριν από οτιδήποτε άλλο, είναι ΠΑΝΤΑ αυτή: αν θα προπονείται σε γυμναστήριο ή στο σπίτι/ύπαιθρο (π.χ. γιατί δεν έχει τη δυνατότητα για συνδρομή γυμναστηρίου αυτή τη στιγμή). Αυτό καθορίζει εντελώς διαφορετικό πρόγραμμα (ασκήσεις με όργανα/μπάρες vs ασκήσεις σωματικού βάρους/λάστιχο/μπάρα πάρκου), οπότε μην προχωρήσεις σε άλλη ερώτηση πριν το μάθεις.
+Η ΠΡΩΤΗ ερώτηση που θα κάνεις, πριν από οτιδήποτε άλλο, είναι ΠΑΝΤΑ αυτή: αν θα προπονείται σε γυμναστήριο ή στο σπίτι/ύπαιθρο (π.χ. γιατί δεν έχει τη δυνατότητα για συνδρομή γυμναστηρίου αυτή τη στιγμή) — μαζί με το όνομά του/της αν δεν το ξέρεις ήδη. Αυτό καθορίζει εντελώς διαφορετικό πρόγραμμα (ασκήσεις με όργανα/μπάρες vs ασκήσεις σωματικού βάρους/λάστιχο/μπάρα πάρκου), οπότε μην προχωρήσεις σε άλλη ερώτηση πριν το μάθεις.
 
 Μετά ρώτα ένα-δύο πράγματα τη φορά (όχι όλα μαζί) μέχρι να έχεις μάθει ΟΛΑ τα παρακάτω:
+- Όνομα (μόνο αν δεν το ξέρεις ήδη)
 - Τόπος προπόνησης: γυμναστήριο ή σπίτι/ύπαιθρος (ΠΑΝΤΑ πρώτη ερώτηση)
 - Κύριος στόχος: αδυνάτισμα, μυϊκή ανάπτυξη, αναδόμηση σώματος (recomp) ή διατήρηση/γενική φόρμα
 - Φύλο
@@ -1772,10 +1786,10 @@ function onboardingSystemPrompt(firstName){
 - Διατροφικές προτιμήσεις ή περιορισμοί (ελεύθερο κείμενο, ή "καμία")
 - Τραυματισμούς ή περιορισμούς κίνησης (ελεύθερο κείμενο, ή "κανένας")
 
-Μόλις έχεις ΟΛΑ τα παραπάνω, ΜΗΝ κάνεις άλλες ερωτήσεις. Γράψε ένα σύντομο φιλικό μήνυμα επιβεβαίωσης, και αμέσως μετά, σε νέα γραμμή, ΕΝΑ code block σε JSON με ΑΚΡΙΒΩΣ αυτά τα keys και επιτρεπτές τιμές (χρησιμοποίησε τις αγγλικές ετικέτες, όχι ελληνικό κείμενο, εκτός από τα δύο πεδία ελεύθερου κειμένου):
+Μόλις έχεις ΟΛΑ τα παραπάνω, ΜΗΝ κάνεις άλλες ερωτήσεις. Γράψε ένα σύντομο φιλικό μήνυμα επιβεβαίωσης, και αμέσως μετά, σε νέα γραμμή, ΕΝΑ code block σε JSON με ΑΚΡΙΒΩΣ αυτά τα keys και επιτρεπτές τιμές (χρησιμοποίησε τις αγγλικές ετικέτες, όχι ελληνικό κείμενο, εκτός από το όνομα και τα δύο πεδία ελεύθερου κειμένου):
 
 \`\`\`json
-{"trainingLocation":"gym|home","goal":"fat_loss|muscle_gain|recomp|maintenance","sex":"male|female","age":0,"heightCm":0,"weightKg":0,"activityLevel":"sedentary|light|moderate|active|very_active","daysPerWeek":0,"experience":"beginner|intermediate|advanced","dietaryNotes":"...","injuries":"..."}
+{"name":"...","trainingLocation":"gym|home","goal":"fat_loss|muscle_gain|recomp|maintenance","sex":"male|female","age":0,"heightCm":0,"weightKg":0,"activityLevel":"sedentary|light|moderate|active|very_active","daysPerWeek":0,"experience":"beginner|intermediate|advanced","dietaryNotes":"...","injuries":"..."}
 \`\`\`
 
 Μην βγάλεις αυτό το JSON πριν έχεις πραγματικά όλες τις απαντήσεις από τον χρήστη. Μην γράψεις τίποτα άλλο μετά το JSON block.`;
@@ -1816,7 +1830,7 @@ async function sendOnboardingTurn(userText){
   sendBtn.disabled = true;
   const loadingEl = appendChatBubble('assistant loading', 'Σκέφτεται…');
   try{
-    const firstName = (currentUser.displayName||'').split(' ')[0] || '';
+    const firstName = getFirstName();
     const sys = onboardingSystemPrompt(firstName);
     const response = await fetch(WORKER_URL, {
       method:'POST',
@@ -1867,6 +1881,8 @@ function tryFinalizeOnboarding(jsonText){
     injuries: String(obj.injuries||'').slice(0,500),
     onboardedAt: new Date().toISOString(),
   };
+  const cleanName = String(obj.name||'').trim().slice(0,80);
+  if(cleanName) profile.name = cleanName;
   profile.splitKey = chooseSplitKey(daysPerWeek, obj.trainingLocation);
   profile.targets = computeTargets(profile);
   finalizeProfile(profile);
@@ -1878,6 +1894,14 @@ async function finalizeProfile(profile){
   // sendOnboardingTurn's own epoch check, so it's still the same value — but
   // capturing it locally keeps this function safe to call from anywhere.
   const epochAtStart = authEpoch;
+  // Email/password sign-ins have no displayName from Firebase itself — if the
+  // AI just learned the user's name during onboarding, persist it onto the
+  // Auth profile too, so greetings/system prompts stay consistent everywhere
+  // without needing to read it back out of this profile doc each time.
+  if(profile.name && !(currentUser && currentUser.displayName) && currentUser && currentUser.updateProfile){
+    try{ await currentUser.updateProfile({ displayName: profile.name }); }catch(e){ console.error('updateProfile failed', e); }
+  }
+  if(authEpoch !== epochAtStart) return;
   try{ await storage.set('profile', JSON.stringify(profile)); }catch(e){ console.error(e); }
   if(authEpoch !== epochAtStart) return; // don't save a "success" message or apply this profile to a now-different signed-in account
   appendChatBubble('assistant', `Τέλεια! Το πρόγραμμά σου είναι έτοιμο: ~${profile.targets.kcal} kcal/ημέρα, ${SPLIT_LABELS[profile.splitKey]}. Ας ξεκινήσουμε!`);
