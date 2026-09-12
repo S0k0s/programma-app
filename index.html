@@ -33,7 +33,7 @@
   .hidden{display:none !important;}
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 
-  .app-shell{max-width:480px;margin:0 auto;padding:18px 16px 96px;}
+  .app-shell{max-width:480px;margin:0 auto;padding:18px 16px 108px;}
   @media(min-width:900px){ .app-shell{max-width:1100px;padding:24px 32px 40px;} }
 
   section{display:none;}
@@ -47,7 +47,7 @@
 
   /* ---------- bottom nav ---------- */
   .bottomnav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
-    display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:50;}
+    display:flex;justify-content:space-around;padding:10px 4px calc(14px + env(safe-area-inset-bottom));z-index:50;}
   @media(min-width:900px){
     .bottomnav{position:static;border-top:none;border-bottom:1px solid var(--line);background:transparent;
       justify-content:flex-start;gap:6px;margin-bottom:28px;padding:0 0 14px;}
@@ -205,7 +205,7 @@
   .logform{display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);
     border-radius:var(--radius-md);padding:12px;margin-bottom:16px;}
   .logform input{background:var(--surface2);border:1px solid var(--line);color:var(--text);border-radius:8px;
-    padding:9px;font-size:13px;}
+    padding:9px;font-size:16px;}
   .logform input[name=name]{flex:2;min-width:140px;}
   .logform input[type=number]{flex:1;min-width:70px;}
   .logtable{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px;}
@@ -261,7 +261,7 @@
   .signin-divider::before,.signin-divider::after{content:'';flex:1;height:1px;background:var(--line);}
   .email-auth-form{display:flex;flex-direction:column;gap:8px;text-align:left;}
   .email-auth-form input{background:var(--surface);border:1px solid var(--line);color:var(--text);
-    border-radius:var(--radius-sm);padding:11px 13px;font-size:13.5px;width:100%;}
+    border-radius:var(--radius-sm);padding:11px 13px;font-size:16px;width:100%;}
   .email-auth-btns{display:flex;gap:8px;margin-top:2px;}
   .email-auth-btns button{flex:1;}
 
@@ -277,7 +277,7 @@
   .msg.user{align-self:flex-end;background:var(--lime);color:#101214;font-weight:600;border-bottom-right-radius:4px;}
   .onboard-inputrow{display:flex;gap:8px;margin-top:12px;}
   .onboard-inputrow input{flex:1;background:var(--surface);border:1px solid var(--line);color:var(--text);
-    border-radius:99px;padding:12px 16px;font-size:13.5px;}
+    border-radius:99px;padding:12px 16px;font-size:16px;}
   .onboard-wrap .dash-link{display:block;text-align:center;margin-top:14px;}
 
   /* ---------- AI coach chat (reuses .msg / .onboard-inputrow styles) ---------- */
@@ -645,6 +645,11 @@ function signOutCleanup(){
   if(usersUnsub){ usersUnsub(); usersUnsub = null; }
   appInitialized = false;
   currentProfile = null;
+  // Clear the in-memory AI chat too, so a tab left open on the AI Coach
+  // across a sign-out doesn't keep showing the previous account's messages.
+  aiMessages = [];
+  const thread = document.getElementById('aiChatThread');
+  if(thread) thread.innerHTML = '<div class="empty">Κάνε μια ερώτηση ή διάλεξε μια γρήγορη πρόταση παραπάνω.</div>';
 }
 document.getElementById('signOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
 document.getElementById('accessSignOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
@@ -981,6 +986,11 @@ function applyProfile(profile){
   renderTargets();
   renderMealGrid();
   setGreeting();
+  // Re-render every per-tab view unconditionally (not just the one currently
+  // visible) — otherwise a tab left open across an account switch (sign out
+  // + sign back in as someone else) keeps showing the previous account's
+  // data until the user happens to navigate away and back to it.
+  renderProfileTab();
 }
 
 function buildDayPicker(){
