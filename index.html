@@ -182,6 +182,10 @@
   .timerbtn{background:var(--surface2);border:1px solid var(--line);color:var(--text-dim);font-size:11.5px;
     border-radius:99px;padding:4px 10px;cursor:pointer;}
   .timerbtn.running{color:#101214;background:var(--amber);border-color:var(--amber);font-weight:700;}
+  .exercise-card .weight-row{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px;color:var(--text-dim);}
+  .exercise-card .weight-row input{width:56px;background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    border-radius:8px;padding:4px 6px;font-size:12.5px;font-variant-numeric:tabular-nums;}
+  .exercise-card .weight-row input:focus{outline:none;border-color:var(--lime);}
 
   .finishbar{position:sticky;bottom:70px;background:var(--bg);padding-top:10px;margin-top:4px;
     display:flex;justify-content:space-between;align-items:center;gap:12px;}
@@ -622,6 +626,17 @@ function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// The system prompts tell the model not to use markdown, but it isn't always
+// reliable about that — strip stray ** / __ bold markers (the app has no
+// markdown renderer, so they'd otherwise show up as literal asterisks) and
+// normalize any asterisk bullet lines to a plain dash.
+function stripMarkdown(text){
+  return String(text||'')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/^\s*[*•]\s+/gm, '- ');
+}
+
 // ---------- custom modal: replaces native confirm()/prompt()/alert() ----------
 // Native browser dialogs look out of place next to the app's own design, and
 // some native WebView wrappers (relevant once this ships to app stores)
@@ -736,7 +751,7 @@ const I18N = {
     dash_view_history:'Δες το ιστορικό σου →', more_suffix:'ακόμα',
     nav_home:'Αρχική', nav_training:'Προπόνηση', nav_nutrition:'Διατροφή',
     training_finish:'Ολοκλήρωση προπόνησης', training_logged:'Καταγράφηκε ✓',
-    rest_label:'Διάλειμμα', completed_tag:'Ολοκληρώθηκε', complete_exercise_aria:'Ολοκλήρωση',
+    rest_label:'Διάλειμμα', completed_tag:'Ολοκληρώθηκε', complete_exercise_aria:'Ολοκλήρωση', weight_label:'Κιλά',
     nutrition_supplements:'Συμπληρώματα: whey 1-2 μεζούρες/ημέρα · κρεατίνη μονοϋδρική 5g/ημέρα (χωρίς φόρτωση)',
     nutrition_extra_link:'Καταγραφή έξτρα φαγητού →',
     extra_back:'← Πίσω στη Διατροφή', extra_title:'Έξτρα φαγητό',
@@ -832,7 +847,7 @@ const I18N = {
     dash_view_history:'See your history →', more_suffix:'more',
     nav_home:'Home', nav_training:'Training', nav_nutrition:'Nutrition',
     training_finish:'Finish workout', training_logged:'Logged ✓',
-    rest_label:'Rest', completed_tag:'Completed', complete_exercise_aria:'Complete',
+    rest_label:'Rest', completed_tag:'Completed', complete_exercise_aria:'Complete', weight_label:'Weight',
     nutrition_supplements:'Supplements: whey 1-2 scoops/day · creatine monohydrate 5g/day (no loading)',
     nutrition_extra_link:'Log extra food →',
     extra_back:'← Back to Nutrition', extra_title:'Extra food',
@@ -1066,6 +1081,8 @@ function signOutCleanup(){
   if(usersUnsub){ usersUnsub(); usersUnsub = null; }
   appInitialized = false;
   currentProfile = null;
+  checkedState = {};
+  exerciseWeights = {};
   // Clear the in-memory AI chat too, so a tab left open on the AI Coach
   // across a sign-out doesn't keep showing the previous account's messages.
   aiMessages = [];
@@ -1567,49 +1584,51 @@ function setGreeting(){
 }
 
 // options are {el,en} pairs, resolved through L2() wherever rendered.
+// Quantities are approximate guideline portions, not prescriptions — the
+// AI Coach adjusts specifics to the user's actual targets when asked.
 const MEALS = {
   breakfast:{label:D('Πρωινό','Breakfast'), goal:D('πρωτεΐνη + λίγο υδατάνθρακα','protein + a little carb'), options:[
     D('Αυγά (3-4) ομελέτα ή βραστά + 1 φέτα ψωμί ολικής','Eggs (3-4) scrambled or boiled + 1 slice whole-grain bread'),
-    D('Greek yogurt + βρώμη + μέλι + μπανάνα/φρούτο εποχής','Greek yogurt + oats + honey + banana/seasonal fruit'),
-    D('Cottage cheese + φρούτο + λίγους ξηρούς καρπούς','Cottage cheese + fruit + a few nuts'),
-    D('Τοστ με γαλοπούλα/ζαμπόν + τυρί + αυγό','Toast with turkey/ham + cheese + egg'),
-    D('Protein shake + φρυγανιές ολικής + φυστικοβούτυρο','Protein shake + whole-grain crackers + peanut butter'),
-    D('Σφολιάτα + 2 βραστά αυγά δίπλα για πρωτεΐνη','Pastry + 2 boiled eggs on the side for protein'),
+    D('Greek yogurt (200-250γρ) + βρώμη (40γρ) + μέλι (1 κ.γ.) + μπανάνα/φρούτο εποχής','Greek yogurt (200-250g) + oats (40g) + honey (1 tsp) + banana/seasonal fruit'),
+    D('Cottage cheese (200γρ) + φρούτο + μία χούφτα ξηρούς καρπούς (20-25γρ)','Cottage cheese (200g) + fruit + a handful of nuts (20-25g)'),
+    D('Τοστ με γαλοπούλα/ζαμπόν (2-3 φέτες) + τυρί (1-2 φέτες) + αυγό (1-2)','Toast with turkey/ham (2-3 slices) + cheese (1-2 slices) + egg (1-2)'),
+    D('Protein shake (1 μεζούρα) + 3-4 φρυγανιές ολικής + φυστικοβούτυρο (1 κ.σ.)','Protein shake (1 scoop) + 3-4 whole-grain crackers + peanut butter (1 tbsp)'),
+    D('Σφολιάτα (1 μέτρια) + 2 βραστά αυγά δίπλα για πρωτεΐνη','Pastry (1 medium) + 2 boiled eggs on the side for protein'),
   ]},
   officeSnack:{label:D('Σνακ γραφείου','Office snack'), goal:D('μικρό, εύκολο σνακ','small, easy snack'), options:[
-    D('Φρούτο + χούφτα αμύγδαλα/καρύδια','Fruit + a handful of almonds/walnuts'),
-    D('Greek yogurt μικρό κεσεδάκι','Small Greek yogurt cup'),
-    D('Protein bar (καλής ποιότητας, χαμηλή ζάχαρη)','Protein bar (good quality, low sugar)'),
-    D('Ρυζογκοφρέτες με τυρί κρέμα ή φυστικοβούτυρο','Rice cakes with cream cheese or peanut butter'),
+    D('Φρούτο (1 μέτριο) + χούφτα αμύγδαλα/καρύδια (20-25γρ)','Fruit (1 medium) + a handful of almonds/walnuts (20-25g)'),
+    D('Greek yogurt μικρό κεσεδάκι (150γρ)','Small Greek yogurt cup (150g)'),
+    D('Protein bar (1 τεμάχιο, καλής ποιότητας, χαμηλή ζάχαρη)','Protein bar (1 bar, good quality, low sugar)'),
+    D('Ρυζογκοφρέτες (3-4) με τυρί κρέμα ή φυστικοβούτυρο (1 κ.σ.)','Rice cakes (3-4) with cream cheese or peanut butter (1 tbsp)'),
   ]},
   lunch:{label:D('Μεσημεριανό','Lunch'), goal:D('πρωτεΐνη + υδατάνθρακας + λαχανικά','protein + carb + vegetables'), options:[
-    D('Κοτόπουλο φιλέτο (ψητό/σχάρα) + ρύζι + σαλάτα','Chicken breast (grilled/roasted) + rice + salad'),
-    D('Μοσχάρι/κιμάς + πατάτες φούρνου + λαχανικά','Beef/ground beef + oven potatoes + vegetables'),
-    D('Ψάρι (σολομός, τόνος, μπακαλιάρος) + κινόα ή ρύζι + μπρόκολο','Fish (salmon, tuna, cod) + quinoa or rice + broccoli'),
-    D('Ζυμαρικά με κιμά ή κοτόπουλο σε σάλτσα ντομάτας','Pasta with ground meat or chicken in tomato sauce'),
-    D('Χοιρινό φιλέτο + πλιγούρι ή πατάτες + σαλάτα','Pork tenderloin + bulgur or potatoes + salad'),
-    D('Γεμιστά με κιμά + ρύζι','Stuffed vegetables with ground meat + rice'),
-    D('Φασολάδα ή φακές + λίγο τυρί δίπλα','Bean or lentil soup + a little cheese on the side'),
+    D('Κοτόπουλο φιλέτο (150-200γρ, ψητό/σχάρα) + ρύζι (100-150γρ μαγειρεμένο) + σαλάτα','Chicken breast (150-200g, grilled/roasted) + rice (100-150g cooked) + salad'),
+    D('Μοσχάρι/κιμάς (150γρ) + πατάτες φούρνου (200γρ) + λαχανικά','Beef/ground beef (150g) + oven potatoes (200g) + vegetables'),
+    D('Ψάρι (150-200γρ: σολομός, τόνος, μπακαλιάρος) + κινόα ή ρύζι (100γρ) + μπρόκολο','Fish (150-200g: salmon, tuna, cod) + quinoa or rice (100g) + broccoli'),
+    D('Ζυμαρικά (80-100γρ ωμά) με κιμά ή κοτόπουλο (150γρ) σε σάλτσα ντομάτας','Pasta (80-100g dry) with ground meat or chicken (150g) in tomato sauce'),
+    D('Χοιρινό φιλέτο (150-200γρ) + πλιγούρι ή πατάτες (150γρ) + σαλάτα','Pork tenderloin (150-200g) + bulgur or potatoes (150g) + salad'),
+    D('Γεμιστά (2-3 μέτρια) με κιμά + ρύζι','Stuffed vegetables (2-3 medium) with ground meat + rice'),
+    D('Φασολάδα ή φακές (1 μπολ, ~300γρ) + λίγο τυρί δίπλα (30γρ)','Bean or lentil soup (1 bowl, ~300g) + a little cheese on the side (30g)'),
   ]},
   afternoonSnack:{label:D('Απογευματινό σνακ','Afternoon snack'), goal:D('μετά δουλειά, πριν/μετά γυμναστήριο','after work, before/after training'), options:[
-    D('Protein shake + μπανάνα','Protein shake + banana'),
-    D('Greek yogurt + μέλι + βρώμη','Greek yogurt + honey + oats'),
-    D('Τοστ με τυρί/γαλοπούλα','Toast with cheese/turkey'),
-    D('Cottage cheese + φρούτο','Cottage cheese + fruit'),
-    D('Χούφτα ξηρούς καρπούς + φρούτο (μέρες χωρίς γυμναστήριο)','A handful of nuts + fruit (rest days)'),
+    D('Protein shake (1 μεζούρα) + μπανάνα (1)','Protein shake (1 scoop) + banana (1)'),
+    D('Greek yogurt (200γρ) + μέλι (1 κ.γ.) + βρώμη (30γρ)','Greek yogurt (200g) + honey (1 tsp) + oats (30g)'),
+    D('Τοστ (2 φέτες) με τυρί/γαλοπούλα','Toast (2 slices) with cheese/turkey'),
+    D('Cottage cheese (150-200γρ) + φρούτο','Cottage cheese (150-200g) + fruit'),
+    D('Χούφτα ξηρούς καρπούς (25-30γρ) + φρούτο (μέρες χωρίς γυμναστήριο)','A handful of nuts (25-30g) + fruit (rest days)'),
   ]},
   dinner:{label:D('Βραδινό','Dinner'), goal:D('πρωτεΐνη + υδατάνθρακας','protein + carb'), options:[
-    D('Κοτόπουλο ή γαλοπούλα + ρύζι/πατάτα + λαχανικά','Chicken or turkey + rice/potato + vegetables'),
-    D('Ομελέτα με τυρί/λαχανικά + ψωμί ολικής','Omelette with cheese/vegetables + whole-grain bread'),
-    D('Ψάρι στο φούρνο + πατάτες + σαλάτα','Oven-baked fish + potatoes + salad'),
-    D('Μπιφτέκια (σπιτικά, άπαχα) + πουρέ ή πατάτες + σαλάτα','Homemade lean burger patties + mash or potatoes + salad'),
-    D('Ζυμαρικά ολικής με τόνο και λαχανικά','Whole-grain pasta with tuna and vegetables'),
-    D('Σούπα με κοτόπουλο/κρέας + ψωμί','Soup with chicken/meat + bread'),
+    D('Κοτόπουλο ή γαλοπούλα (150-200γρ) + ρύζι/πατάτα (150γρ) + λαχανικά','Chicken or turkey (150-200g) + rice/potato (150g) + vegetables'),
+    D('Ομελέτα (3 αυγά) με τυρί/λαχανικά + ψωμί ολικής (1 φέτα)','Omelette (3 eggs) with cheese/vegetables + whole-grain bread (1 slice)'),
+    D('Ψάρι στο φούρνο (200γρ) + πατάτες (150γρ) + σαλάτα','Oven-baked fish (200g) + potatoes (150g) + salad'),
+    D('Μπιφτέκια (σπιτικά, άπαχα, 150-200γρ κρέας) + πουρέ ή πατάτες (150γρ) + σαλάτα','Homemade lean burger patties (150-200g meat) + mash or potatoes (150g) + salad'),
+    D('Ζυμαρικά ολικής (80γρ ωμά) με τόνο (1 κονσέρβα) και λαχανικά','Whole-grain pasta (80g dry) with tuna (1 can) and vegetables'),
+    D('Σούπα με κοτόπουλο/κρέας (1 μπολ) + ψωμί (1 φέτα)','Soup with chicken/meat (1 bowl) + bread (1 slice)'),
   ]},
   beforeBed:{label:D('Πριν τον ύπνο','Before bed'), goal:D('αργή πρωτεΐνη (προαιρετικό)','slow protein (optional)'), options:[
-    D('Cottage cheese','Cottage cheese'),
-    D('Greek yogurt (πλήρες)','Greek yogurt (full-fat)'),
-    D('Ένα ποτήρι γάλα + λίγους ξηρούς καρπούς','A glass of milk + a few nuts'),
+    D('Cottage cheese (150-200γρ)','Cottage cheese (150-200g)'),
+    D('Greek yogurt (πλήρες, 200γρ)','Greek yogurt (full-fat, 200g)'),
+    D('Ένα ποτήρι γάλα (250ml) + λίγους ξηρούς καρπούς (15-20γρ)','A glass of milk (250ml) + a few nuts (15-20g)'),
   ]},
 };
 
@@ -1629,6 +1648,20 @@ function todayKey(){ return formatLocalDate(new Date()); }
 let DAYS = TEMPLATES.gym_upperLower4;
 let currentDay = Object.keys(DAYS)[0];
 let checkedState = {}; // {exerciseId: true}
+
+// Last weight lifted per exercise — deliberately just the latest value, not
+// a logged history over time, per the user's request. Global across days
+// (not per-date) since the same exercise id should remember one current number.
+let exerciseWeights = {}; // {exerciseId: kg}
+async function loadExerciseWeights(){
+  try{
+    const r = await storage.get('exercise-weights');
+    exerciseWeights = JSON.parse(r.value) || {};
+  }catch(e){ exerciseWeights = {}; }
+}
+async function saveExerciseWeights(){
+  try{ await storage.set('exercise-weights', JSON.stringify(exerciseWeights)); }catch(e){ console.error(e); }
+}
 
 function renderTodayLabel(){
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(lang==='en'?'en-US':'el-GR', {weekday:'long', day:'numeric', month:'long'});
@@ -1692,6 +1725,7 @@ function renderExercises(){
     card.className = 'exercise-card' + (checkedState[ex.id] ? ' checked' : '');
     card.style.setProperty('--cat-color', cat.color);
     const exName = L2(ex.name);
+    const savedWeight = exerciseWeights[ex.id];
     card.innerHTML = `
       <div class="icon">${ICONS[ex.id] || FALLBACK_ICON}</div>
       <div class="info">
@@ -1700,6 +1734,11 @@ function renderExercises(){
           <span>${ex.sets} x ${L2(ex.reps)}</span>
           <span>${t('rest_label')}: ${ex.rest}"</span>
           <button class="timerbtn" type="button" data-rest="${ex.rest}" data-id="${ex.id}">▶ Timer</button>
+        </div>
+        <div class="weight-row">
+          <label for="weight-${ex.id}">${t('weight_label')}:</label>
+          <input type="number" id="weight-${ex.id}" class="weight-input" inputmode="decimal" step="0.5" min="0" max="500" data-id="${ex.id}" placeholder="kg" value="${savedWeight!=null?savedWeight:''}">
+          <span>kg</span>
         </div>
         <div class="done-tag">✓ ${t('completed_tag')}</div>
       </div>
@@ -1715,6 +1754,18 @@ function renderExercises(){
       updateProgressLabel();
       saveTodayWorkout();
       renderDashboard();
+    });
+  });
+  list.querySelectorAll('.weight-input').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      const id = inp.dataset.id;
+      if(inp.value === ''){ delete exerciseWeights[id]; }
+      else{
+        const v = Number(inp.value);
+        if(isNaN(v) || v<0 || v>500){ inp.value = exerciseWeights[id]!=null ? exerciseWeights[id] : ''; return; }
+        exerciseWeights[id] = v;
+      }
+      saveExerciseWeights();
     });
   });
   list.querySelectorAll('.timerbtn').forEach(btn=>{
@@ -2047,6 +2098,23 @@ async function buildContextSummary(){
         : `${d}: έξτρα φαγητό εκτός κύριων γευμάτων — ${tot} kcal σε ${entries.length} καταχωρήσεις`);
     }
   }catch(e){}
+  try{
+    const ids = Object.keys(exerciseWeights);
+    if(ids.length){
+      const findExerciseName = (id)=>{
+        if(EX[id]) return L2(EX[id].name);
+        if(typeof DAYS !== 'undefined' && DAYS){
+          for(const key of Object.keys(DAYS)){
+            const found = (DAYS[key].exercises||[]).find(e=>e.id===id);
+            if(found) return L2(found.name);
+          }
+        }
+        return id;
+      };
+      const parts = ids.map(id=>`${findExerciseName(id)}: ${exerciseWeights[id]}kg`);
+      lines.push((lang==='en' ? 'Current weights (last logged): ' : 'Τρέχοντα βάρη (τελευταία καταγραφή): ') + parts.join(', '));
+    }
+  }catch(e){}
   return lines.join('\n') || (lang==='en' ? 'No history recorded yet.' : 'Δεν υπάρχει ακόμα ιστορικό καταγεγραμμένο.');
 }
 
@@ -2062,7 +2130,7 @@ function buildCoachSystemPrompt(){
     let s = `You are a personal trainer and dietitian for ${name ? name+',' : ''} ${pronoun}, ${p.age} years old, ${p.heightCm}cm, ${p.weightKg}kg, goal: ${L(GOAL_LABELS,p.goal).toLowerCase()}. They train at ${p.trainingLocation==='home' ? 'home/outdoors, with no gym access (only bodyweight, resistance band, backpack, park bar, or a chair/bench) — do NOT suggest exercises using gym machines or free weights they don’t have.' : 'a gym, with access to machines and free weights.'} Nutrition targets: ${targets.kcal||'-'} kcal, ${targets.protein||'-'}g protein, ${targets.fat||'-'}g fat, ${targets.carbs||'-'}g carbs. Program: ${L(SPLIT_LABELS,p.splitKey)}.`;
     if(p.dietaryNotes) s += ` Dietary preferences/restrictions: ${p.dietaryNotes}.`;
     if(p.injuries) s += ` Injuries/movement limitations: ${p.injuries}.`;
-    s += ' Always reply in English, briefly and practically.';
+    s += ' Always reply in English, briefly and practically. Write plain text only — never use markdown formatting like **bold** or __bold__ (the chat shows raw text, so asterisks would appear literally). If you need a list, put each item on its own line starting with a dash (-), not an asterisk. Whenever you mention a specific food, give an approximate quantity too (e.g. "150g chicken breast", "1 cup rice"), not just the food name.';
     s += ` If the user explicitly asks to change their program — e.g. says they no longer go to a gym and want a home/outdoor program, or vice versa, or wants to change training days/week, goal, or activity level — AFTER your normal reply, on a new line, add ONE code block with ONLY the fields that actually change (never all fields, just the new ones):
 \`\`\`profile-update
 {"trainingLocation":"home"}
@@ -2079,7 +2147,7 @@ Valid fields and values: trainingLocation ("gym"|"home"), goal ("fat_loss"|"musc
 \`\`\`nutrition-update
 {"targets":{"carbs":300},"meals":{"lunch":{"options":["Option 1 with details","Option 2 with details"]}}}
 \`\`\`
-"targets" is an optional partial override on top of the targets (fields: kcal, protein, fat, carbs — numbers). "meals" is optional — key MUST be one of the meal keys above, and "options" is the FULL new list of options for that meal (replaces the old one, 3-7 realistic options, in English). Use this ONLY when they explicitly ask to change nutrition/targets/food options, not for a simple "what should I eat now" question.`;
+"targets" is an optional partial override on top of the targets (fields: kcal, protein, fat, carbs — numbers). "meals" is optional — key MUST be one of the meal keys above, and "options" is the FULL new list of options for that meal (replaces the old one, 3-7 realistic options, in English, each with an approximate quantity like "150-200g" or "1 cup" — not just the food name). Use this ONLY when they explicitly ask to change nutrition/targets/food options, not for a simple "what should I eat now" question.`;
     return s;
   }
 
@@ -2087,7 +2155,7 @@ Valid fields and values: trainingLocation ("gym"|"home"), goal ("fat_loss"|"musc
   let s = `Είσαι προσωπικός γυμναστής και διαιτολόγος για ${name ? name+',' : ''} ${pronoun} ${p.age} ετών, ${p.heightCm}cm, ${p.weightKg}kg, στόχος: ${L(GOAL_LABELS,p.goal).toLowerCase()}. Προπονείται στο${p.trainingLocation==='home' ? ' σπίτι/ύπαιθρο, χωρίς πρόσβαση σε γυμναστήριο (μόνο σωματικό βάρος, λάστιχο αντίστασης, σακίδιο, μπάρα πάρκου ή καρέκλα/πάγκο) — ΜΗΝ προτείνεις ασκήσεις με όργανα γυμναστηρίου ή ελεύθερα βάρη που δεν έχει.' : ' γυμναστήριο, με πρόσβαση σε όργανα και ελεύθερα βάρη.'} Στόχοι διατροφής: ${targets.kcal||'-'} kcal, ${targets.protein||'-'}g πρωτεΐνη, ${targets.fat||'-'}g λίπος, ${targets.carbs||'-'}g υδατάνθρακες. Πρόγραμμα: ${L(SPLIT_LABELS,p.splitKey)}.`;
   if(p.dietaryNotes) s += ` Διατροφικές προτιμήσεις/περιορισμοί: ${p.dietaryNotes}.`;
   if(p.injuries) s += ` Τραυματισμοί/περιορισμοί κίνησης: ${p.injuries}.`;
-  s += ' Απάντα πάντα στα Ελληνικά, σύντομα και πρακτικά.';
+  s += ' Απάντα πάντα στα Ελληνικά, σύντομα και πρακτικά. Γράφε απλό κείμενο — ποτέ markdown μορφοποίηση όπως **έντονα** ή __έντονα__ (το chat δείχνει το κείμενο αυτούσιο, οπότε οι αστερίσκοι θα εμφανίζονταν κυριολεκτικά). Αν χρειαστεί λίστα, βάλε κάθε στοιχείο σε ξεχωριστή γραμμή που ξεκινά με παύλα (-), όχι αστερίσκο. Όποτε αναφέρεις συγκεκριμένο φαγητό, δώσε και μια κατά προσέγγιση ποσότητα (π.χ. "150γρ κοτόπουλο", "1 φλιτζάνι ρύζι"), όχι μόνο το όνομα του φαγητού.';
   s += ` Αν ο χρήστης ζητήσει ρητά αλλαγή στο πρόγραμμά του — π.χ. πει ότι δεν πάει (πια) γυμναστήριο και θέλει πρόγραμμα σπιτιού/υπαίθρου, ή το αντίστροφο, ή θέλει να αλλάξει τις μέρες προπόνησης/εβδομάδα, τον στόχο, ή το επίπεδο δραστηριότητάς του — ΜΕΤΑ την κανονική απάντησή σου με λίγα λόγια πρόσθεσε σε νέα γραμμή ΕΝΑ code block ΜΟΝΟ με τα πεδία που πραγματικά αλλάζουν (ποτέ όλα τα πεδία, μόνο τα νέα):
 \`\`\`profile-update
 {"trainingLocation":"home"}
@@ -2104,7 +2172,7 @@ Valid fields and values: trainingLocation ("gym"|"home"), goal ("fat_loss"|"musc
 \`\`\`nutrition-update
 {"targets":{"carbs":300},"meals":{"lunch":{"options":["Επιλογή 1 με λεπτομέρειες","Επιλογή 2 με λεπτομέρειες"]}}}
 \`\`\`
-Το "targets" είναι προαιρετικό partial override πάνω στους στόχους (πεδία: kcal, protein, fat, carbs — αριθμοί). Το "meals" είναι προαιρετικό — key ΠΡΕΠΕΙ να είναι ένα από τα παραπάνω meal keys, και "options" είναι η ΠΛΗΡΗΣ νέα λίστα επιλογών για αυτό το γεύμα (αντικαθιστά την παλιά, 3-7 ρεαλιστικές επιλογές, ελληνικά). Χρησιμοποίησε αυτό ΜΟΝΟ όταν ζητάει ρητά αλλαγή στη διατροφή/στόχους/επιλογές φαγητού, όχι για μια απλή ερώτηση τύπου "τι να φάω τώρα".`;
+Το "targets" είναι προαιρετικό partial override πάνω στους στόχους (πεδία: kcal, protein, fat, carbs — αριθμοί). Το "meals" είναι προαιρετικό — key ΠΡΕΠΕΙ να είναι ένα από τα παραπάνω meal keys, και "options" είναι η ΠΛΗΡΗΣ νέα λίστα επιλογών για αυτό το γεύμα (αντικαθιστά την παλιά, 3-7 ρεαλιστικές επιλογές, ελληνικά, η κάθε μία με μια κατά προσέγγιση ποσότητα όπως "150-200γρ" ή "1 φλιτζάνι" — όχι μόνο το όνομα του φαγητού). Χρησιμοποίησε αυτό ΜΟΝΟ όταν ζητάει ρητά αλλαγή στη διατροφή/στόχους/επιλογές φαγητού, όχι για μια απλή ερώτηση τύπου "τι να φάω τώρα".`;
   return s;
 }
 
@@ -2248,7 +2316,7 @@ function appendAiBubble(cls, text){
   if(empty) empty.remove();
   const div = document.createElement('div');
   div.className = 'msg ' + cls;
-  div.innerHTML = escapeHtml(text).replace(/\n/g,'<br>');
+  div.innerHTML = escapeHtml(stripMarkdown(text)).replace(/\n/g,'<br>');
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
   return div;
@@ -2378,7 +2446,7 @@ function onboardingSystemPrompt(firstName){
     const nameInstructionEn = firstName
       ? `The user's name is ${firstName} — use their name to address them in conversation. Also put this name in the final JSON as "name".`
       : `We don't know the user's name yet (e.g. they signed up with email instead of Google). Ask their name in your FIRST message, and use it to address them afterward.`;
-    return `You are the onboarding coach for the AI Coach app. You speak English, friendly, natural, and brief.
+    return `You are the onboarding coach for the AI Coach app. You speak English, friendly, natural, and brief. Write plain text only — never markdown formatting like **bold** (the chat shows raw text, so asterisks would appear literally); if you need a list, use a dash (-) per line.
 ${nameInstructionEn} Your goal: learn what you need to build a personalized training and nutrition program — WITHOUT tiring the user with many separate questions. Ask AT MOST 3 messages, grouped as follows (don't split into more):
 
 Message 1: name (if not already known) AND whether they'll train at a gym or at home/outdoors (e.g. because they can't afford a gym membership) — this determines a completely different program, so it's needed early.
@@ -2400,7 +2468,7 @@ Do not output this JSON before you actually have all the answers AND explicit co
   const nameInstruction = firstName
     ? `Ο χρήστης λέγεται ${firstName} — χρησιμοποίησε το όνομά του/της για να τον/την προσφωνείς στη συνομιλία. Βάλε αυτό το όνομα και στο τελικό JSON ως "name".`
     : `Δεν ξέρουμε ακόμα πώς λέγεται ο χρήστης (π.χ. έκανε εγγραφή με email αντί για Google). Ρώτα το όνομά του/της στο ΠΡΩΤΟ σου μήνυμα, και χρησιμοποίησε το για να τον/την προσφωνείς στη συνέχεια.`;
-  return `Είσαι ο onboarding coach της εφαρμογής AI Coach. Μιλάς Ελληνικά, φιλικά, φυσικά και σύντομα.
+  return `Είσαι ο onboarding coach της εφαρμογής AI Coach. Μιλάς Ελληνικά, φιλικά, φυσικά και σύντομα. Γράφε απλό κείμενο — ποτέ markdown μορφοποίηση όπως **έντονα** (το chat δείχνει το κείμενο αυτούσιο, οπότε οι αστερίσκοι θα εμφανίζονταν κυριολεκτικά)· αν χρειαστεί λίστα, χρησιμοποίησε παύλα (-) σε κάθε γραμμή.
 ${nameInstruction} Σκοπός σου: να μάθεις όσα χρειάζεσαι για να φτιάξεις εξατομικευμένο πρόγραμμα προπόνησης και διατροφής — ΧΩΡΙΣ να κουράσεις τον χρήστη με πολλές ξεχωριστές ερωτήσεις. Ρώτα σε το ΠΟΛΥ 3 μηνύματα, ομαδοποιημένα ως εξής (μην τα σπάσεις σε περισσότερα):
 
 1ο μήνυμα: όνομα (αν δεν το ξέρεις ήδη) ΚΑΙ αν θα προπονείται σε γυμναστήριο ή σπίτι/ύπαιθρο (π.χ. γιατί δεν έχει τη δυνατότητα για συνδρομή γυμναστηρίου) — αυτό καθορίζει εντελώς διαφορετικό πρόγραμμα, οπότε χρειάζεται νωρίς.
@@ -2431,7 +2499,7 @@ function appendChatBubble(cls, text){
   const wrap = document.getElementById('onboardChat');
   const div = document.createElement('div');
   div.className = 'msg ' + cls;
-  div.innerHTML = escapeHtml(text).replace(/\n/g,'<br>');
+  div.innerHTML = escapeHtml(stripMarkdown(text)).replace(/\n/g,'<br>');
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
   return div;
@@ -2663,6 +2731,7 @@ let appInitialized = false;
 function refreshAppData(){
   loadTodayWorkout();
   renderFoodLog();
+  loadExerciseWeights().then(()=>{ if(typeof renderExercises === 'function') renderExercises(); });
 }
 function initApp(){
   if(appInitialized) return;
