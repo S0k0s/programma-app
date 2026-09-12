@@ -577,6 +577,15 @@ const AI_MODEL = 'claude-haiku-4-5-20251001';
 // rest of the app's code below did not need to change.
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
+// Firebase's default (LOCAL) persistence keeps a session signed in
+// indefinitely and restores it silently on every future visit/new tab with
+// no prompt — that's the "auto sign-in" behavior we don't want, and it's
+// also what let a stale session in one tab bleed into another during the
+// earlier account mix-up. SESSION persistence keeps someone signed in only
+// for as long as that browser tab stays open (survives a reload of the same
+// tab, but a new visit — new tab, reopened browser — always starts at the
+// sign-in screen and requires an explicit, deliberate choice of account).
+auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(e=>console.error('setPersistence failed', e));
 const db = firebase.firestore();
 let currentUser = null;
 let currentProfile = null;
