@@ -580,7 +580,8 @@ async function onAccessApproved(){
   let profile = null;
   try{
     const res = await storage.get('profile');
-    profile = JSON.parse(res.value);
+    profile = migrateProfile(JSON.parse(res.value));
+    if(profile) await storage.set('profile', JSON.stringify(profile));
   }catch(e){ profile = null; }
   if(!profile){
     showGate('onboarding-gate');
@@ -633,6 +634,33 @@ const ICONS = {
   lb4: svg(`<rect x="2" y="23" width="6" height="3" rx="1.5"/><circle cx="5" cy="20" r="3" fill="currentColor" stroke="none"/><line x1="5" y1="23" x2="17" y2="15"/><line x1="17" y1="15" x2="24" y2="20"/><line x1="24" y1="20" x2="24" y2="31"/><line x1="12" y1="16" x2="20" y2="16"/><circle cx="12" cy="16" r="2.2" fill="none" stroke="currentColor"/><circle cx="20" cy="16" r="2.2" fill="none" stroke="currentColor"/>`),
   lb5: svg(`<line x1="12" y1="3" x2="12" y2="9"/><line x1="28" y1="3" x2="28" y2="9"/><line x1="8" y1="3" x2="16" y2="3"/><line x1="24" y1="3" x2="32" y2="3"/><circle cx="20" cy="12" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="15" x2="20" y2="27"/><line x1="20" y1="27" x2="17" y2="33"/><line x1="17" y1="33" x2="22" y2="34"/><line x1="20" y1="27" x2="24" y2="33"/><line x1="24" y1="33" x2="19" y2="34"/>`),
   lb6: svg(`<line x1="28" y1="2" x2="26" y2="9"/><circle cx="28" cy="2" r="1.6" fill="none" stroke="currentColor"/><circle cx="24" cy="12" r="3" fill="currentColor" stroke="none"/><line x1="24" y1="9" x2="26" y2="9"/><line x1="24" y1="15" x2="18" y2="23"/><line x1="18" y1="23" x2="14" y2="27"/><line x1="18" y1="23" x2="23" y2="28"/>`),
+  // HOME/OUTDOOR — bodyweight + optional band/backpack/park-bar (no gym machines).
+  // Bands and cable pulls reuse the same "line to floor circle" idiom as the
+  // gym cable-machine icons; a bar reuses a line with two short support posts.
+  hua1: svg(`<circle cx="8" cy="20" r="3" fill="currentColor" stroke="none"/><line x1="11" y1="21" x2="30" y2="16"/><line x1="16" y1="19" x2="16" y2="28"/><line x1="26" y1="17" x2="26" y2="26"/><line x1="6" y1="30" x2="34" y2="30"/><line x1="16" y1="28" x2="10" y2="30"/><line x1="26" y1="26" x2="30" y2="30"/>`),
+  hua2: svg(`<circle cx="10" cy="10" r="3" fill="currentColor" stroke="none"/><line x1="11" y1="13" x2="20" y2="22"/><line x1="20" y1="22" x2="18" y2="34"/><line x1="14" y1="16" x2="26" y2="24"/><line x1="26" y1="24" x2="30" y2="32"/><circle cx="30" cy="34" r="1.8" fill="none" stroke="currentColor"/>`),
+  hua3: svg(`<line x1="6" y1="4" x2="34" y2="4"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="32" y1="4" x2="32" y2="8"/><circle cx="20" cy="13" r="3" fill="currentColor" stroke="none"/><line x1="12" y1="4" x2="17" y2="16"/><line x1="28" y1="4" x2="23" y2="16"/><line x1="20" y1="16" x2="20" y2="27"/><line x1="20" y1="27" x2="16" y2="35"/><line x1="20" y1="27" x2="24" y2="35"/>`),
+  hua4: svg(`<circle cx="18" cy="26" r="3" fill="currentColor" stroke="none"/><line x1="18" y1="23" x2="24" y2="10"/><line x1="24" y1="10" x2="30" y2="26"/><line x1="18" y1="23" x2="10" y2="30"/><line x1="6" y1="30" x2="34" y2="30"/>`),
+  hua5: svg(`<rect x="4" y="26" width="12" height="3" rx="1.5"/><circle cx="24" cy="14" r="3" fill="currentColor" stroke="none"/><line x1="24" y1="17" x2="18" y2="26"/><line x1="18" y1="26" x2="10" y2="24"/><line x1="24" y1="17" x2="30" y2="24"/><line x1="18" y1="26" x2="30" y2="30"/>`),
+  hua6: svg(`<circle cx="20" cy="8" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="11" x2="20" y2="26"/><line x1="20" y1="26" x2="16" y2="35"/><line x1="20" y1="26" x2="24" y2="35"/><line x1="20" y1="14" x2="15" y2="20"/><line x1="15" y1="20" x2="15" y2="30"/><circle cx="15" cy="32" r="1.8" fill="none" stroke="currentColor"/>`),
+  hla1: svg(`<circle cx="20" cy="6" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="9" x2="20" y2="18"/><line x1="20" y1="18" x2="13" y2="24"/><line x1="13" y1="24" x2="14" y2="34"/><line x1="20" y1="18" x2="27" y2="24"/><line x1="27" y1="24" x2="26" y2="34"/><line x1="20" y1="12" x2="30" y2="14"/>`),
+  hla2: svg(`<circle cx="8" cy="28" r="3" fill="currentColor" stroke="none"/><line x1="11" y1="28" x2="22" y2="28"/><line x1="22" y1="28" x2="22" y2="20"/><line x1="22" y1="20" x2="30" y2="20"/><line x1="30" y1="20" x2="30" y2="30"/>`),
+  hla3: svg(`<circle cx="14" cy="8" r="3" fill="currentColor" stroke="none"/><line x1="14" y1="11" x2="14" y2="22"/><line x1="14" y1="22" x2="9" y2="30"/><line x1="14" y1="22" x2="20" y2="26"/><line x1="20" y1="26" x2="26" y2="22"/><rect x="25" y="20" width="10" height="3" rx="1.5"/>`),
+  hla4: svg(`<circle cx="16" cy="7" r="3" fill="currentColor" stroke="none"/><line x1="16" y1="10" x2="16" y2="22"/><line x1="16" y1="22" x2="12" y2="32"/><line x1="16" y1="22" x2="24" y2="26"/><line x1="24" y1="26" x2="30" y2="34"/>`),
+  hla5: svg(`<rect x="10" y="30" width="20" height="3" rx="1.5"/><circle cx="20" cy="10" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="13" x2="20" y2="27"/><line x1="20" y1="27" x2="17" y2="30"/><line x1="20" y1="27" x2="23" y2="30"/>`),
+  hla6: svg(`<circle cx="8" cy="20" r="3" fill="currentColor" stroke="none"/><line x1="11" y1="21" x2="30" y2="21"/><line x1="30" y1="21" x2="34" y2="30"/><line x1="16" y1="21" x2="16" y2="30"/><line x1="24" y1="21" x2="18" y2="14"/>`),
+  hub1: svg(`<line x1="4" y1="4" x2="36" y2="4"/><line x1="6" y1="4" x2="6" y2="8"/><line x1="34" y1="4" x2="34" y2="8"/><circle cx="20" cy="14" r="3" fill="currentColor" stroke="none"/><line x1="8" y1="4" x2="17" y2="17"/><line x1="32" y1="4" x2="23" y2="17"/><line x1="20" y1="17" x2="20" y2="27"/><line x1="20" y1="27" x2="16" y2="35"/><line x1="20" y1="27" x2="24" y2="35"/>`),
+  hub2: svg(`<rect x="24" y="24" width="12" height="3" rx="1.5"/><circle cx="8" cy="20" r="3" fill="currentColor" stroke="none"/><line x1="11" y1="21" x2="28" y2="24"/><line x1="16" y1="20" x2="16" y2="30"/><line x1="26" y1="23" x2="26" y2="24"/><line x1="6" y1="30" x2="20" y2="30"/>`),
+  hub3: svg(`<circle cx="20" cy="8" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="11" x2="20" y2="26"/><line x1="20" y1="14" x2="12" y2="18"/><line x1="12" y1="18" x2="12" y2="30"/><circle cx="12" cy="32" r="1.8" fill="none" stroke="currentColor"/><line x1="20" y1="14" x2="28" y2="18"/><line x1="28" y1="18" x2="28" y2="30"/><circle cx="28" cy="32" r="1.8" fill="none" stroke="currentColor"/><line x1="20" y1="26" x2="16" y2="35"/><line x1="20" y1="26" x2="24" y2="35"/>`),
+  hub4: svg(`<circle cx="20" cy="8" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="11" x2="20" y2="26"/><line x1="20" y1="14" x2="8" y2="14"/><line x1="8" y1="14" x2="8" y2="30"/><circle cx="8" cy="32" r="1.8" fill="none" stroke="currentColor"/><line x1="20" y1="14" x2="32" y2="14"/><line x1="32" y1="14" x2="32" y2="30"/><circle cx="32" cy="32" r="1.8" fill="none" stroke="currentColor"/><line x1="20" y1="26" x2="15" y2="35"/><line x1="20" y1="26" x2="25" y2="35"/>`),
+  hub5: svg(`<circle cx="20" cy="8" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="11" x2="20" y2="26"/><line x1="20" y1="14" x2="13" y2="26"/><line x1="13" y1="26" x2="13" y2="32"/><circle cx="13" cy="34" r="1.8" fill="none" stroke="currentColor"/><line x1="20" y1="14" x2="27" y2="18"/><line x1="27" y1="18" x2="27" y2="32"/><circle cx="27" cy="34" r="1.8" fill="none" stroke="currentColor"/><line x1="20" y1="26" x2="15" y2="35"/><line x1="20" y1="26" x2="25" y2="35"/>`),
+  hub6: svg(`<rect x="6" y="27" width="12" height="3" rx="1.5"/><circle cx="24" cy="16" r="3" fill="currentColor" stroke="none"/><line x1="24" y1="19" x2="18" y2="27"/><line x1="18" y1="27" x2="12" y2="26"/><line x1="24" y1="19" x2="30" y2="26"/><line x1="18" y1="27" x2="28" y2="32"/>`),
+  hlb1: svg(`<circle cx="18" cy="8" r="3" fill="currentColor" stroke="none"/><line x1="18" y1="11" x2="18" y2="18"/><line x1="18" y1="18" x2="30" y2="14"/><line x1="18" y1="18" x2="12" y2="32"/><line x1="30" y1="14" x2="34" y2="24"/><line x1="18" y1="18" x2="10" y2="16"/>`),
+  hlb2: svg(`<circle cx="20" cy="6" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="9" x2="20" y2="18"/><line x1="20" y1="18" x2="14" y2="24"/><line x1="14" y1="24" x2="15" y2="34"/><line x1="20" y1="18" x2="26" y2="24"/><line x1="26" y1="24" x2="25" y2="34"/><line x1="20" y1="9" x2="12" y2="4"/><line x1="20" y1="9" x2="28" y2="4"/>`),
+  hlb3: svg(`<line x1="30" y1="4" x2="30" y2="36"/><circle cx="20" cy="14" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="17" x2="20" y2="24"/><line x1="20" y1="24" x2="12" y2="24"/><line x1="12" y1="24" x2="12" y2="34"/><line x1="20" y1="24" x2="26" y2="30"/><line x1="26" y1="30" x2="26" y2="34"/>`),
+  hlb4: svg(`<rect x="2" y="23" width="6" height="3" rx="1.5"/><circle cx="5" cy="20" r="3" fill="currentColor" stroke="none"/><line x1="5" y1="23" x2="17" y2="15"/><line x1="17" y1="15" x2="24" y2="20"/><line x1="24" y1="20" x2="24" y2="31"/><rect x="14" y="10" width="6" height="4" rx="1"/>`),
+  hlb5: svg(`<circle cx="20" cy="7" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="10" x2="20" y2="24"/><line x1="20" y1="24" x2="20" y2="32"/><line x1="20" y1="28" x2="26" y2="24"/><line x1="14" y1="34" x2="26" y2="34"/>`),
+  hlb6: svg(`<circle cx="10" cy="24" r="3" fill="currentColor" stroke="none"/><line x1="13" y1="24" x2="26" y2="24"/><line x1="26" y1="24" x2="32" y2="16"/><line x1="16" y1="24" x2="16" y2="14"/><line x1="16" y1="14" x2="10" y2="10"/>`),
 };
 
 // Flat catalog of every exercise (icon key = catalog key). Training templates
@@ -663,26 +691,53 @@ const EX = {
   lb4:{name:'Hip thrust', sets:3, reps:'10', rest:90, cat:'legs'},
   lb5:{name:'Γάμπες όρθιες (μηχάνημα)', sets:4, reps:'15', rest:60, cat:'legs'},
   lb6:{name:'Κοιλιακοί: cable crunch + πλάγιοι', sets:3, reps:'σετ', rest:60, cat:'core'},
+  // HOME/OUTDOOR — bodyweight + optional resistance band, backpack-as-weight,
+  // a park bar or a sturdy chair/bench. No gym membership or machines needed.
+  hua1:{name:'Πιέσεις εδάφους (push-ups)', sets:4, reps:'12-15', rest:90, cat:'chest'},
+  hua2:{name:'Κωπηλατική με λάστιχο αντίστασης (band row)', sets:4, reps:'12-15', rest:75, cat:'back'},
+  hua3:{name:'Έλξεις σε μπάρα πάρκου (park bar pull-ups)', sets:4, reps:'όσες βγουν', rest:120, cat:'back'},
+  hua4:{name:'Pike push-ups (ώθηση ώμων)', sets:3, reps:'8-12', rest:90, cat:'shoulders'},
+  hua5:{name:'Dips σε πάγκο/καρέκλα (τρικέφαλος)', sets:3, reps:'12-15', rest:60, cat:'arms'},
+  hua6:{name:'Curl με λάστιχο ή μπουκάλια νερού', sets:3, reps:'12-15', rest:60, cat:'arms'},
+  hla1:{name:'Καθίσματα σωματικού βάρους (squats)', sets:4, reps:'15-20', rest:90, cat:'legs'},
+  hla2:{name:'Ισχιακή γέφυρα (glute bridge)', sets:3, reps:'15-20', rest:60, cat:'legs'},
+  hla3:{name:'Bulgarian split squat (πόδι πάνω σε καρέκλα)', sets:3, reps:'10-12/πόδι', rest:90, cat:'legs'},
+  hla4:{name:'Reverse lunges (πισώβημα)', sets:3, reps:'12/πόδι', rest:75, cat:'legs'},
+  hla5:{name:'Γάμπες σε σκαλοπάτι (calf raises)', sets:4, reps:'20', rest:60, cat:'legs'},
+  hla6:{name:'Plank + mountain climbers', sets:3, reps:'σετ', rest:60, cat:'core'},
+  hub1:{name:'Έλξεις πλατιά λαβή σε μπάρα πάρκου', sets:4, reps:'όσες βγουν', rest:120, cat:'back'},
+  hub2:{name:'Incline push-ups (χέρια σε πάγκο)', sets:4, reps:'15-20', rest:75, cat:'chest'},
+  hub3:{name:'Κωπηλατική όρθια με λάστιχο', sets:3, reps:'12-15', rest:90, cat:'back'},
+  hub4:{name:'Πλάγιες ανυψώσεις με λάστιχο', sets:3, reps:'15', rest:60, cat:'shoulders'},
+  hub5:{name:'Curl εναλλάξ με λάστιχο', sets:3, reps:'12/χέρι', rest:60, cat:'arms'},
+  hub6:{name:'Dips σε καρέκλα (τρικέφαλος)', sets:3, reps:'12-15', rest:60, cat:'arms'},
+  hlb1:{name:'Single-leg RDL σωματικού βάρους', sets:3, reps:'10/πόδι', rest:90, cat:'legs'},
+  hlb2:{name:'Jump squats (πλειομετρικά)', sets:3, reps:'12-15', rest:90, cat:'legs'},
+  hlb3:{name:'Wall sit', sets:3, reps:'30-45"', rest:75, cat:'legs'},
+  hlb4:{name:'Hip thrust με σακίδιο βάρους', sets:3, reps:'12-15', rest:90, cat:'legs'},
+  hlb5:{name:'Γάμπες με ένα πόδι', sets:3, reps:'15/πόδι', rest:60, cat:'legs'},
+  hlb6:{name:'Bicycle crunches + πλάγια πλανκ', sets:3, reps:'σετ', rest:60, cat:'core'},
 };
 function buildDay(label, sub, ids){
   return { label, sub, exercises: ids.map(id=>({id, ...EX[id]})) };
 }
 
-// Multiple training templates — the onboarding profile picks one based on
-// how many days/week the user can train (see chooseSplitKey).
+// Multiple training templates, split by location (gym vs home/outdoor — some
+// people simply can't afford a gym membership) and by days/week available.
+// The onboarding profile picks one via chooseSplitKey(daysPerWeek, location).
 const TEMPLATES = {
-  upperLower4: {
+  gym_upperLower4: {
     upperA: buildDay('Upper A', 'Στήθος / Τρικέφαλος', ['ua1','ua2','ua3','ua4','ua5','ua6']),
     lowerA: buildDay('Lower A', 'Δύναμη', ['la1','la2','la3','la4','la5','la6']),
     upperB: buildDay('Upper B', 'Πλάτη / Ώμοι', ['ub1','ub2','ub3','ub4','ub5','ub6']),
     lowerB: buildDay('Lower B', 'Όγκος', ['lb1','lb2','lb3','lb4','lb5','lb6']),
   },
-  fullBody3: {
+  gym_fullBody3: {
     fullA: buildDay('Full Body A', 'Squat focus', ['la1','ua1','ua2','ua4','la5','la6']),
     fullB: buildDay('Full Body B', 'Deadlift focus', ['lb1','ub2','ub1','ub4','ua6','lb6']),
     fullC: buildDay('Full Body C', 'Leg press focus', ['la3','ub3','ua5','lb4','ub5','la4']),
   },
-  pushPullLegs6: {
+  gym_pushPullLegs6: {
     pushA: buildDay('Push A', 'Στήθος / Ώμοι / Τρικέφαλος', ['ua1','ua4','ua5']),
     pullA: buildDay('Pull A', 'Πλάτη / Δικέφαλος', ['ua2','ua3','ua6']),
     legsA: buildDay('Legs A', 'Δύναμη', ['la1','la2','la3','la4','la5','la6']),
@@ -690,12 +745,31 @@ const TEMPLATES = {
     pullB: buildDay('Pull B', 'Πλάτη / Δικέφαλος', ['ub1','ub3','ub5']),
     legsB: buildDay('Legs B', 'Όγκος', ['lb1','lb2','lb3','lb4','lb5','lb6']),
   },
+  home_upperLower4: {
+    upperA: buildDay('Upper A', 'Στήθος / Τρικέφαλος', ['hua1','hua2','hua3','hua4','hua5','hua6']),
+    lowerA: buildDay('Lower A', 'Δύναμη', ['hla1','hla2','hla3','hla4','hla5','hla6']),
+    upperB: buildDay('Upper B', 'Πλάτη / Ώμοι', ['hub1','hub2','hub3','hub4','hub5','hub6']),
+    lowerB: buildDay('Lower B', 'Όγκος', ['hlb1','hlb2','hlb3','hlb4','hlb5','hlb6']),
+  },
+  home_fullBody3: {
+    fullA: buildDay('Full Body A', 'Squat focus', ['hla1','hua1','hua2','hua4','hla5','hla6']),
+    fullB: buildDay('Full Body B', 'Hinge focus', ['hlb1','hub2','hub1','hub4','hua6','hlb6']),
+    fullC: buildDay('Full Body C', 'Unilateral focus', ['hla3','hub3','hua5','hlb4','hub5','hla4']),
+  },
+  home_pushPullLegs6: {
+    pushA: buildDay('Push A', 'Στήθος / Ώμοι / Τρικέφαλος', ['hua1','hua4','hua5']),
+    pullA: buildDay('Pull A', 'Πλάτη / Δικέφαλος', ['hua2','hua3','hua6']),
+    legsA: buildDay('Legs A', 'Δύναμη', ['hla1','hla2','hla3','hla4','hla5','hla6']),
+    pushB: buildDay('Push B', 'Στήθος / Ώμοι / Τρικέφαλος', ['hub2','hub4','hub6']),
+    pullB: buildDay('Pull B', 'Πλάτη / Δικέφαλος', ['hub1','hub3','hub5']),
+    legsB: buildDay('Legs B', 'Όγκος', ['hlb1','hlb2','hlb3','hlb4','hlb5','hlb6']),
+  },
 };
 
-function chooseSplitKey(daysPerWeek){
-  if(daysPerWeek <= 3) return 'fullBody3';
-  if(daysPerWeek >= 6) return 'pushPullLegs6';
-  return 'upperLower4';
+function chooseSplitKey(daysPerWeek, trainingLocation){
+  const base = daysPerWeek <= 3 ? 'fullBody3' : (daysPerWeek >= 6 ? 'pushPullLegs6' : 'upperLower4');
+  const loc = trainingLocation === 'home' ? 'home' : 'gym';
+  return `${loc}_${base}`;
 }
 
 function computeTargets(p){
@@ -714,24 +788,42 @@ function computeTargets(p){
 }
 
 const GOAL_LABELS = {fat_loss:'Απώλεια λίπους', muscle_gain:'Μυϊκή ανάπτυξη', recomp:'Αναδόμηση σώματος (recomp)', maintenance:'Διατήρηση / γενική φόρμα'};
-const SPLIT_LABELS = {upperLower4:'Upper/Lower — 4 ημέρες/εβδομάδα', fullBody3:'Full Body — 3 ημέρες/εβδομάδα', pushPullLegs6:'Push/Pull/Legs — 6 ημέρες/εβδομάδα'};
+const SPLIT_LABELS = {
+  gym_upperLower4:'Γυμναστήριο — Upper/Lower, 4 ημέρες/εβδομάδα',
+  gym_fullBody3:'Γυμναστήριο — Full Body, 3 ημέρες/εβδομάδα',
+  gym_pushPullLegs6:'Γυμναστήριο — Push/Pull/Legs, 6 ημέρες/εβδομάδα',
+  home_upperLower4:'Σπίτι/ύπαιθρος — Upper/Lower, 4 ημέρες/εβδομάδα',
+  home_fullBody3:'Σπίτι/ύπαιθρος — Full Body, 3 ημέρες/εβδομάδα',
+  home_pushPullLegs6:'Σπίτι/ύπαιθρος — Push/Pull/Legs, 6 ημέρες/εβδομάδα',
+};
 const ACTIVITY_LABELS = {sedentary:'Καθιστική', light:'Ελαφριά κίνηση', moderate:'Μέτρια δραστηριότητα', active:'Αρκετά δραστήριος', very_active:'Πολύ δραστήριος'};
 const EXPERIENCE_LABELS = {beginner:'Αρχάριος', intermediate:'Μέσο επίπεδο', advanced:'Προχωρημένος'};
-const EQUIPMENT_LABELS = {full_gym:'Πλήρες γυμναστήριο', home_basic:'Βασικός εξοπλισμός σπιτιού', limited:'Πολύ περιορισμένος εξοπλισμός'};
+const LOCATION_LABELS = {gym:'Γυμναστήριο', home:'Σπίτι / ύπαιθρος'};
 
 function defaultProfile(){
   return {
     goal:'muscle_gain', sex:'male', age:30, heightCm:183, weightKg:88,
-    activityLevel:'moderate', daysPerWeek:4, experience:'intermediate', equipment:'full_gym',
-    dietaryNotes:'', injuries:'', splitKey:'upperLower4',
+    activityLevel:'moderate', daysPerWeek:4, experience:'intermediate', trainingLocation:'gym',
+    dietaryNotes:'', injuries:'', splitKey:'gym_upperLower4',
     targets:{kcal:3100, protein:180, fat:87, carbs:410},
     onboardedAt:new Date().toISOString(),
   };
 }
 
+// Upgrades profiles saved before the gym/home split existed, so the app
+// picks a location-appropriate template instead of crashing on a missing key.
+function migrateProfile(profile){
+  if(!profile || profile.trainingLocation) return profile;
+  profile.trainingLocation = 'gym';
+  const remap = {upperLower4:'gym_upperLower4', fullBody3:'gym_fullBody3', pushPullLegs6:'gym_pushPullLegs6'};
+  profile.splitKey = remap[profile.splitKey] || 'gym_upperLower4';
+  delete profile.equipment;
+  return profile;
+}
+
 function applyProfile(profile){
   currentProfile = profile;
-  DAYS = TEMPLATES[profile.splitKey] || TEMPLATES.upperLower4;
+  DAYS = TEMPLATES[profile.splitKey] || TEMPLATES.gym_upperLower4;
   currentDay = Object.keys(DAYS)[0];
   buildDayPicker();
   renderTargets();
@@ -815,7 +907,7 @@ const MEALS = {
 
 // ---------- state / date ----------
 function todayKey(){ return new Date().toISOString().slice(0,10); }
-let DAYS = TEMPLATES.upperLower4;
+let DAYS = TEMPLATES.gym_upperLower4;
 let currentDay = Object.keys(DAYS)[0];
 let checkedState = {}; // {exerciseId: true}
 
@@ -1227,7 +1319,7 @@ function buildCoachSystemPrompt(){
   const t = p.targets || {};
   const name = (currentUser && currentUser.displayName) ? currentUser.displayName.split(' ')[0] : '';
   const pronoun = p.sex === 'female' ? 'μια γυναίκα' : 'έναν άντρα';
-  let s = `Είσαι προσωπικός γυμναστής και διαιτολόγος για ${name ? name+',' : ''} ${pronoun} ${p.age} ετών, ${p.heightCm}cm, ${p.weightKg}kg, στόχος: ${(GOAL_LABELS[p.goal]||'γενική φόρμα').toLowerCase()}. Στόχοι διατροφής: ${t.kcal||'-'} kcal, ${t.protein||'-'}g πρωτεΐνη, ${t.fat||'-'}g λίπος, ${t.carbs||'-'}g υδατάνθρακες. Πρόγραμμα: ${SPLIT_LABELS[p.splitKey]||''}.`;
+  let s = `Είσαι προσωπικός γυμναστής και διαιτολόγος για ${name ? name+',' : ''} ${pronoun} ${p.age} ετών, ${p.heightCm}cm, ${p.weightKg}kg, στόχος: ${(GOAL_LABELS[p.goal]||'γενική φόρμα').toLowerCase()}. Προπονείται στο${p.trainingLocation==='home' ? ' σπίτι/ύπαιθρο, χωρίς πρόσβαση σε γυμναστήριο (μόνο σωματικό βάρος, λάστιχο αντίστασης, σακίδιο, μπάρα πάρκου ή καρέκλα/πάγκο) — ΜΗΝ προτείνεις ασκήσεις με όργανα γυμναστηρίου ή ελεύθερα βάρη που δεν έχει.' : ' γυμναστήριο, με πρόσβαση σε όργανα και ελεύθερα βάρη.'} Στόχοι διατροφής: ${t.kcal||'-'} kcal, ${t.protein||'-'}g πρωτεΐνη, ${t.fat||'-'}g λίπος, ${t.carbs||'-'}g υδατάνθρακες. Πρόγραμμα: ${SPLIT_LABELS[p.splitKey]||''}.`;
   if(p.dietaryNotes) s += ` Διατροφικές προτιμήσεις/περιορισμοί: ${p.dietaryNotes}.`;
   if(p.injuries) s += ` Τραυματισμοί/περιορισμοί κίνησης: ${p.injuries}.`;
   s += ' Απάντα πάντα στα Ελληνικά, σύντομα και πρακτικά.';
@@ -1275,7 +1367,11 @@ let onboardMessages = [];
 function onboardingSystemPrompt(firstName){
   return `Είσαι ο AI onboarding coach της εφαρμογής PROGRAMMA. Μιλάς Ελληνικά, φιλικά, φυσικά και σύντομα.
 Ο χρήστης λέγεται ${firstName || ''}. Σκοπός σου: να μάθεις όσα χρειάζεσαι για να φτιάξεις εξατομικευμένο πρόγραμμα προπόνησης και διατροφής.
-Ρώτα ένα-δύο πράγματα τη φορά (όχι όλα μαζί) μέχρι να έχεις μάθει ΟΛΑ τα παρακάτω:
+
+Η ΠΡΩΤΗ ερώτηση που θα κάνεις, πριν από οτιδήποτε άλλο, είναι ΠΑΝΤΑ αυτή: αν θα προπονείται σε γυμναστήριο ή στο σπίτι/ύπαιθρο (π.χ. γιατί δεν έχει τη δυνατότητα για συνδρομή γυμναστηρίου αυτή τη στιγμή). Αυτό καθορίζει εντελώς διαφορετικό πρόγραμμα (ασκήσεις με όργανα/μπάρες vs ασκήσεις σωματικού βάρους/λάστιχο/μπάρα πάρκου), οπότε μην προχωρήσεις σε άλλη ερώτηση πριν το μάθεις.
+
+Μετά ρώτα ένα-δύο πράγματα τη φορά (όχι όλα μαζί) μέχρι να έχεις μάθει ΟΛΑ τα παρακάτω:
+- Τόπος προπόνησης: γυμναστήριο ή σπίτι/ύπαιθρος (ΠΑΝΤΑ πρώτη ερώτηση)
 - Κύριος στόχος: αδυνάτισμα, μυϊκή ανάπτυξη, αναδόμηση σώματος (recomp) ή διατήρηση/γενική φόρμα
 - Φύλο
 - Ηλικία (έτη)
@@ -1284,14 +1380,13 @@ function onboardingSystemPrompt(firstName){
 - Επίπεδο καθημερινής δραστηριότητας εκτός γυμναστικής (καθιστική / ελαφριά / μέτρια / αρκετά δραστήρια / πολύ δραστήρια δουλειά-ζωή)
 - Πόσες ημέρες/εβδομάδα μπορεί να προπονείται (αριθμός 1-7)
 - Επίπεδο εμπειρίας στη γυμναστική (αρχάριος / μέσο επίπεδο / προχωρημένος)
-- Πρόσβαση σε εξοπλισμό (πλήρες γυμναστήριο / βασικός εξοπλισμός σπιτιού / πολύ περιορισμένος)
 - Διατροφικές προτιμήσεις ή περιορισμοί (ελεύθερο κείμενο, ή "καμία")
 - Τραυματισμούς ή περιορισμούς κίνησης (ελεύθερο κείμενο, ή "κανένας")
 
 Μόλις έχεις ΟΛΑ τα παραπάνω, ΜΗΝ κάνεις άλλες ερωτήσεις. Γράψε ένα σύντομο φιλικό μήνυμα επιβεβαίωσης, και αμέσως μετά, σε νέα γραμμή, ΕΝΑ code block σε JSON με ΑΚΡΙΒΩΣ αυτά τα keys και επιτρεπτές τιμές (χρησιμοποίησε τις αγγλικές ετικέτες, όχι ελληνικό κείμενο, εκτός από τα δύο πεδία ελεύθερου κειμένου):
 
 \`\`\`json
-{"goal":"fat_loss|muscle_gain|recomp|maintenance","sex":"male|female","age":0,"heightCm":0,"weightKg":0,"activityLevel":"sedentary|light|moderate|active|very_active","daysPerWeek":0,"experience":"beginner|intermediate|advanced","equipment":"full_gym|home_basic|limited","dietaryNotes":"...","injuries":"..."}
+{"trainingLocation":"gym|home","goal":"fat_loss|muscle_gain|recomp|maintenance","sex":"male|female","age":0,"heightCm":0,"weightKg":0,"activityLevel":"sedentary|light|moderate|active|very_active","daysPerWeek":0,"experience":"beginner|intermediate|advanced","dietaryNotes":"...","injuries":"..."}
 \`\`\`
 
 Μην βγάλεις αυτό το JSON πριν έχεις πραγματικά όλες τις απαντήσεις από τον χρήστη. Μην γράψεις τίποτα άλλο μετά το JSON block.`;
@@ -1357,10 +1452,10 @@ async function sendOnboardingTurn(userText){
 function tryFinalizeOnboarding(jsonText){
   let obj;
   try{ obj = JSON.parse(jsonText); }catch(e){ return false; }
-  const required = ['goal','sex','age','heightCm','weightKg','activityLevel','daysPerWeek','experience','equipment'];
+  const required = ['trainingLocation','goal','sex','age','heightCm','weightKg','activityLevel','daysPerWeek','experience'];
   for(const k of required){ if(obj[k]===undefined || obj[k]===null || obj[k]==='') return false; }
-  const goals = Object.keys(GOAL_LABELS), acts = Object.keys(ACTIVITY_LABELS), exps = Object.keys(EXPERIENCE_LABELS), equips = Object.keys(EQUIPMENT_LABELS);
-  if(!goals.includes(obj.goal) || !acts.includes(obj.activityLevel) || !exps.includes(obj.experience) || !equips.includes(obj.equipment)) return false;
+  const goals = Object.keys(GOAL_LABELS), acts = Object.keys(ACTIVITY_LABELS), exps = Object.keys(EXPERIENCE_LABELS), locs = Object.keys(LOCATION_LABELS);
+  if(!locs.includes(obj.trainingLocation) || !goals.includes(obj.goal) || !acts.includes(obj.activityLevel) || !exps.includes(obj.experience)) return false;
   const age = Number(obj.age), heightCm = Number(obj.heightCm), weightKg = Number(obj.weightKg), daysPerWeek = Number(obj.daysPerWeek);
   if(!(age>=10 && age<=100)) return false;
   if(!(heightCm>=100 && heightCm<=230)) return false;
@@ -1368,14 +1463,14 @@ function tryFinalizeOnboarding(jsonText){
   if(!(daysPerWeek>=1 && daysPerWeek<=7)) return false;
   const sex = obj.sex === 'female' ? 'female' : 'male';
   const profile = {
-    goal: obj.goal, sex, age, heightCm, weightKg,
+    trainingLocation: obj.trainingLocation, goal: obj.goal, sex, age, heightCm, weightKg,
     activityLevel: obj.activityLevel, daysPerWeek,
-    experience: obj.experience, equipment: obj.equipment,
+    experience: obj.experience,
     dietaryNotes: String(obj.dietaryNotes||'').slice(0,500),
     injuries: String(obj.injuries||'').slice(0,500),
     onboardedAt: new Date().toISOString(),
   };
-  profile.splitKey = chooseSplitKey(daysPerWeek);
+  profile.splitKey = chooseSplitKey(daysPerWeek, obj.trainingLocation);
   profile.targets = computeTargets(profile);
   finalizeProfile(profile);
   return true;
@@ -1429,7 +1524,7 @@ function renderProfileTab(){
       <div class="stat-label">Στοιχεία</div>
       <div style="font-size:13px;margin-top:4px;">${p.sex==='female'?'Γυναίκα':'Άντρας'} · ${p.age} ετών · ${p.heightCm}cm · ${p.weightKg}kg</div>
       <div style="font-size:12px;color:var(--text-dim);margin-top:6px;">Δραστηριότητα: ${escapeHtml(ACTIVITY_LABELS[p.activityLevel]||'-')}</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Εμπειρία: ${escapeHtml(EXPERIENCE_LABELS[p.experience]||'-')} · Εξοπλισμός: ${escapeHtml(EQUIPMENT_LABELS[p.equipment]||'-')}</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Εμπειρία: ${escapeHtml(EXPERIENCE_LABELS[p.experience]||'-')} · Τόπος: ${escapeHtml(LOCATION_LABELS[p.trainingLocation]||'-')}</div>
       ${p.dietaryNotes ? `<div style="font-size:12px;color:var(--text-dim);margin-top:6px;">Διατροφικές σημειώσεις: ${escapeHtml(p.dietaryNotes)}</div>` : ''}
       ${p.injuries ? `<div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Τραυματισμοί/περιορισμοί: ${escapeHtml(p.injuries)}</div>` : ''}
     </div>
