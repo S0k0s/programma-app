@@ -1323,7 +1323,38 @@ function buildCoachSystemPrompt(){
   if(p.dietaryNotes) s += ` Διατροφικές προτιμήσεις/περιορισμοί: ${p.dietaryNotes}.`;
   if(p.injuries) s += ` Τραυματισμοί/περιορισμοί κίνησης: ${p.injuries}.`;
   s += ' Απάντα πάντα στα Ελληνικά, σύντομα και πρακτικά.';
+  s += ` Αν ο χρήστης ζητήσει ρητά αλλαγή στο πρόγραμμά του — π.χ. πει ότι δεν πάει (πια) γυμναστήριο και θέλει πρόγραμμα σπιτιού/υπαίθρου, ή το αντίστροφο, ή θέλει να αλλάξει τις μέρες προπόνησης/εβδομάδα, τον στόχο, ή το επίπεδο δραστηριότητάς του — ΜΕΤΑ την κανονική απάντησή σου με λίγα λόγια πρόσθεσε σε νέα γραμμή ΕΝΑ code block ΜΟΝΟ με τα πεδία που πραγματικά αλλάζουν (ποτέ όλα τα πεδία, μόνο τα νέα):
+\`\`\`profile-update
+{"trainingLocation":"home"}
+\`\`\`
+Έγκυρα πεδία και τιμές: trainingLocation ("gym"|"home"), goal ("fat_loss"|"muscle_gain"|"recomp"|"maintenance"), daysPerWeek (αριθμός 1-7), activityLevel ("sedentary"|"light"|"moderate"|"active"|"very_active"), experience ("beginner"|"intermediate"|"advanced"), weightKg, heightCm, age (αριθμοί). Μην βάλεις αυτό το block για γενικές ερωτήσεις (π.χ. τι να φάει, πρόοδος, μια απλή πρόταση άσκησης) — ΜΟΝΟ όταν ζητάει ρητά να αλλάξει το πρόγραμμα/προφίλ του, αφού πρώτα του έχεις δώσει την κανονική απάντηση.`;
   return s;
+}
+
+// Applies a partial profile update the AI Coach proposed (e.g. the user said
+// they don't go to a gym anymore and want a home program) so the change
+// actually reaches the Προπόνηση tab instead of staying as chat text only.
+async function applyProfileUpdate(jsonText){
+  let obj;
+  try{ obj = JSON.parse(jsonText); }catch(e){ return false; }
+  const p = Object.assign({}, currentProfile || defaultProfile());
+  const locs = Object.keys(LOCATION_LABELS), goals = Object.keys(GOAL_LABELS), acts = Object.keys(ACTIVITY_LABELS), exps = Object.keys(EXPERIENCE_LABELS);
+  let changed = false;
+  if(obj.trainingLocation !== undefined && locs.includes(obj.trainingLocation)){ p.trainingLocation = obj.trainingLocation; changed = true; }
+  if(obj.goal !== undefined && goals.includes(obj.goal)){ p.goal = obj.goal; changed = true; }
+  if(obj.activityLevel !== undefined && acts.includes(obj.activityLevel)){ p.activityLevel = obj.activityLevel; changed = true; }
+  if(obj.experience !== undefined && exps.includes(obj.experience)){ p.experience = obj.experience; changed = true; }
+  if(obj.daysPerWeek !== undefined){ const d = Number(obj.daysPerWeek); if(d>=1 && d<=7){ p.daysPerWeek = d; changed = true; } }
+  if(obj.weightKg !== undefined){ const w = Number(obj.weightKg); if(w>=30 && w<=300){ p.weightKg = w; changed = true; } }
+  if(obj.heightCm !== undefined){ const h = Number(obj.heightCm); if(h>=100 && h<=230){ p.heightCm = h; changed = true; } }
+  if(obj.age !== undefined){ const a = Number(obj.age); if(a>=10 && a<=100){ p.age = a; changed = true; } }
+  if(!changed) return false;
+  p.splitKey = chooseSplitKey(p.daysPerWeek, p.trainingLocation);
+  p.targets = computeTargets(p);
+  try{ await storage.set('profile', JSON.stringify(p)); }catch(e){ console.error(e); }
+  applyProfile(p);
+  if(appInitialized) refreshAppData();
+  return true;
 }
 
 async function askAI(question){
@@ -1346,7 +1377,15 @@ async function askAI(question){
     if(!response.ok){ throw new Error('bad status'); }
     const data = await response.json();
     const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
-    out.innerHTML = `<div class="airesponse">${escapeHtml(text||'Δεν ελήφθη απάντηση.')}</div>`;
+    const updateMatch = text.match(/```profile-update\s*([\s\S]*?)```/);
+    const displayText = (updateMatch ? text.slice(0, updateMatch.index) : text).trim();
+    out.innerHTML = `<div class="airesponse">${escapeHtml(displayText||'Δεν ελήφθη απάντηση.')}</div>`;
+    if(updateMatch){
+      const applied = await applyProfileUpdate(updateMatch[1]);
+      if(applied){
+        out.innerHTML += `<div class="airesponse" style="border-left-color:var(--success);margin-top:10px;">✅ Ενημέρωσα το πρόγραμμά σου: ${escapeHtml(SPLIT_LABELS[currentProfile.splitKey]||'')}. Δες την καρτέλα «Προπόνηση».</div>`;
+      }
+    }
   }catch(e){
     out.innerHTML = `<div class="airesponse error">Κάτι πήγε στραβά με τη σύνδεση στον AI coach. Δοκίμασε ξανά σε λίγο.</div>`;
   }
