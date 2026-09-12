@@ -481,6 +481,7 @@
       <p style="font-size:12px;color:var(--text-dim);margin:0 0 10px;">Η εγγραφή είναι ελεύθερη — εδώ μπορείς να αφαιρέσεις πρόσβαση από κάποιον αν χρειαστεί.</p>
       <div id="userList"></div>
     </div>
+    <button class="ghost" type="button" id="profileSignOutBtn" style="margin-top:28px;color:var(--danger);border-color:var(--danger);">Αποσύνδεση</button>
   </section>
 
 </div>
@@ -623,6 +624,7 @@ function signOutCleanup(){
 }
 document.getElementById('signOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
 document.getElementById('accessSignOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
+document.getElementById('profileSignOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
 
 // ---------- gates: signin -> access request -> onboarding -> app ----------
 function showGate(id){
