@@ -1,8 +1,32 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'sokratispoun@gmail.com';
+    }
+    function isApproved(uid) {
+      return exists(/databases/$(database)/documents/access/$(uid)) &&
+             get(/databases/$(database)/documents/access/$(uid)).data.status == 'approved';
+    }
+
+    // Access requests: a signed-in user can create their own pending request
+    // and read their own status. Only the admin can approve/deny (update)
+    // or list the queue of requests.
+    match /access/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if request.auth != null && request.auth.uid == uid &&
+                    (request.resource.data.status == 'pending' ||
+                     (isAdmin() && request.resource.data.status == 'approved'));
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Per-user app data: locked to the owning uid AND requires an approved
+    // access request (the admin's own uid is always allowed).
     match /users/{userId}/data/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId &&
+                          (isAdmin() || isApproved(userId));
     }
   }
 }

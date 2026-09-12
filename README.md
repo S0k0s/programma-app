@@ -31,3 +31,15 @@ Three things need to be set up once, in this order. None of these steps involve 
 
 - Open the site, sign in with Google — the same sign-in on your phone/tablet/laptop shows the same workout and food history everywhere, since it's stored in Firestore under your account, not the browser.
 - If the AI Coach shows a connection error, double-check `WORKER_URL` in `index.html` and the `ANTHROPIC_API_KEY` secret in the Worker.
+
+## Multi-user access requests
+
+The app now supports multiple people, each with their own private workout/nutrition/AI-coach data — no one can see anyone else's. New users go through:
+
+1. **Sign in with Google** → the app creates a pending `access` request for them and shows a "waiting for approval" screen.
+2. **You approve them** → open the app signed in as the admin account, go to the profile icon (top-right) → **Προφίλ** tab → **Αιτήματα πρόσβασης**, and click Έγκριση/Απόρριψη. The requester's screen updates automatically (no refresh needed) once you approve.
+3. **First-time AI onboarding** → once approved, a first-time user is greeted by an AI chat that asks about their goal, stats, training days/week, experience, equipment and any dietary/injury notes, then computes personalized calorie/macro targets and picks a training split (Full Body 3x, Upper/Lower 4x, or Push/Pull/Legs 6x depending on their availability). They can skip this for a sensible default, and can always redo it later from the Προφίλ tab.
+
+**The admin account is hardcoded** as `sokratispoun@gmail.com` in both `index.html` (`ADMIN_EMAIL`) and `firestore.rules` (`isAdmin()`) — that account is auto-approved on first sign-in and is the only one that can approve/deny other users. If you ever need to change the admin email, update it in both places.
+
+**Important — you must republish the updated `firestore.rules`** for any of this to work: Firestore Console → your project → **Firestore Database → Rules** → paste in the contents of `firestore.rules` from this repo → **Publish**. Without this, access requests and per-user data isolation won't be enforced correctly.

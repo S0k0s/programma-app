@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PROGRAMMA — Sokratis</title>
+<title>PROGRAMMA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -240,10 +240,10 @@
     padding:9px 13px;border-radius:99px;cursor:pointer;}
   button.ghost:hover{border-color:var(--lime);color:var(--lime);}
 
-  /* ---------- sign-in gate ---------- */
-  #signin-gate{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;
+  /* ---------- sign-in / access / onboarding gates ---------- */
+  .gate{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;
     justify-content:center;padding:24px;}
-  #signin-gate.hidden{display:none;}
+  .gate.hidden{display:none;}
   .signin-card{max-width:340px;text-align:center;}
   .signin-card .brandmark{font-size:11px;letter-spacing:3px;color:var(--text-dim);font-weight:700;margin-bottom:10px;}
   .signin-card h1{font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;margin:0 0 8px;}
@@ -255,11 +255,29 @@
   .signin-error{color:var(--danger);font-size:12.5px;margin-top:14px;}
   .signout-link{font-size:11.5px;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:2px 0;margin-top:4px;}
   .signout-link:hover{color:var(--danger);}
+
+  /* ---------- onboarding chat ---------- */
+  .onboard-wrap{max-width:440px;width:100%;max-height:92vh;display:flex;flex-direction:column;}
+  .onboard-wrap h1{font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;margin:2px 0 14px;text-align:center;}
+  .onboard-chat{flex:1;min-height:220px;max-height:52vh;overflow-y:auto;background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;display:flex;flex-direction:column;gap:10px;}
+  .msg{max-width:85%;padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;}
+  .msg.assistant{align-self:flex-start;background:var(--surface2);border:1px solid var(--line);border-bottom-left-radius:4px;}
+  .msg.assistant.error{border-color:var(--danger);color:#f0c9c2;}
+  .msg.assistant.loading{color:var(--text-dim);font-style:italic;}
+  .msg.user{align-self:flex-end;background:var(--lime);color:#101214;font-weight:600;border-bottom-right-radius:4px;}
+  .onboard-inputrow{display:flex;gap:8px;margin-top:12px;}
+  .onboard-inputrow input{flex:1;background:var(--surface);border:1px solid var(--line);color:var(--text);
+    border-radius:99px;padding:12px 16px;font-size:13.5px;}
+  .onboard-wrap .dash-link{display:block;text-align:center;margin-top:14px;}
+
+  /* ---------- profile / admin ---------- */
+  .profile-block{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;}
 </style>
 </head>
 <body>
 
-<div id="signin-gate">
+<div id="signin-gate" class="gate">
   <div class="signin-card">
     <div class="brandmark">PROGRAMMA</div>
     <h1>Σύνδεση</h1>
@@ -269,6 +287,28 @@
       Σύνδεση με Google
     </button>
     <div class="signin-error" id="signinError" style="display:none;"></div>
+  </div>
+</div>
+
+<div id="access-gate" class="gate hidden">
+  <div class="signin-card">
+    <div class="brandmark">PROGRAMMA</div>
+    <h1 id="accessTitle">Έλεγχος πρόσβασης…</h1>
+    <p id="accessMsg"></p>
+    <button class="signout-link" id="accessSignOutBtn" type="button">Αποσύνδεση</button>
+  </div>
+</div>
+
+<div id="onboarding-gate" class="gate hidden">
+  <div class="onboard-wrap">
+    <div class="brandmark" style="text-align:center;">PROGRAMMA</div>
+    <h1>Ας φτιάξουμε το πρόγραμμά σου</h1>
+    <div class="onboard-chat" id="onboardChat"></div>
+    <div class="onboard-inputrow">
+      <input id="onboardInput" type="text" placeholder="Γράψε την απάντησή σου…" aria-label="Απάντηση προς τον AI coach">
+      <button class="primary" id="onboardSendBtn" type="button">Στείλε</button>
+    </div>
+    <button class="dash-link" type="button" id="onboardSkipBtn">Παράλειψη για τώρα (προεπιλεγμένο πρόγραμμα) →</button>
   </div>
 </div>
 
@@ -283,7 +323,9 @@
         <div class="date" id="todayLabel"></div>
         <button class="signout-link" id="signOutBtn" type="button">Αποσύνδεση</button>
       </div>
-      <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><path d="M9 15l2 2 4-4"/></svg>
+      <button type="button" id="profileBtn" aria-label="Προφίλ" style="background:none;border:none;cursor:pointer;padding:0;">
+        <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      </button>
     </div>
 
     <div class="dashboard-grid">
@@ -348,12 +390,7 @@
   <!-- NUTRITION -->
   <section id="tab-nutrition">
     <div class="screen-header">Διατροφή</div>
-    <div class="targets">
-      <div class="t"><div class="v">3100</div><div class="l">kcal στόχος</div></div>
-      <div class="t"><div class="v">180g</div><div class="l">Πρωτεΐνη</div></div>
-      <div class="t"><div class="v">87g</div><div class="l">Λίπος</div></div>
-      <div class="t"><div class="v">410g</div><div class="l">Υδατ.</div></div>
-    </div>
+    <div class="targets" id="targetsGrid"></div>
     <div class="mealgrid" id="mealGrid"></div>
     <div style="font-size:12px;color:var(--text-dim);margin:2px 0 16px;">Συμπληρώματα: whey 1-2 μεζούρες/ημέρα · κρεατίνη μονοϋδρική 5g/ημέρα (χωρίς φόρτωση)</div>
     <button class="dash-link" type="button" id="toExtraBtn">Καταγραφή έξτρα φαγητού →</button>
@@ -401,6 +438,18 @@
     <div id="aiOutput"><div class="empty">Κάνε μια ερώτηση ή διάλεξε μια γρήγορη πρόταση παραπάνω.</div></div>
   </section>
 
+  <!-- PROFILE -->
+  <section id="tab-profile">
+    <button class="backlink" type="button" id="profileBackBtn">← Πίσω στην Αρχική</button>
+    <div class="screen-header">Προφίλ</div>
+    <div id="profileSummary"></div>
+    <button class="dash-link" type="button" id="redoOnboardingBtn">Ξαναρώτησε το AI Coach για νέο πρόγραμμα →</button>
+    <div id="adminPanel" class="hidden">
+      <h3 style="font-size:14px;font-weight:800;margin:24px 0 10px;">Αιτήματα πρόσβασης</h3>
+      <div id="pendingRequests"></div>
+    </div>
+  </section>
+
 </div>
 
 <nav class="bottomnav">
@@ -434,6 +483,9 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser = null;
+let currentProfile = null;
+
+const ADMIN_EMAIL = 'sokratispoun@gmail.com';
 
 const storage = {
   async get(key){
@@ -449,6 +501,10 @@ const storage = {
   }
 };
 
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 document.getElementById('googleSignInBtn').addEventListener('click', async ()=>{
   const errEl = document.getElementById('signinError');
   errEl.style.display = 'none';
@@ -459,21 +515,82 @@ document.getElementById('googleSignInBtn').addEventListener('click', async ()=>{
     errEl.style.display = 'block';
   }
 });
-document.getElementById('signOutBtn').addEventListener('click', ()=>auth.signOut());
+function signOutCleanup(){
+  if(accessUnsub){ accessUnsub(); accessUnsub = null; }
+  if(pendingUnsub){ pendingUnsub(); pendingUnsub = null; }
+  appInitialized = false;
+  currentProfile = null;
+}
+document.getElementById('signOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
+document.getElementById('accessSignOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
+
+// ---------- gates: signin -> access request -> onboarding -> app ----------
+function showGate(id){
+  document.querySelectorAll('.gate').forEach(g=>g.classList.toggle('hidden', g.id!==id));
+  document.getElementById('appShell').style.display = id ? 'none' : '';
+}
+
+let accessUnsub = null;
 
 auth.onAuthStateChanged(user=>{
   currentUser = user;
-  const gate = document.getElementById('signin-gate');
-  const shell = document.getElementById('appShell');
-  if(user){
-    gate.classList.add('hidden');
-    shell.style.display = '';
-    initApp();
-  } else {
-    gate.classList.remove('hidden');
-    shell.style.display = 'none';
+  if(accessUnsub){ accessUnsub(); accessUnsub = null; }
+  if(!user){
+    signOutCleanup();
+    showGate('signin-gate');
+    return;
   }
+  showGate('access-gate');
+  document.getElementById('accessTitle').textContent = 'Έλεγχος πρόσβασης…';
+  document.getElementById('accessMsg').textContent = '';
+  watchAccess(user);
 });
+
+function watchAccess(user){
+  const ref = db.collection('access').doc(user.uid);
+  accessUnsub = ref.onSnapshot(async snap=>{
+    if(!snap.exists){
+      const isAdmin = user.email === ADMIN_EMAIL;
+      try{
+        await ref.set({
+          email: user.email || '',
+          name: user.displayName || '',
+          status: isAdmin ? 'approved' : 'pending',
+          requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }catch(e){ console.error('access request error', e); }
+      return; // onSnapshot fires again once the doc exists
+    }
+    const data = snap.data();
+    if(data.status === 'approved'){
+      onAccessApproved();
+    } else if(data.status === 'denied'){
+      showGate('access-gate');
+      document.getElementById('accessTitle').textContent = 'Δεν εγκρίθηκε η πρόσβαση';
+      document.getElementById('accessMsg').textContent = 'Επικοινώνησε με τον διαχειριστή της εφαρμογής αν νομίζεις πως είναι λάθος.';
+    } else {
+      showGate('access-gate');
+      document.getElementById('accessTitle').textContent = 'Το αίτημά σου εστάλη';
+      document.getElementById('accessMsg').textContent = 'Περιμένεις έγκριση πρόσβασης από τον διαχειριστή. Η σελίδα θα ενημερωθεί αυτόματα μόλις εγκριθεί.';
+    }
+  }, err=>{ console.error('access watch error', err); });
+}
+
+async function onAccessApproved(){
+  let profile = null;
+  try{
+    const res = await storage.get('profile');
+    profile = JSON.parse(res.value);
+  }catch(e){ profile = null; }
+  if(!profile){
+    showGate('onboarding-gate');
+    startOnboardingChat();
+  } else {
+    applyProfile(profile);
+    showGate(null);
+    initApp();
+  }
+}
 
 const CATS = {
   chest:{color:'#C7F36B'},
@@ -518,40 +635,137 @@ const ICONS = {
   lb6: svg(`<line x1="28" y1="2" x2="26" y2="9"/><circle cx="28" cy="2" r="1.6" fill="none" stroke="currentColor"/><circle cx="24" cy="12" r="3" fill="currentColor" stroke="none"/><line x1="24" y1="9" x2="26" y2="9"/><line x1="24" y1="15" x2="18" y2="23"/><line x1="18" y1="23" x2="14" y2="27"/><line x1="18" y1="23" x2="23" y2="28"/>`),
 };
 
-const DAYS = {
-  upperA:{label:'Upper A', sub:'Στήθος / Τρικέφαλος', exercises:[
-    {id:'ua1', name:'Πάγκος με μπάρα (flat bench press)', sets:4, reps:'6-8', rest:120, cat:'chest'},
-    {id:'ua2', name:'Κωπηλατική με αλτήρα (dumbbell row)', sets:4, reps:'8-10', rest:90, cat:'back'},
-    {id:'ua3', name:'Lat pulldown / έλξεις λαβής', sets:3, reps:'8-10', rest:90, cat:'back'},
-    {id:'ua4', name:'Ωθήσεις ώμων με αλτήρες (shoulder press)', sets:3, reps:'10', rest:75, cat:'shoulders'},
-    {id:'ua5', name:'Τρικέφαλος στο cable (pushdown)', sets:3, reps:'12', rest:60, cat:'arms'},
-    {id:'ua6', name:'Δικέφαλος με μπάρα (barbell curl)', sets:3, reps:'10', rest:60, cat:'arms'},
-  ]},
-  lowerA:{label:'Lower A', sub:'Δύναμη', exercises:[
-    {id:'la1', name:'Squat με μπάρα', sets:4, reps:'6-8', rest:120, cat:'legs'},
-    {id:'la2', name:'Romanian deadlift με μπάρα', sets:3, reps:'8', rest:120, cat:'legs'},
-    {id:'la3', name:'Leg press (μηχάνημα)', sets:3, reps:'10', rest:90, cat:'legs'},
-    {id:'la4', name:'Leg curl (μηχάνημα)', sets:3, reps:'12', rest:75, cat:'legs'},
-    {id:'la5', name:'Γάμπες (calf raises)', sets:4, reps:'15', rest:60, cat:'legs'},
-    {id:'la6', name:'Κοιλιακοί: plank + hanging leg raise', sets:3, reps:'σετ', rest:60, cat:'core'},
-  ]},
-  upperB:{label:'Upper B', sub:'Πλάτη / Ώμοι', exercises:[
-    {id:'ub1', name:'Έλξεις στη μπάρα (pull-ups / assisted)', sets:4, reps:'6-10', rest:120, cat:'back'},
-    {id:'ub2', name:'Ωθήσεις πάγκου με αλτήρες (DB press)', sets:4, reps:'8-10', rest:90, cat:'chest'},
-    {id:'ub3', name:'Seated cable row (μηχάνημα)', sets:3, reps:'10', rest:90, cat:'back'},
-    {id:'ub4', name:'Lateral raises (πλάγιες ανυψώσεις)', sets:3, reps:'12', rest:60, cat:'shoulders'},
-    {id:'ub5', name:'Δικέφαλος με αλτήρες εναλλάξ', sets:3, reps:'10', rest:60, cat:'arms'},
-    {id:'ub6', name:'Τρικέφαλος skull crushers', sets:3, reps:'10', rest:60, cat:'arms'},
-  ]},
-  lowerB:{label:'Lower B', sub:'Όγκος', exercises:[
-    {id:'lb1', name:'Deadlift (συμβατικό / sumo)', sets:4, reps:'5-6', rest:150, cat:'legs'},
-    {id:'lb2', name:'Bulgarian split squat με αλτήρες', sets:3, reps:'10/πόδι', rest:90, cat:'legs'},
-    {id:'lb3', name:'Leg extension (μηχάνημα)', sets:3, reps:'12', rest:75, cat:'legs'},
-    {id:'lb4', name:'Hip thrust', sets:3, reps:'10', rest:90, cat:'legs'},
-    {id:'lb5', name:'Γάμπες όρθιες (μηχάνημα)', sets:4, reps:'15', rest:60, cat:'legs'},
-    {id:'lb6', name:'Κοιλιακοί: cable crunch + πλάγιοι', sets:3, reps:'σετ', rest:60, cat:'core'},
-  ]},
+// Flat catalog of every exercise (icon key = catalog key). Training templates
+// below just reference these by id, so the same 24-exercise pool can be
+// regrouped into different splits without redefining sets/reps/rest per split.
+const EX = {
+  ua1:{name:'Πάγκος με μπάρα (flat bench press)', sets:4, reps:'6-8', rest:120, cat:'chest'},
+  ua2:{name:'Κωπηλατική με αλτήρα (dumbbell row)', sets:4, reps:'8-10', rest:90, cat:'back'},
+  ua3:{name:'Lat pulldown / έλξεις λαβής', sets:3, reps:'8-10', rest:90, cat:'back'},
+  ua4:{name:'Ωθήσεις ώμων με αλτήρες (shoulder press)', sets:3, reps:'10', rest:75, cat:'shoulders'},
+  ua5:{name:'Τρικέφαλος στο cable (pushdown)', sets:3, reps:'12', rest:60, cat:'arms'},
+  ua6:{name:'Δικέφαλος με μπάρα (barbell curl)', sets:3, reps:'10', rest:60, cat:'arms'},
+  la1:{name:'Squat με μπάρα', sets:4, reps:'6-8', rest:120, cat:'legs'},
+  la2:{name:'Romanian deadlift με μπάρα', sets:3, reps:'8', rest:120, cat:'legs'},
+  la3:{name:'Leg press (μηχάνημα)', sets:3, reps:'10', rest:90, cat:'legs'},
+  la4:{name:'Leg curl (μηχάνημα)', sets:3, reps:'12', rest:75, cat:'legs'},
+  la5:{name:'Γάμπες (calf raises)', sets:4, reps:'15', rest:60, cat:'legs'},
+  la6:{name:'Κοιλιακοί: plank + hanging leg raise', sets:3, reps:'σετ', rest:60, cat:'core'},
+  ub1:{name:'Έλξεις στη μπάρα (pull-ups / assisted)', sets:4, reps:'6-10', rest:120, cat:'back'},
+  ub2:{name:'Ωθήσεις πάγκου με αλτήρες (DB press)', sets:4, reps:'8-10', rest:90, cat:'chest'},
+  ub3:{name:'Seated cable row (μηχάνημα)', sets:3, reps:'10', rest:90, cat:'back'},
+  ub4:{name:'Lateral raises (πλάγιες ανυψώσεις)', sets:3, reps:'12', rest:60, cat:'shoulders'},
+  ub5:{name:'Δικέφαλος με αλτήρες εναλλάξ', sets:3, reps:'10', rest:60, cat:'arms'},
+  ub6:{name:'Τρικέφαλος skull crushers', sets:3, reps:'10', rest:60, cat:'arms'},
+  lb1:{name:'Deadlift (συμβατικό / sumo)', sets:4, reps:'5-6', rest:150, cat:'legs'},
+  lb2:{name:'Bulgarian split squat με αλτήρες', sets:3, reps:'10/πόδι', rest:90, cat:'legs'},
+  lb3:{name:'Leg extension (μηχάνημα)', sets:3, reps:'12', rest:75, cat:'legs'},
+  lb4:{name:'Hip thrust', sets:3, reps:'10', rest:90, cat:'legs'},
+  lb5:{name:'Γάμπες όρθιες (μηχάνημα)', sets:4, reps:'15', rest:60, cat:'legs'},
+  lb6:{name:'Κοιλιακοί: cable crunch + πλάγιοι', sets:3, reps:'σετ', rest:60, cat:'core'},
 };
+function buildDay(label, sub, ids){
+  return { label, sub, exercises: ids.map(id=>({id, ...EX[id]})) };
+}
+
+// Multiple training templates — the onboarding profile picks one based on
+// how many days/week the user can train (see chooseSplitKey).
+const TEMPLATES = {
+  upperLower4: {
+    upperA: buildDay('Upper A', 'Στήθος / Τρικέφαλος', ['ua1','ua2','ua3','ua4','ua5','ua6']),
+    lowerA: buildDay('Lower A', 'Δύναμη', ['la1','la2','la3','la4','la5','la6']),
+    upperB: buildDay('Upper B', 'Πλάτη / Ώμοι', ['ub1','ub2','ub3','ub4','ub5','ub6']),
+    lowerB: buildDay('Lower B', 'Όγκος', ['lb1','lb2','lb3','lb4','lb5','lb6']),
+  },
+  fullBody3: {
+    fullA: buildDay('Full Body A', 'Squat focus', ['la1','ua1','ua2','ua4','la5','la6']),
+    fullB: buildDay('Full Body B', 'Deadlift focus', ['lb1','ub2','ub1','ub4','ua6','lb6']),
+    fullC: buildDay('Full Body C', 'Leg press focus', ['la3','ub3','ua5','lb4','ub5','la4']),
+  },
+  pushPullLegs6: {
+    pushA: buildDay('Push A', 'Στήθος / Ώμοι / Τρικέφαλος', ['ua1','ua4','ua5']),
+    pullA: buildDay('Pull A', 'Πλάτη / Δικέφαλος', ['ua2','ua3','ua6']),
+    legsA: buildDay('Legs A', 'Δύναμη', ['la1','la2','la3','la4','la5','la6']),
+    pushB: buildDay('Push B', 'Στήθος / Ώμοι / Τρικέφαλος', ['ub2','ub4','ub6']),
+    pullB: buildDay('Pull B', 'Πλάτη / Δικέφαλος', ['ub1','ub3','ub5']),
+    legsB: buildDay('Legs B', 'Όγκος', ['lb1','lb2','lb3','lb4','lb5','lb6']),
+  },
+};
+
+function chooseSplitKey(daysPerWeek){
+  if(daysPerWeek <= 3) return 'fullBody3';
+  if(daysPerWeek >= 6) return 'pushPullLegs6';
+  return 'upperLower4';
+}
+
+function computeTargets(p){
+  const bmr = p.sex === 'female'
+    ? (10*p.weightKg + 6.25*p.heightCm - 5*p.age - 161)
+    : (10*p.weightKg + 6.25*p.heightCm - 5*p.age + 5);
+  const activityMul = {sedentary:1.2, light:1.375, moderate:1.55, active:1.725, very_active:1.9}[p.activityLevel] || 1.375;
+  let kcal = bmr * activityMul;
+  if(p.goal === 'fat_loss') kcal -= 500;
+  else if(p.goal === 'muscle_gain') kcal += 300;
+  kcal = Math.max(1400, Math.round(kcal/10)*10);
+  const protein = Math.round(2.0 * p.weightKg);
+  const fat = Math.round((kcal*0.25)/9);
+  const carbs = Math.max(0, Math.round((kcal - protein*4 - fat*9)/4));
+  return {kcal, protein, fat, carbs};
+}
+
+const GOAL_LABELS = {fat_loss:'Απώλεια λίπους', muscle_gain:'Μυϊκή ανάπτυξη', recomp:'Αναδόμηση σώματος (recomp)', maintenance:'Διατήρηση / γενική φόρμα'};
+const SPLIT_LABELS = {upperLower4:'Upper/Lower — 4 ημέρες/εβδομάδα', fullBody3:'Full Body — 3 ημέρες/εβδομάδα', pushPullLegs6:'Push/Pull/Legs — 6 ημέρες/εβδομάδα'};
+const ACTIVITY_LABELS = {sedentary:'Καθιστική', light:'Ελαφριά κίνηση', moderate:'Μέτρια δραστηριότητα', active:'Αρκετά δραστήριος', very_active:'Πολύ δραστήριος'};
+const EXPERIENCE_LABELS = {beginner:'Αρχάριος', intermediate:'Μέσο επίπεδο', advanced:'Προχωρημένος'};
+const EQUIPMENT_LABELS = {full_gym:'Πλήρες γυμναστήριο', home_basic:'Βασικός εξοπλισμός σπιτιού', limited:'Πολύ περιορισμένος εξοπλισμός'};
+
+function defaultProfile(){
+  return {
+    goal:'muscle_gain', sex:'male', age:30, heightCm:183, weightKg:88,
+    activityLevel:'moderate', daysPerWeek:4, experience:'intermediate', equipment:'full_gym',
+    dietaryNotes:'', injuries:'', splitKey:'upperLower4',
+    targets:{kcal:3100, protein:180, fat:87, carbs:410},
+    onboardedAt:new Date().toISOString(),
+  };
+}
+
+function applyProfile(profile){
+  currentProfile = profile;
+  DAYS = TEMPLATES[profile.splitKey] || TEMPLATES.upperLower4;
+  currentDay = Object.keys(DAYS)[0];
+  buildDayPicker();
+  renderTargets();
+  setGreeting();
+}
+
+function buildDayPicker(){
+  daypickerEl.innerHTML = '';
+  Object.keys(DAYS).forEach(key=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.day = key;
+    b.innerHTML = `<span class="lbl">${DAYS[key].label}</span><span class="sub">${DAYS[key].sub}</span><span class="donebadge" style="display:none">✓</span>`;
+    b.addEventListener('click', ()=>{ currentDay = key; renderDayButtons(); renderExercises(); renderDashboard(); });
+    daypickerEl.appendChild(b);
+  });
+  renderDayButtons();
+}
+
+function renderTargets(){
+  const t = (currentProfile && currentProfile.targets) || {kcal:'-',protein:'-',fat:'-',carbs:'-'};
+  document.getElementById('targetsGrid').innerHTML = `
+    <div class="t"><div class="v">${t.kcal}</div><div class="l">kcal στόχος</div></div>
+    <div class="t"><div class="v">${t.protein}g</div><div class="l">Πρωτεΐνη</div></div>
+    <div class="t"><div class="v">${t.fat}g</div><div class="l">Λίπος</div></div>
+    <div class="t"><div class="v">${t.carbs}g</div><div class="l">Υδατ.</div></div>`;
+}
+
+function setGreeting(){
+  const h = new Date().getHours();
+  const g = h<12 ? 'Καλημέρα' : (h<18 ? 'Καλό απόγευμα' : 'Καλησπέρα');
+  const name = (currentUser && currentUser.displayName) ? currentUser.displayName.split(' ')[0] : '';
+  document.getElementById('greetLabel').textContent = name ? `${g}, ${name}` : g;
+}
 
 const MEALS = {
   breakfast:{label:'Πρωινό', goal:'πρωτεΐνη + λίγο υδατάνθρακα', options:[
@@ -601,18 +815,14 @@ const MEALS = {
 
 // ---------- state / date ----------
 function todayKey(){ return new Date().toISOString().slice(0,10); }
-let currentDay = 'upperA';
+let DAYS = TEMPLATES.upperLower4;
+let currentDay = Object.keys(DAYS)[0];
 let checkedState = {}; // {exerciseId: true}
 
 document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('el-GR', {weekday:'long', day:'numeric', month:'long'});
-(function setGreeting(){
-  const h = new Date().getHours();
-  const g = h<12 ? 'Καλημέρα' : (h<18 ? 'Καλό απόγευμα' : 'Καλησπέρα');
-  document.getElementById('greetLabel').textContent = `${g}, Sokratis`;
-})();
 
 // ---------- generic tab routing ----------
-const SECONDARY_PARENT = { extra:'nutrition', history:'dashboard' };
+const SECONDARY_PARENT = { extra:'nutrition', history:'dashboard', profile:'dashboard' };
 function switchTab(name){
   document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
   const target = document.getElementById('tab-'+name);
@@ -621,6 +831,7 @@ function switchTab(name){
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.tab===navTarget));
   if(name==='dashboard') renderDashboard();
   if(name==='history') renderHistory();
+  if(name==='profile') renderProfileTab();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.navbtn').forEach(btn=>{
@@ -631,17 +842,11 @@ document.getElementById('historyBackBtn').addEventListener('click', ()=>switchTa
 document.getElementById('toExtraBtn').addEventListener('click', ()=>switchTab('extra'));
 document.getElementById('extraBackBtn').addEventListener('click', ()=>switchTab('nutrition'));
 document.getElementById('askCoachBtn').addEventListener('click', ()=>switchTab('ai'));
+document.getElementById('profileBtn').addEventListener('click', ()=>switchTab('profile'));
+document.getElementById('profileBackBtn').addEventListener('click', ()=>switchTab('dashboard'));
 
 // ---------- training ----------
 const daypickerEl = document.getElementById('daypicker');
-Object.keys(DAYS).forEach(key=>{
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.dataset.day = key;
-  b.innerHTML = `<span class="lbl">${DAYS[key].label}</span><span class="sub">${DAYS[key].sub}</span><span class="donebadge" style="display:none">✓</span>`;
-  b.addEventListener('click', ()=>{ currentDay = key; renderDayButtons(); renderExercises(); renderDashboard(); });
-  daypickerEl.appendChild(b);
-});
 
 function renderDayButtons(){
   daypickerEl.querySelectorAll('button').forEach(b=>{
@@ -653,7 +858,7 @@ async function loadTodayWorkout(){
   try{
     const res = await storage.get('workout-log:'+todayKey());
     const data = JSON.parse(res.value);
-    currentDay = data.day || currentDay;
+    currentDay = (data.day && DAYS[data.day]) ? data.day : currentDay;
     checkedState = {};
     (data.checked||[]).forEach(id=>checkedState[id]=true);
   }catch(e){ /* no log yet today */ }
@@ -1017,11 +1222,23 @@ async function buildContextSummary(){
   return lines.join('\n') || 'Δεν υπάρχει ακόμα ιστορικό καταγεγραμμένο.';
 }
 
+function buildCoachSystemPrompt(){
+  const p = currentProfile || defaultProfile();
+  const t = p.targets || {};
+  const name = (currentUser && currentUser.displayName) ? currentUser.displayName.split(' ')[0] : '';
+  const pronoun = p.sex === 'female' ? 'μια γυναίκα' : 'έναν άντρα';
+  let s = `Είσαι προσωπικός γυμναστής και διαιτολόγος για ${name ? name+',' : ''} ${pronoun} ${p.age} ετών, ${p.heightCm}cm, ${p.weightKg}kg, στόχος: ${(GOAL_LABELS[p.goal]||'γενική φόρμα').toLowerCase()}. Στόχοι διατροφής: ${t.kcal||'-'} kcal, ${t.protein||'-'}g πρωτεΐνη, ${t.fat||'-'}g λίπος, ${t.carbs||'-'}g υδατάνθρακες. Πρόγραμμα: ${SPLIT_LABELS[p.splitKey]||''}.`;
+  if(p.dietaryNotes) s += ` Διατροφικές προτιμήσεις/περιορισμοί: ${p.dietaryNotes}.`;
+  if(p.injuries) s += ` Τραυματισμοί/περιορισμοί κίνησης: ${p.injuries}.`;
+  s += ' Απάντα πάντα στα Ελληνικά, σύντομα και πρακτικά.';
+  return s;
+}
+
 async function askAI(question){
   const out = document.getElementById('aiOutput');
   out.innerHTML = '<div class="loading">Σκέφτεται…</div>';
   const context = await buildContextSummary();
-  const sys = `Είσαι προσωπικός γυμναστής και διαιτολόγος για έναν άντρα 30 ετών, 1.83m, 88kg, στόχος μυϊκή ανάπτυξη σε 8 μήνες. Στόχοι διατροφής: ~3100 kcal, 180g πρωτεΐνη, 87g λίπος, 410g υδατάνθρακες. Πρόγραμμα: Upper/Lower split 4 ημέρες/εβδομάδα. Απάντα πάντα στα Ελληνικά, σύντομα και πρακτικά.`;
+  const sys = buildCoachSystemPrompt();
   const userMsg = `Πρόσφατο ιστορικό:\n${context}\n\nΕρώτηση: ${question}`;
   try{
     const response = await fetch(WORKER_URL, {
@@ -1037,7 +1254,7 @@ async function askAI(question){
     if(!response.ok){ throw new Error('bad status'); }
     const data = await response.json();
     const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
-    out.innerHTML = `<div class="airesponse">${(text||'Δεν ελήφθη απάντηση.').replace(/</g,'&lt;')}</div>`;
+    out.innerHTML = `<div class="airesponse">${escapeHtml(text||'Δεν ελήφθη απάντηση.')}</div>`;
   }catch(e){
     out.innerHTML = `<div class="airesponse error">Κάτι πήγε στραβά με τη σύνδεση στον AI coach. Δοκίμασε ξανά σε λίγο.</div>`;
   }
@@ -1052,13 +1269,227 @@ document.getElementById('askAiBtn').addEventListener('click', ()=>{
   askAI(q);
 });
 
+// ---------- AI onboarding chat ----------
+let onboardMessages = [];
+
+function onboardingSystemPrompt(firstName){
+  return `Είσαι ο AI onboarding coach της εφαρμογής PROGRAMMA. Μιλάς Ελληνικά, φιλικά, φυσικά και σύντομα.
+Ο χρήστης λέγεται ${firstName || ''}. Σκοπός σου: να μάθεις όσα χρειάζεσαι για να φτιάξεις εξατομικευμένο πρόγραμμα προπόνησης και διατροφής.
+Ρώτα ένα-δύο πράγματα τη φορά (όχι όλα μαζί) μέχρι να έχεις μάθει ΟΛΑ τα παρακάτω:
+- Κύριος στόχος: αδυνάτισμα, μυϊκή ανάπτυξη, αναδόμηση σώματος (recomp) ή διατήρηση/γενική φόρμα
+- Φύλο
+- Ηλικία (έτη)
+- Ύψος (cm)
+- Βάρος (kg)
+- Επίπεδο καθημερινής δραστηριότητας εκτός γυμναστικής (καθιστική / ελαφριά / μέτρια / αρκετά δραστήρια / πολύ δραστήρια δουλειά-ζωή)
+- Πόσες ημέρες/εβδομάδα μπορεί να προπονείται (αριθμός 1-7)
+- Επίπεδο εμπειρίας στη γυμναστική (αρχάριος / μέσο επίπεδο / προχωρημένος)
+- Πρόσβαση σε εξοπλισμό (πλήρες γυμναστήριο / βασικός εξοπλισμός σπιτιού / πολύ περιορισμένος)
+- Διατροφικές προτιμήσεις ή περιορισμοί (ελεύθερο κείμενο, ή "καμία")
+- Τραυματισμούς ή περιορισμούς κίνησης (ελεύθερο κείμενο, ή "κανένας")
+
+Μόλις έχεις ΟΛΑ τα παραπάνω, ΜΗΝ κάνεις άλλες ερωτήσεις. Γράψε ένα σύντομο φιλικό μήνυμα επιβεβαίωσης, και αμέσως μετά, σε νέα γραμμή, ΕΝΑ code block σε JSON με ΑΚΡΙΒΩΣ αυτά τα keys και επιτρεπτές τιμές (χρησιμοποίησε τις αγγλικές ετικέτες, όχι ελληνικό κείμενο, εκτός από τα δύο πεδία ελεύθερου κειμένου):
+
+\`\`\`json
+{"goal":"fat_loss|muscle_gain|recomp|maintenance","sex":"male|female","age":0,"heightCm":0,"weightKg":0,"activityLevel":"sedentary|light|moderate|active|very_active","daysPerWeek":0,"experience":"beginner|intermediate|advanced","equipment":"full_gym|home_basic|limited","dietaryNotes":"...","injuries":"..."}
+\`\`\`
+
+Μην βγάλεις αυτό το JSON πριν έχεις πραγματικά όλες τις απαντήσεις από τον χρήστη. Μην γράψεις τίποτα άλλο μετά το JSON block.`;
+}
+
+function startOnboardingChat(){
+  onboardMessages = [];
+  document.getElementById('onboardChat').innerHTML = '';
+  document.getElementById('onboardInput').value = '';
+  sendOnboardingTurn(null);
+}
+
+function appendChatBubble(cls, text){
+  const wrap = document.getElementById('onboardChat');
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.innerHTML = escapeHtml(text).replace(/\n/g,'<br>');
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+async function sendOnboardingTurn(userText){
+  const sendBtn = document.getElementById('onboardSendBtn');
+  if(userText){
+    onboardMessages.push({role:'user', content:userText});
+    appendChatBubble('user', userText);
+  } else if(onboardMessages.length===0){
+    // Anthropic's Messages API requires the conversation to start with a
+    // user turn and strictly alternate — seed it, but don't show it in the UI.
+    onboardMessages.push({role:'user', content:'Γεια!'});
+  }
+  sendBtn.disabled = true;
+  const loadingEl = appendChatBubble('assistant loading', 'Σκέφτεται…');
+  try{
+    const firstName = (currentUser.displayName||'').split(' ')[0] || '';
+    const sys = onboardingSystemPrompt(firstName);
+    const response = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:700, system: sys, messages: onboardMessages })
+    });
+    if(!response.ok) throw new Error('bad status');
+    const data = await response.json();
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    loadingEl.remove();
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
+    const displayText = (jsonMatch ? text.slice(0, jsonMatch.index) : text).trim();
+    if(displayText) appendChatBubble('assistant', displayText);
+    onboardMessages.push({role:'assistant', content:text});
+    if(jsonMatch){
+      const ok = tryFinalizeOnboarding(jsonMatch[1]);
+      if(!ok) appendChatBubble('assistant', 'Κάτι δεν πήγε καλά με τα στοιχεία — πες μου ξανά τι χρειάζεται να διορθώσουμε.');
+    }
+  }catch(e){
+    loadingEl.remove();
+    appendChatBubble('assistant error', 'Κάτι πήγε στραβά με τη σύνδεση στον AI coach. Δοκίμασε ξανά, ή πάτησε «Παράλειψη για τώρα».');
+  }
+  sendBtn.disabled = false;
+  document.getElementById('onboardInput').focus();
+}
+
+function tryFinalizeOnboarding(jsonText){
+  let obj;
+  try{ obj = JSON.parse(jsonText); }catch(e){ return false; }
+  const required = ['goal','sex','age','heightCm','weightKg','activityLevel','daysPerWeek','experience','equipment'];
+  for(const k of required){ if(obj[k]===undefined || obj[k]===null || obj[k]==='') return false; }
+  const goals = Object.keys(GOAL_LABELS), acts = Object.keys(ACTIVITY_LABELS), exps = Object.keys(EXPERIENCE_LABELS), equips = Object.keys(EQUIPMENT_LABELS);
+  if(!goals.includes(obj.goal) || !acts.includes(obj.activityLevel) || !exps.includes(obj.experience) || !equips.includes(obj.equipment)) return false;
+  const age = Number(obj.age), heightCm = Number(obj.heightCm), weightKg = Number(obj.weightKg), daysPerWeek = Number(obj.daysPerWeek);
+  if(!(age>=10 && age<=100)) return false;
+  if(!(heightCm>=100 && heightCm<=230)) return false;
+  if(!(weightKg>=30 && weightKg<=300)) return false;
+  if(!(daysPerWeek>=1 && daysPerWeek<=7)) return false;
+  const sex = obj.sex === 'female' ? 'female' : 'male';
+  const profile = {
+    goal: obj.goal, sex, age, heightCm, weightKg,
+    activityLevel: obj.activityLevel, daysPerWeek,
+    experience: obj.experience, equipment: obj.equipment,
+    dietaryNotes: String(obj.dietaryNotes||'').slice(0,500),
+    injuries: String(obj.injuries||'').slice(0,500),
+    onboardedAt: new Date().toISOString(),
+  };
+  profile.splitKey = chooseSplitKey(daysPerWeek);
+  profile.targets = computeTargets(profile);
+  finalizeProfile(profile);
+  return true;
+}
+
+async function finalizeProfile(profile){
+  try{ await storage.set('profile', JSON.stringify(profile)); }catch(e){ console.error(e); }
+  appendChatBubble('assistant', `Τέλεια! Το πρόγραμμά σου είναι έτοιμο: ~${profile.targets.kcal} kcal/ημέρα, ${SPLIT_LABELS[profile.splitKey]}. Ας ξεκινήσουμε!`);
+  setTimeout(()=>{
+    applyProfile(profile);
+    showGate(null);
+    if(appInitialized) refreshAppData(); else initApp();
+  }, 1400);
+}
+
+document.getElementById('onboardSendBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('onboardInput');
+  const val = input.value.trim();
+  if(!val) return;
+  input.value = '';
+  sendOnboardingTurn(val);
+});
+document.getElementById('onboardInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); document.getElementById('onboardSendBtn').click(); }
+});
+document.getElementById('onboardSkipBtn').addEventListener('click', async ()=>{
+  const profile = defaultProfile();
+  try{ await storage.set('profile', JSON.stringify(profile)); }catch(e){ console.error(e); }
+  applyProfile(profile);
+  showGate(null);
+  if(appInitialized) refreshAppData(); else initApp();
+});
+document.getElementById('redoOnboardingBtn').addEventListener('click', ()=>{
+  if(!confirm('Θα ξαναρχίσει η συνομιλία με το AI Coach για να φτιάξει νέο πρόγραμμα. Συνέχεια;')) return;
+  showGate('onboarding-gate');
+  startOnboardingChat();
+});
+
+// ---------- profile tab + admin panel ----------
+let pendingUnsub = null;
+
+function renderProfileTab(){
+  const p = currentProfile || defaultProfile();
+  const t = p.targets || {};
+  document.getElementById('profileSummary').innerHTML = `
+    <div class="profile-block">
+      <div class="stat-label">Στόχος</div>
+      <div style="font-weight:700;margin-top:4px;">${escapeHtml(GOAL_LABELS[p.goal]||'-')}</div>
+    </div>
+    <div class="profile-block">
+      <div class="stat-label">Στοιχεία</div>
+      <div style="font-size:13px;margin-top:4px;">${p.sex==='female'?'Γυναίκα':'Άντρας'} · ${p.age} ετών · ${p.heightCm}cm · ${p.weightKg}kg</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:6px;">Δραστηριότητα: ${escapeHtml(ACTIVITY_LABELS[p.activityLevel]||'-')}</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Εμπειρία: ${escapeHtml(EXPERIENCE_LABELS[p.experience]||'-')} · Εξοπλισμός: ${escapeHtml(EQUIPMENT_LABELS[p.equipment]||'-')}</div>
+      ${p.dietaryNotes ? `<div style="font-size:12px;color:var(--text-dim);margin-top:6px;">Διατροφικές σημειώσεις: ${escapeHtml(p.dietaryNotes)}</div>` : ''}
+      ${p.injuries ? `<div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Τραυματισμοί/περιορισμοί: ${escapeHtml(p.injuries)}</div>` : ''}
+    </div>
+    <div class="profile-block">
+      <div class="stat-label">Πρόγραμμα</div>
+      <div style="font-weight:700;margin-top:4px;">${escapeHtml(SPLIT_LABELS[p.splitKey]||'-')}</div>
+      <div class="targets" style="margin-top:10px;">
+        <div class="t"><div class="v">${t.kcal||'-'}</div><div class="l">kcal στόχος</div></div>
+        <div class="t"><div class="v">${t.protein||'-'}g</div><div class="l">Πρωτεΐνη</div></div>
+        <div class="t"><div class="v">${t.fat||'-'}g</div><div class="l">Λίπος</div></div>
+        <div class="t"><div class="v">${t.carbs||'-'}g</div><div class="l">Υδατ.</div></div>
+      </div>
+    </div>`;
+
+  const adminPanel = document.getElementById('adminPanel');
+  if(currentUser && currentUser.email === ADMIN_EMAIL){
+    adminPanel.classList.remove('hidden');
+    watchPendingRequests();
+  } else {
+    adminPanel.classList.add('hidden');
+  }
+}
+
+function watchPendingRequests(){
+  if(pendingUnsub) return;
+  pendingUnsub = db.collection('access').where('status','==','pending').onSnapshot(snap=>{
+    const el = document.getElementById('pendingRequests');
+    if(snap.empty){ el.innerHTML = '<div class="empty">Δεν υπάρχουν εκκρεμή αιτήματα.</div>'; return; }
+    el.innerHTML = '';
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const row = document.createElement('div');
+      row.className = 'historyday';
+      row.innerHTML = `<div class="hdate">${escapeHtml(d.name || d.email || doc.id)}</div>
+        <div class="hrow">${escapeHtml(d.email||'')}</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="primary" type="button" data-approve="${doc.id}">Έγκριση</button>
+          <button class="ghost" type="button" data-deny="${doc.id}">Απόρριψη</button>
+        </div>`;
+      el.appendChild(row);
+    });
+    el.querySelectorAll('[data-approve]').forEach(b=>{
+      b.addEventListener('click', ()=>db.collection('access').doc(b.dataset.approve).update({status:'approved'}).catch(e=>console.error(e)));
+    });
+    el.querySelectorAll('[data-deny]').forEach(b=>{
+      b.addEventListener('click', ()=>db.collection('access').doc(b.dataset.deny).update({status:'denied'}).catch(e=>console.error(e)));
+    });
+  }, err=>console.error('pending requests watch error', err));
+}
+
 // ---------- init ----------
 let appInitialized = false;
+function refreshAppData(){
+  loadTodayWorkout();
+  renderFoodLog();
+}
 function initApp(){
   if(appInitialized) return;
   appInitialized = true;
-  loadTodayWorkout();
-  renderFoodLog();
+  refreshAppData();
 }
 </script>
 </body>
