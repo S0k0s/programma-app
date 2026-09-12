@@ -509,6 +509,9 @@
 // ---------- config: fill in after deploying the Cloudflare Worker ----------
 // Replace with your deployed Worker URL, e.g. https://programma-ai.YOUR-SUBDOMAIN.workers.dev
 const WORKER_URL = 'https://programma-ai.sokratispoun.workers.dev';
+// Cheapest current Claude model — used for every AI Coach / onboarding call
+// to keep per-message cost as low as possible now that sign-up is open.
+const AI_MODEL = 'claude-haiku-4-5-20251001';
 
 // ---------- Firebase auth + Firestore-backed storage shim ----------
 // Same get/set interface as the old Claude-artifact window.storage, so the
@@ -543,7 +546,12 @@ document.getElementById('googleSignInBtn').addEventListener('click', async ()=>{
   const errEl = document.getElementById('signinError');
   errEl.style.display = 'none';
   try{
-    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    const provider = new firebase.auth.GoogleAuthProvider();
+    // Force the account chooser every time, so a browser that already has a
+    // Google session cached (e.g. from testing the admin account) never
+    // gets silently reused instead of the account the user actually wants.
+    provider.setCustomParameters({ prompt: 'select_account' });
+    await auth.signInWithPopup(provider);
   }catch(e){
     errEl.textContent = 'Η σύνδεση απέτυχε. Δοκίμασε ξανά.';
     errEl.style.display = 'block';
@@ -1617,7 +1625,7 @@ async function askAI(question){
     const response = await fetch(WORKER_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:600, system: sys, messages: messagesToSend })
+      body: JSON.stringify({ model:AI_MODEL, max_tokens:600, system: sys, messages: messagesToSend })
     });
     if(!response.ok){ throw new Error('bad status'); }
     const data = await response.json();
@@ -1734,7 +1742,7 @@ async function sendOnboardingTurn(userText){
     const response = await fetch(WORKER_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:700, system: sys, messages: onboardMessages })
+      body: JSON.stringify({ model:AI_MODEL, max_tokens:700, system: sys, messages: onboardMessages })
     });
     if(!response.ok) throw new Error('bad status');
     const data = await response.json();
