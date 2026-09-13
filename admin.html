@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<style>
+  :root{ --bg:#101214; --surface:#191D20; --surface2:#20262A; --line:#272d31; --text:#F4F5EE;
+    --text-dim:#8E9795; --lime:#C7F36B; --danger:#F08270; --success:#82D69B; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,'Inter',sans-serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:32px 20px 60px;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .sub{color:var(--text-dim);font-size:13px;margin:0 0 28px;}
+  button{font-family:inherit;cursor:pointer;border-radius:99px;padding:10px 18px;font-size:14px;font-weight:700;}
+  .primary{background:var(--lime);color:#101214;border:none;}
+  .ghost{background:none;border:1px solid var(--line);color:var(--text);}
+  .danger{color:var(--danger);border-color:var(--danger);background:none;}
+  .row{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
+  .row .email{font-weight:700;font-size:14px;}
+  .row .status{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .row .status.active{color:var(--success);}
+  .row .status.revoked{color:var(--danger);}
+  .row .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .row .actions button{padding:7px 14px;font-size:12.5px;}
+  #gate, #denied{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
+  #denied{display:none;}
+  #panel{display:none;}
+  .empty{color:var(--text-dim);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate">
+    <h1>Admin</h1>
+    <button class="primary" id="signInBtn">Sign in with Google</button>
+  </div>
+
+  <div id="denied">
+    <h1>Not authorized</h1>
+    <p class="sub">This account does not have access to this page.</p>
+    <button class="ghost" id="signOutBtnDenied">Sign out</button>
+  </div>
+
+  <div id="panel">
+    <h1>Users</h1>
+    <p class="sub">Revoke or restore access, or permanently delete an account.</p>
+    <div id="userList"><div class="empty">Loading…</div></div>
+    <button class="ghost" id="signOutBtn" style="margin-top:24px;">Sign out</button>
+  </div>
+</div>
+
+<script>
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const ADMIN_EMAIL = 'sokratispoun@gmail.com';
+const WORKER_URL = 'https://programma-ai.sokratispoun.workers.dev';
+
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('signInBtn').addEventListener('click', ()=>{
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>console.error(e));
+});
+document.getElementById('signOutBtn').addEventListener('click', ()=>auth.signOut());
+document.getElementById('signOutBtnDenied').addEventListener('click', ()=>auth.signOut());
+
+let currentUser = null;
+let usersUnsub = null;
+
+auth.onAuthStateChanged(user=>{
+  currentUser = user;
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('denied').style.display = 'none';
+  document.getElementById('panel').style.display = 'none';
+  if(usersUnsub){ usersUnsub(); usersUnsub = null; }
+
+  if(!user){
+    document.getElementById('gate').style.display = 'flex';
+    return;
+  }
+  if(user.email !== ADMIN_EMAIL){
+    document.getElementById('denied').style.display = 'flex';
+    return;
+  }
+  document.getElementById('panel').style.display = 'block';
+  watchUserList();
+});
+
+// Same users/{uid}/data cleanup the self-service delete flow uses —
+// Firestore rules let the admin act on any uid, not just their own.
+async function deleteAllUserData(uid){
+  const dataCol = db.collection('users').doc(uid).collection('data');
+  const dataSnap = await dataCol.get();
+  const docs = dataSnap.docs;
+  const chunkSize = 400; // stay well under Firestore's 500-write batch limit
+  for(let i=0; i<docs.length; i+=chunkSize){
+    const batch = db.batch();
+    docs.slice(i, i+chunkSize).forEach(d=>batch.delete(d.ref));
+    await batch.commit();
+  }
+  try{ await db.collection('users').doc(uid).delete(); }catch(e){ /* implicit doc, fine if missing */ }
+  await db.collection('access').doc(uid).delete();
+}
+
+// Deletes the Firebase Auth sign-in record itself, which no client SDK can
+// do for anyone but the signed-in user — goes through the Cloudflare Worker
+// (service account), which independently re-verifies this really is the
+// admin's own ID token before touching anything.
+async function adminDeleteUser(uid, btn){
+  if(!confirm('This will PERMANENTLY delete this user\'s account and all their data. This cannot be undone.')) return;
+  btn.disabled = true;
+  try{
+    await deleteAllUserData(uid);
+  }catch(e){
+    console.error('admin delete: user data cleanup failed', e);
+    alert('Something went wrong deleting the user\'s data. Please try again.');
+    btn.disabled = false;
+    return;
+  }
+  try{
+    const idToken = await currentUser.getIdToken();
+    const res = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'admin-delete-user', idToken, targetUid: uid }),
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.ok){
+      console.error('admin delete: auth record cleanup failed', data);
+      alert('The data was deleted, but the sign-in account itself was not (a server-side problem). Try again or check the Worker setup.');
+    }
+  }catch(e){
+    console.error('admin delete: worker call failed', e);
+    alert('The data was deleted, but the sign-in account itself was not (a server-side problem). Try again or check the Worker setup.');
+  }
+  // The onSnapshot below already drops this row once its doc is gone
+  // (deleted as part of deleteAllUserData) — nothing else to refresh here.
+}
+
+function watchUserList(){
+  if(usersUnsub) return;
+  usersUnsub = db.collection('access').onSnapshot(snap=>{
+    const el = document.getElementById('userList');
+    if(snap.empty){ el.innerHTML = '<div class="empty">No users yet.</div>'; return; }
+    el.innerHTML = '';
+    snap.forEach(doc=>{
+      if(doc.id === (currentUser && currentUser.uid)) return; // don't let the admin ban themselves
+      const d = doc.data();
+      const denied = d.status === 'denied';
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<div class="email">${escapeHtml(d.name || d.email || doc.id)}</div>
+        <div class="status ${denied?'revoked':'active'}">${escapeHtml(d.email||'')} · ${denied?'No access':'Active'}</div>
+        <div class="actions">
+          ${denied
+            ? `<button class="primary" type="button" data-approve="${doc.id}">Restore access</button>`
+            : `<button class="ghost" type="button" data-deny="${doc.id}">Revoke access</button>`}
+          <button class="danger" type="button" data-delete="${doc.id}">Delete account</button>
+        </div>`;
+      el.appendChild(row);
+    });
+    el.querySelectorAll('[data-approve]').forEach(b=>{
+      b.addEventListener('click', ()=>db.collection('access').doc(b.dataset.approve).update({status:'approved'}).catch(e=>console.error(e)));
+    });
+    el.querySelectorAll('[data-deny]').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        if(!confirm('This user will lose access to the app. Continue?')) return;
+        db.collection('access').doc(b.dataset.deny).update({status:'denied'}).catch(e=>console.error(e));
+      });
+    });
+    el.querySelectorAll('[data-delete]').forEach(b=>{
+      b.addEventListener('click', ()=>adminDeleteUser(b.dataset.delete, b));
+    });
+  }, err=>console.error('user list watch error', err));
+}
+</script>
+</body>
+</html>

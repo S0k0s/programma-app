@@ -1,7 +1,7 @@
 {
   "name": "AI Coach",
   "short_name": "AI Coach",
-  "description": "Προσωπικός προπονητής και διαιτολόγος με AI",
+  "description": "Personal AI trainer and dietitian",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#101214",
