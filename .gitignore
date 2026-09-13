@@ -1,0 +1,17 @@
+# Dependencies / build output — never commit these
+node_modules/
+*.log
+
+# Signing keys — treat like passwords, never commit
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+*.p8
+
+# Xcode / Capacitor build artifacts
+ios-capacitor/ios/App/build/
+ios-capacitor/ios/App/Pods/
+ios-capacitor/ios/.xcode.env.local
+android-twa/build/
+android-twa/.gradle/

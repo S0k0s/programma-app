@@ -260,6 +260,10 @@
   .prefill-note{font-size:12px;color:var(--amber);margin:-6px 0 12px;}
   .select-field{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--text);
     border-radius:var(--radius-sm);padding:10px 12px;font-size:16px;margin:8px 0 12px;}
+  .manual-form{display:flex;flex-direction:column;}
+  .manual-form label{font-size:12px;color:var(--text-dim);font-weight:700;margin:10px 0 0;}
+  .manual-form label:first-child{margin-top:0;}
+  .manual-form select, .manual-form input{margin:4px 0 0;}
 
   /* ---------- progressive overload hint (inline, per exercise) ---------- */
   .overload-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
@@ -486,12 +490,53 @@
   <div class="onboard-wrap">
     <div class="brandmark" style="text-align:center;">AI Coach</div>
     <h1 data-i18n="onboard_title">Ας φτιάξουμε το πρόγραμμά σου</h1>
-    <div class="onboard-chat" id="onboardChat"></div>
-    <div class="onboard-inputrow">
-      <input id="onboardInput" type="text" data-i18n-placeholder="onboard_input_placeholder" placeholder="Γράψε την απάντησή σου…" aria-label="Απάντηση προς τον AI coach">
-      <button class="primary" id="onboardSendBtn" type="button" data-i18n="send">Στείλε</button>
+
+    <div id="onboardChatSection">
+      <div class="onboard-chat" id="onboardChat"></div>
+      <div class="onboard-inputrow">
+        <input id="onboardInput" type="text" data-i18n-placeholder="onboard_input_placeholder" placeholder="Γράψε την απάντησή σου…" aria-label="Απάντηση προς τον AI coach">
+        <button class="primary" id="onboardSendBtn" type="button" data-i18n="send">Στείλε</button>
+      </div>
+      <button class="dash-link" type="button" id="onboardSkipBtn" data-i18n="onboard_skip">Παράλειψη για τώρα (προεπιλεγμένο πρόγραμμα) →</button>
     </div>
-    <button class="dash-link" type="button" id="onboardSkipBtn" data-i18n="onboard_skip">Παράλειψη για τώρα (προεπιλεγμένο πρόγραμμα) →</button>
+
+    <div id="onboardManualSection" class="hidden">
+      <p class="sub" data-i18n="onboard_manual_desc" style="color:var(--text-dim);font-size:13px;margin-top:0;">We still need these to build your program and nutrition targets.</p>
+      <div class="manual-form">
+        <label data-i18n="onboard_manual_location">Where do you train?</label>
+        <select class="select-field" id="manualLocation"></select>
+
+        <label data-i18n="onboard_manual_goal">Goal</label>
+        <select class="select-field" id="manualGoal"></select>
+
+        <label data-i18n="onboard_manual_sex">Sex</label>
+        <select class="select-field" id="manualSex">
+          <option value="male" data-i18n="profile_male">Male</option>
+          <option value="female" data-i18n="profile_female">Female</option>
+        </select>
+
+        <label data-i18n="onboard_manual_age">Age</label>
+        <input class="select-field" type="number" id="manualAge" min="10" max="100" inputmode="numeric">
+
+        <label data-i18n="onboard_manual_height">Height (cm)</label>
+        <input class="select-field" type="number" id="manualHeight" min="100" max="230" inputmode="numeric">
+
+        <label data-i18n="onboard_manual_weight">Weight (kg)</label>
+        <input class="select-field" type="number" id="manualWeight" min="30" max="300" inputmode="numeric">
+
+        <label data-i18n="onboard_manual_activity">Activity level</label>
+        <select class="select-field" id="manualActivity"></select>
+
+        <label data-i18n="onboard_manual_days">Training days per week</label>
+        <input class="select-field" type="number" id="manualDays" min="1" max="7" inputmode="numeric">
+
+        <label data-i18n="onboard_manual_experience">Experience</label>
+        <select class="select-field" id="manualExperience"></select>
+      </div>
+      <div id="manualFormError" class="prefill-note hidden" style="color:var(--danger);"></div>
+      <button class="primary" type="button" id="manualSubmitBtn" data-i18n="onboard_manual_submit" style="width:100%;margin-top:14px;">Build my program</button>
+      <button class="dash-link" type="button" id="manualBackBtn" data-i18n="onboard_manual_back" style="margin-top:12px;">← Back to chat</button>
+    </div>
   </div>
 </div>
 
@@ -1019,7 +1064,13 @@ const I18N = {
     legal_body: LEGAL_BODY_EN,
     signout:'Sign out',
     onboard_title:"Let's build your program", onboard_input_placeholder:'Type your answer…',
-    send:'Send', onboard_skip:'Skip for now (default program) →',
+    send:'Send', onboard_skip:'Skip the chat — fill in your info instead →',
+    onboard_manual_desc:'We still need these to build your program and nutrition targets.',
+    onboard_manual_location:'Where do you train?', onboard_manual_goal:'Goal', onboard_manual_sex:'Sex',
+    onboard_manual_age:'Age', onboard_manual_height:'Height (cm)', onboard_manual_weight:'Weight (kg)',
+    onboard_manual_activity:'Activity level', onboard_manual_days:'Training days per week', onboard_manual_experience:'Experience',
+    onboard_manual_submit:'Build my program', onboard_manual_back:'← Back to chat',
+    onboard_manual_error:'Please fill in every field with a realistic value (age 10-100, height 100-230cm, weight 30-300kg, 1-7 days/week).',
     greet_morning:'Good morning', greet_afternoon:'Good afternoon', greet_evening:'Good evening',
     dash_hero_label:"Today's workout", dash_exercises:'Exercises', dash_continue:'→ Continue',
     dash_ai_preview_text:'Need an idea for your next meal, or a progress check?', dash_ask_coach:'Ask the Coach',
@@ -1089,6 +1140,7 @@ const I18N = {
     profile_verify_title:'Email verification',
     profile_verify_desc:'We sent a verification email to {email}. It’s not required to use the app, but you’ll need it to recover access.',
     profile_verify_resend:'Resend email', profile_verify_sending:'Sending…', profile_verify_sent:'Sent ✓', profile_verify_failed:'Failed — try again',
+    profile_verify_rate_limited:'Too many requests — wait a few minutes and try again',
     history_loading:'Loading…', history_no_workouts:'No workouts logged yet.',
     history_no_food:'No extra meals logged yet.',
     history_exercises_done:'exercises', history_entries_total:'{n} entries — {kcal} kcal total',
@@ -1434,7 +1486,7 @@ document.getElementById('deleteAccountBtn').addEventListener('click', async ()=>
     await deleteAllUserData(uid);
   }catch(e){
     console.error('account data delete failed', e);
-    await customAlert(t('delete_account_data_failed'));
+    await customAlert(`${t('delete_account_data_failed')}${e && e.code ? ` (${e.code})` : ''}`);
     return;
   }
   try{
@@ -1446,12 +1498,12 @@ document.getElementById('deleteAccountBtn').addEventListener('click', async ()=>
         await currentUser.delete();
       }catch(e2){
         console.error('reauth/delete failed', e2);
-        await customAlert(t('delete_account_reauth_failed'));
+        await customAlert(`${t('delete_account_reauth_failed')}${e2 && e2.code ? ` (${e2.code})` : ''}`);
         return;
       }
     } else {
       console.error('account delete failed', e);
-      await customAlert(t('delete_account_failed'));
+      await customAlert(`${t('delete_account_failed')}${e && e.code ? ` (${e.code})` : ''}`);
       return;
     }
   }
@@ -3485,9 +3537,59 @@ document.getElementById('onboardSendBtn').addEventListener('click', ()=>{
 document.getElementById('onboardInput').addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); document.getElementById('onboardSendBtn').click(); }
 });
-document.getElementById('onboardSkipBtn').addEventListener('click', async ()=>{
+// Populates a <select> from one of the {key: {el,en}} label dictionaries
+// (GOAL_LABELS, ACTIVITY_LABELS, etc.) — used by the manual onboarding
+// fallback below so its options always match the AI path's valid values.
+function populateSelectFromDict(select, dict){
+  select.innerHTML = Object.keys(dict).map(k=>`<option value="${k}">${escapeHtml(L(dict,k))}</option>`).join('');
+}
+populateSelectFromDict(document.getElementById('manualLocation'), LOCATION_LABELS);
+populateSelectFromDict(document.getElementById('manualGoal'), GOAL_LABELS);
+populateSelectFromDict(document.getElementById('manualActivity'), ACTIVITY_LABELS);
+populateSelectFromDict(document.getElementById('manualExperience'), EXPERIENCE_LABELS);
+
+// "Skip" no longer hands out a fake completed profile (it used to apply
+// defaultProfile(), which is really just one hardcoded person's own stats —
+// every skipping user would've seen that as if it were their own program).
+// It now just switches to a short manual form that collects the same
+// required fields the AI onboarding path collects, so every account's
+// program is always built from that account's own real numbers.
+document.getElementById('onboardSkipBtn').addEventListener('click', ()=>{
+  document.getElementById('onboardChatSection').classList.add('hidden');
+  document.getElementById('onboardManualSection').classList.remove('hidden');
+  document.getElementById('manualFormError').classList.add('hidden');
+});
+document.getElementById('manualBackBtn').addEventListener('click', ()=>{
+  document.getElementById('onboardManualSection').classList.add('hidden');
+  document.getElementById('onboardChatSection').classList.remove('hidden');
+});
+document.getElementById('manualSubmitBtn').addEventListener('click', async ()=>{
+  const age = Number(document.getElementById('manualAge').value);
+  const heightCm = Number(document.getElementById('manualHeight').value);
+  const weightKg = Number(document.getElementById('manualWeight').value);
+  const daysPerWeek = Number(document.getElementById('manualDays').value);
+  const errEl = document.getElementById('manualFormError');
+  const valid = age>=10 && age<=100 && heightCm>=100 && heightCm<=230 && weightKg>=30 && weightKg<=300 && daysPerWeek>=1 && daysPerWeek<=7;
+  if(!valid){
+    errEl.textContent = t('onboard_manual_error');
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
   const epochAtStart = authEpoch;
-  const profile = defaultProfile();
+  const profile = {
+    trainingLocation: document.getElementById('manualLocation').value,
+    goal: document.getElementById('manualGoal').value,
+    sex: document.getElementById('manualSex').value === 'female' ? 'female' : 'male',
+    age, heightCm, weightKg,
+    activityLevel: document.getElementById('manualActivity').value,
+    daysPerWeek,
+    experience: document.getElementById('manualExperience').value,
+    dietaryNotes:'', injuries:'',
+    onboardedAt: new Date().toISOString(),
+  };
+  profile.splitKey = chooseSplitKey(profile.daysPerWeek, profile.trainingLocation);
+  profile.targets = computeTargets(profile);
   try{ await storage.set('profile', JSON.stringify(profile)); }catch(e){ console.error(e); }
   if(authEpoch !== epochAtStart) return; // account changed while saving — don't apply it to whoever is signed in now
   applyProfile(profile);
@@ -3546,7 +3648,9 @@ function renderProfileTab(){
         e.target.textContent = t('profile_verify_sent');
       }catch(err){
         console.error('resend verification failed', err);
-        e.target.textContent = t('profile_verify_failed');
+        e.target.textContent = err && err.code === 'auth/too-many-requests'
+          ? t('profile_verify_rate_limited')
+          : `${t('profile_verify_failed')}${err && err.code ? ` (${err.code})` : ''}`;
         e.target.disabled = false;
       }
     });
