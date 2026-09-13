@@ -24,14 +24,27 @@ service cloud.firestore {
       allow delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
     }
 
+    // 'subscription', 'credits', 'onboarding-usage' and the daily
+    // 'ai-usage:*' counters are written only by the Cloudflare Worker, via a
+    // Firebase service-account credential that bypasses these rules
+    // entirely — never by the client. Otherwise a user could just set their
+    // own subscription to 'active', top up their own AI Coach credit
+    // balance, reset/inflate their own daily quota, or reset their bounded
+    // free-onboarding-message counter back to zero, straight from devtools.
+    function isServerOnlyDoc(docId) {
+      return docId == 'subscription' || docId == 'credits' || docId == 'onboarding-usage' || docId.matches('ai-usage:.*');
+    }
+
     // Per-user app data: locked to the owning uid AND requires an approved
     // access request — except the admin, who can also read/write/delete any
     // user's data directly (needed for the admin panel's "delete account"
     // moderation action, which wipes a target user's data via this same
     // client-side deleteAllUserData() the self-delete flow already uses).
     match /users/{userId}/data/{docId} {
-      allow read, write: if request.auth != null &&
-                          ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
+      allow read: if request.auth != null &&
+                  ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
+      allow write: if request.auth != null && !isServerOnlyDoc(docId) &&
+                   ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
     }
     // The (mostly unused) parent user doc — same admin-or-self rule, so the
     // best-effort `db.collection('users').doc(uid).delete()` cleanup call
