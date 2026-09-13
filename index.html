@@ -442,12 +442,12 @@
          doesn't want end users seeing; it's also unreliable on mobile
          Safari's popup-based flow). Email/password is the only sign-in
          method until that's revisited. -->
-    <button class="signin-btn" id="googleSignInBtn" type="button">
+    <button class="signin-btn hidden" id="googleSignInBtn" type="button">
       <svg viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.27-1.6 3.73-5.5 3.73-3.31 0-6.02-2.74-6.02-6.13S8.19 5.57 11.5 5.57c1.89 0 3.16.8 3.88 1.5l2.64-2.55C16.36 2.83 14.1 1.8 11.5 1.8 6.3 1.8 2.06 6.03 2.06 11.23S6.3 20.66 11.5 20.66c6.62 0 8.83-4.63 8.83-8.02 0-.54-.06-.95-.13-1.36H12z"/></svg>
       <span data-i18n="signin_google">Σύνδεση με Google</span>
     </button>
 
-    <div class="signin-divider"><span data-i18n="signin_or_email">ή με email</span></div>
+    <div class="signin-divider hidden"><span data-i18n="signin_or_email">ή με email</span></div>
 
     <form id="emailAuthForm" class="email-auth-form">
       <input type="email" id="emailAuthEmail" placeholder="Email" autocomplete="email" required>
