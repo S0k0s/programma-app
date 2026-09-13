@@ -43,7 +43,17 @@ service cloud.firestore {
     match /users/{userId}/data/{docId} {
       allow read: if request.auth != null &&
                   ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
-      allow write: if request.auth != null && !isServerOnlyDoc(docId) &&
+      // Server-only docs can never be *created or updated* by the client —
+      // that's the whole point of isServerOnlyDoc (see above). But deletion
+      // is different: it can only remove a doc, never fabricate a fake
+      // active/approved value, so it's safe to allow as part of the normal
+      // self-delete / admin-delete account cleanup below. Without this
+      // split, deleteAllUserData()'s batch delete fails outright (a single
+      // rejected op fails the whole batch) for any account that has ever
+      // used the AI Coach or subscribed — i.e. almost every real account.
+      allow create, update: if request.auth != null && !isServerOnlyDoc(docId) &&
+                   ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
+      allow delete: if request.auth != null &&
                    ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
     }
     // The (mostly unused) parent user doc — same admin-or-self rule, so the
