@@ -1629,6 +1629,73 @@ function chooseSplitKey(daysPerWeek, trainingLocation){
   return `${loc}_${base}`;
 }
 
+// ---------- per-profile personalization on top of the shared split templates ----------
+// chooseSplitKey only decides *which* template (days/week + location) a person
+// gets — six shared pools. Without this step, two people on the same split
+// would see byte-identical sets/reps regardless of experience, age or goal.
+// This nudges the shared template toward the individual every time it's
+// applied, so it stays in sync if any of those profile fields change later
+// (e.g. the AI Coach updates their experience level mid-conversation).
+//
+// Sex/gender is deliberately NOT used to fork exercise selection here — the
+// evidence-based difference by sex is in the *numbers* (see computeTargets'
+// BMR formula and the per-kg protein target), not in which exercises someone
+// is assigned. Using sex to hand out a different exercise list wouldn't be
+// personalization, just stereotyping without a physiological basis.
+function shiftRepRangeString(str, amount){
+  if(amount === 0 || typeof str !== 'string') return str;
+  if(/^\d+-\d+$/.test(str)){
+    const [a,b] = str.split('-').map(Number);
+    const na = Math.max(1, a+amount), nb = Math.max(na+1, b+amount);
+    return `${na}-${nb}`;
+  }
+  if(/^\d+$/.test(str)) return String(Math.max(1, Number(str)+amount));
+  return str; // leaves non-numeric reps (AMRAP-style, "σετ"/"set") untouched
+}
+function shiftReps(reps, amount){
+  if(amount === 0) return reps;
+  if(typeof reps === 'string') return shiftRepRangeString(reps, amount);
+  return { el: shiftRepRangeString(reps.el, amount), en: shiftRepRangeString(reps.en, amount) };
+}
+// Beginners: fewer sets (recoverability while learning form). Advanced:
+// extra set on every exercise (more volume — the standard progression lever
+// once technique is established). Intermediate: the template's own baseline.
+function personalizeSets(baseSets, experience){
+  if(experience === 'beginner') return Math.max(2, baseSets - 1);
+  if(experience === 'advanced') return Math.min(5, baseSets + 1);
+  return baseSets;
+}
+// Shifts rep ranges a bit higher (further from a one-rep-max effort) for
+// teens still building movement competency and for older lifters, where
+// moving away from very heavy low-rep work is a common, sensible default —
+// and for fat-loss/recomp goals, where slightly higher reps suit the
+// metabolic-work emphasis of that goal. This is a default nudge, not medical
+// advice — see the app's own medical disclaimer.
+function personalizeRepShift(profile){
+  let shift = 0;
+  if(profile.age && profile.age < 18) shift += 2;
+  if(profile.age && profile.age >= 55) shift += 2;
+  if(profile.goal === 'fat_loss' || profile.goal === 'recomp') shift += 2;
+  return shift;
+}
+function personalizeExercise(ex, profile){
+  const repShift = personalizeRepShift(profile);
+  return Object.assign({}, ex, {
+    sets: personalizeSets(ex.sets, profile.experience),
+    reps: shiftReps(ex.reps, repShift),
+  });
+}
+// Beginners also get a trimmed exercise count on longer days (drop the last
+// exercise — by convention in this catalog the more peripheral isolation
+// move) so their first program isn't as overwhelming as an advanced lifter's.
+function personalizeDay(day, profile){
+  let exercises = day.exercises.map(ex=>personalizeExercise(ex, profile));
+  if(profile.experience === 'beginner' && exercises.length > 4){
+    exercises = exercises.slice(0, -1);
+  }
+  return { label: day.label, sub: day.sub, exercises };
+}
+
 function computeTargets(p){
   const bmr = p.sex === 'female'
     ? (10*p.weightKg + 6.25*p.heightCm - 5*p.age - 161)
@@ -1700,11 +1767,16 @@ function applyProfile(profile){
   currentProfile = profile;
   const base = TEMPLATES[profile.splitKey] || TEMPLATES.gym_upperLower4;
   // Merge in any per-user exercise overrides the AI Coach applied (see
-  // applyExerciseUpdate) without mutating the shared TEMPLATES object.
+  // applyExerciseUpdate) without mutating the shared TEMPLATES object. A day
+  // without an override still isn't the raw shared template — personalizeDay
+  // adjusts sets/reps/exercise-count for this specific profile first, so two
+  // people on the same split (days/week + location) don't end up with an
+  // identical program. Custom (AI-picked) days are left as-is — those were
+  // already chosen deliberately for this person in a real conversation.
   DAYS = {};
   Object.keys(base).forEach(key=>{
     const custom = profile.customDays && profile.customDays[key];
-    DAYS[key] = custom ? { label: base[key].label, sub: base[key].sub, exercises: custom } : base[key];
+    DAYS[key] = custom ? { label: base[key].label, sub: base[key].sub, exercises: custom } : personalizeDay(base[key], profile);
   });
   currentDay = Object.keys(DAYS)[0];
   buildDayPicker();
