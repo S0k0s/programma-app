@@ -436,12 +436,18 @@
     <div class="brandmark">AI Coach</div>
     <h1 data-i18n="signin_title">Σύνδεση</h1>
     <p data-i18n="signin_subtitle">Συνδέσου για να βλέπεις το ίδιο ιστορικό προπόνησης και διατροφής σε κάθε συσκευή.</p>
-    <button class="signin-btn" id="googleSignInBtn" type="button">
+    <!-- Google sign-in is hidden for now (not removed — the OAuth consent
+         screen shows the raw gym-app-f99d6.firebaseapp.com Firebase domain
+         until a custom auth domain is set up, which the account owner
+         doesn't want end users seeing; it's also unreliable on mobile
+         Safari's popup-based flow). Email/password is the only sign-in
+         method until that's revisited. -->
+    <button class="signin-btn hidden" id="googleSignInBtn" type="button">
       <svg viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.27-1.6 3.73-5.5 3.73-3.31 0-6.02-2.74-6.02-6.13S8.19 5.57 11.5 5.57c1.89 0 3.16.8 3.88 1.5l2.64-2.55C16.36 2.83 14.1 1.8 11.5 1.8 6.3 1.8 2.06 6.03 2.06 11.23S6.3 20.66 11.5 20.66c6.62 0 8.83-4.63 8.83-8.02 0-.54-.06-.95-.13-1.36H12z"/></svg>
       <span data-i18n="signin_google">Σύνδεση με Google</span>
     </button>
 
-    <div class="signin-divider"><span data-i18n="signin_or_email">ή με email</span></div>
+    <div class="signin-divider hidden"><span data-i18n="signin_or_email">ή με email</span></div>
 
     <form id="emailAuthForm" class="email-auth-form">
       <input type="email" id="emailAuthEmail" placeholder="Email" autocomplete="email" required>
@@ -1166,6 +1172,10 @@ const I18N = {
     profile_verify_desc:'We sent a verification email to {email}. It’s not required to use the app, but you’ll need it to recover access.',
     profile_verify_resend:'Resend email', profile_verify_sending:'Sending…', profile_verify_sent:'Sent ✓', profile_verify_failed:'Failed — try again',
     profile_verify_rate_limited:'Too many requests — wait a few minutes and try again',
+    profile_add_password_title:'Add a password', profile_add_password_desc:'You signed in with Google. Add a password so you can still sign in — Google sign-in is currently hidden.',
+    profile_add_password_placeholder:'New password (8+ chars, upper, lower, digit, symbol)',
+    profile_add_password_btn:'Set password', profile_add_password_success:'Password set — you can now sign in with your email and this password.',
+    profile_add_password_error:'Something went wrong setting your password. Try again.',
     history_loading:'Loading…', history_no_workouts:'No workouts logged yet.',
     history_no_food:'No extra meals logged yet.',
     history_exercises_done:'exercises', history_entries_total:'{n} entries — {kcal} kcal total',
@@ -3668,7 +3678,19 @@ function renderProfileTab(){
   const tg = p.targets || {};
   const isPasswordAccount = !!(currentUser && currentUser.providerData && currentUser.providerData.some(pd=>pd.providerId==='password'));
   const needsVerification = isPasswordAccount && currentUser && !currentUser.emailVerified;
+  // Google sign-in is currently hidden in the sign-in card (see signin-gate)
+  // — anyone who originally signed up via Google has no other way back in,
+  // so offer to link a password credential onto their existing account
+  // (same uid, same data) rather than leaving them stranded.
+  const needsPassword = !isPasswordAccount;
   document.getElementById('profileSummary').innerHTML = `
+    ${needsPassword ? `
+    <div class="profile-block" style="border-color:var(--amber);">
+      <div class="stat-label">${t('profile_add_password_title')}</div>
+      <div style="font-size:12.5px;margin-top:4px;color:var(--text-dim);">${t('profile_add_password_desc')}</div>
+      <input type="password" id="newPasswordInput" class="modal-input" placeholder="${escapeHtml(t('profile_add_password_placeholder'))}" style="margin-top:8px;width:100%;">
+      <button class="ghost" type="button" id="addPasswordBtn" style="margin-top:8px;">${t('profile_add_password_btn')}</button>
+    </div>` : ''}
     ${needsVerification ? `
     <div class="profile-block" style="border-color:var(--amber);">
       <div class="stat-label">${t('profile_verify_title')}</div>
@@ -3698,6 +3720,26 @@ function renderProfileTab(){
       </div>
     </div>`;
 
+  if(needsPassword){
+    document.getElementById('addPasswordBtn').addEventListener('click', async (e)=>{
+      const pwInput = document.getElementById('newPasswordInput');
+      const password = pwInput.value;
+      const pwError = passwordStrengthError(password);
+      if(pwError){ await customAlert(pwError); return; }
+      e.target.disabled = true;
+      try{
+        const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+        await currentUser.linkWithCredential(cred);
+        pwInput.value = '';
+        await customAlert(t('profile_add_password_success'));
+        renderProfileTab();
+      }catch(err){
+        console.error('link password failed', err);
+        await customAlert(`${t('profile_add_password_error')}${err && err.code ? ` (${err.code})` : ''}`);
+        e.target.disabled = false;
+      }
+    });
+  }
   if(needsVerification){
     document.getElementById('resendVerificationBtn').addEventListener('click', async (e)=>{
       e.target.disabled = true;
