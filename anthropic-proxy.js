@@ -330,6 +330,13 @@ async function handleCreateCheckoutSession(body, cors, env) {
       customer_email: user.email || '',
       success_url: `${APP_URL}?upgrade=success`,
       cancel_url: `${APP_URL}?upgrade=cancel`,
+      // EU consumers get a 14-day right of withdrawal on distance purchases
+      // of digital services by default — since the subscription activates
+      // immediately, this checkbox is their express consent to that
+      // immediate performance and their acknowledgment that the right of
+      // withdrawal is lost once the service has been delivered.
+      'consent_collection[terms_of_service]': 'required',
+      'custom_text[terms_of_service_acceptance][message]': 'I agree to immediate activation of the subscription and understand I lose my 14-day right of withdrawal once it starts.',
     });
     return new Response(JSON.stringify({ url: session.url }), { status: 200, headers: { 'Content-Type': 'application/json', ...cors } });
   } catch (e) {
@@ -358,6 +365,10 @@ async function handleCreateCreditCheckoutSession(body, cors, env) {
       customer_email: user.email || '',
       success_url: `${APP_URL}?credits=success`,
       cancel_url: `${APP_URL}?credits=cancel`,
+      // See the matching comment in handleCreateCheckoutSession above — same
+      // EU withdrawal-right consent, for the one-time message pack.
+      'consent_collection[terms_of_service]': 'required',
+      'custom_text[terms_of_service_acceptance][message]': 'I agree to immediate delivery of these messages and understand I lose my 14-day right of withdrawal once they are credited.',
     });
     return new Response(JSON.stringify({ url: session.url }), { status: 200, headers: { 'Content-Type': 'application/json', ...cors } });
   } catch (e) {

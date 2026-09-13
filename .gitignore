@@ -1,6 +1,7 @@
 # Dependencies / build output — never commit these
 node_modules/
 *.log
+.DS_Store
 
 # Signing keys — treat like passwords, never commit
 *.keystore
