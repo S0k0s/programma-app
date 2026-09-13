@@ -1547,6 +1547,9 @@ auth.onAuthStateChanged(user=>{
   document.getElementById('accessTitle').textContent = t('access_checking');
   document.getElementById('accessMsg').textContent = '';
   watchAccess(user);
+  // Lightweight "last seen" signal for the admin dashboard — just a
+  // timestamp on each session start, not a full activity log.
+  storage.set('last-active', JSON.stringify({ at: Date.now() })).catch(()=>{});
 });
 
 function watchAccess(user){

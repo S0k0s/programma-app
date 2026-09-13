@@ -388,12 +388,22 @@ function mapStripeStatus(stripeStatus) {
   return (stripeStatus === 'active' || stripeStatus === 'trialing') ? 'active' : 'canceled';
 }
 
+// Newer Stripe API versions dropped current_period_end/start from the
+// top-level Subscription object (flexible billing mode moved them onto each
+// subscription item instead) — read whichever location the active API
+// version actually populates, so this keeps working across the migration.
+function subscriptionCurrentPeriodEnd(stripeSub) {
+  if (stripeSub.current_period_end) return stripeSub.current_period_end;
+  const item = stripeSub.items && stripeSub.items.data && stripeSub.items.data[0];
+  return item ? item.current_period_end : undefined;
+}
+
 async function upsertSubscriptionFromStripeSubscription(accessToken, uid, stripeSub) {
   await firestoreSetUserDoc(accessToken, uid, 'subscription', {
     status: mapStripeStatus(stripeSub.status),
     stripeCustomerId: stripeSub.customer,
     stripeSubscriptionId: stripeSub.id,
-    currentPeriodEnd: stripeSub.current_period_end,
+    currentPeriodEnd: subscriptionCurrentPeriodEnd(stripeSub),
     updatedAt: Math.floor(Date.now() / 1000),
   });
   await setStripeCustomerUid(accessToken, stripeSub.customer, uid);

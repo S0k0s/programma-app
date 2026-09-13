@@ -11,27 +11,38 @@
 <script src="firebase-config.js"></script>
 <style>
   :root{ --bg:#101214; --surface:#191D20; --surface2:#20262A; --line:#272d31; --text:#F4F5EE;
-    --text-dim:#8E9795; --lime:#C7F36B; --danger:#F08270; --success:#82D69B; }
+    --text-dim:#8E9795; --lime:#C7F36B; --danger:#F08270; --success:#82D69B; --amber:#D9A441; }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,'Inter',sans-serif;}
-  .wrap{max-width:640px;margin:0 auto;padding:32px 20px 60px;}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 20px 60px;}
   h1{font-size:20px;margin:0 0 4px;}
-  .sub{color:var(--text-dim);font-size:13px;margin:0 0 28px;}
+  .sub{color:var(--text-dim);font-size:13px;margin:0 0 20px;}
   button{font-family:inherit;cursor:pointer;border-radius:99px;padding:10px 18px;font-size:14px;font-weight:700;}
   .primary{background:var(--lime);color:#101214;border:none;}
   .ghost{background:none;border:1px solid var(--line);color:var(--text);}
   .danger{color:var(--danger);border-color:var(--danger);background:none;}
-  .row{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
-  .row .email{font-weight:700;font-size:14px;}
-  .row .status{font-size:12px;color:var(--text-dim);margin-top:2px;}
-  .row .status.active{color:var(--success);}
-  .row .status.revoked{color:var(--danger);}
-  .row .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-  .row .actions button{padding:7px 14px;font-size:12.5px;}
   #gate, #denied{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
   #denied{display:none;}
   #panel{display:none;}
   .empty{color:var(--text-dim);font-size:13px;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+  .toolbar .ghost{padding:8px 14px;font-size:12.5px;}
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap;}
+  th{text-align:left;color:var(--text-dim);font-weight:600;font-size:11px;letter-spacing:.3px;text-transform:uppercase;
+    padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface2);}
+  td{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .name{font-weight:700;}
+  .email{color:var(--text-dim);font-size:12px;margin-top:1px;}
+  .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;}
+  .pill.active{background:rgba(130,214,155,.14);color:var(--success);}
+  .pill.revoked{background:rgba(240,130,112,.14);color:var(--danger);}
+  .pill.pro{background:rgba(217,164,65,.14);color:var(--amber);}
+  .pill.free{background:var(--surface2);color:var(--text-dim);}
+  .muted{color:var(--text-dim);}
+  .actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .actions button{padding:6px 12px;font-size:12px;}
 </style>
 </head>
 <body>
@@ -48,10 +59,17 @@
   </div>
 
   <div id="panel">
-    <h1>Users</h1>
-    <p class="sub">Revoke or restore access, or permanently delete an account.</p>
+    <div class="toolbar">
+      <div>
+        <h1>Users</h1>
+        <p class="sub" style="margin-bottom:0;">Overview, plan, activity, and AI Coach usage — click Refresh to reload the stat columns.</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="ghost" id="refreshBtn">Refresh stats</button>
+        <button class="ghost" id="signOutBtn">Sign out</button>
+      </div>
+    </div>
     <div id="userList"><div class="empty">Loading…</div></div>
-    <button class="ghost" id="signOutBtn" style="margin-top:24px;">Sign out</button>
   </div>
 </div>
 
@@ -65,6 +83,24 @@ const WORKER_URL = 'https://programma-ai.sokratispoun.workers.dev';
 function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function utcDateKey(d){ return (d||new Date()).toISOString().slice(0,10); }
+function formatDate(ts){
+  if(!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-US', {year:'numeric', month:'short', day:'numeric'});
+}
+function formatRelative(ms){
+  if(!ms) return 'Never';
+  const diff = Date.now() - ms;
+  const min = Math.floor(diff/60000);
+  if(min < 1) return 'Just now';
+  if(min < 60) return min+'m ago';
+  const hr = Math.floor(min/60);
+  if(hr < 24) return hr+'h ago';
+  const day = Math.floor(hr/24);
+  if(day < 30) return day+'d ago';
+  return formatDate(ms);
+}
 
 document.getElementById('signInBtn').addEventListener('click', ()=>{
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>console.error(e));
@@ -74,6 +110,7 @@ document.getElementById('signOutBtnDenied').addEventListener('click', ()=>auth.s
 
 let currentUser = null;
 let usersUnsub = null;
+let latestAccessDocs = [];
 
 auth.onAuthStateChanged(user=>{
   currentUser = user;
@@ -93,6 +130,8 @@ auth.onAuthStateChanged(user=>{
   document.getElementById('panel').style.display = 'block';
   watchUserList();
 });
+
+document.getElementById('refreshBtn').addEventListener('click', ()=>renderTable(latestAccessDocs));
 
 // Same users/{uid}/data cleanup the self-service delete flow uses —
 // Firestore rules let the admin act on any uid, not just their own.
@@ -145,41 +184,112 @@ async function adminDeleteUser(uid, btn){
   // (deleted as part of deleteAllUserData) — nothing else to refresh here.
 }
 
+// Surface-level per-user stats for the dashboard — plan, sign-up already
+// comes from the access doc; this fills in subscription/credits/AI usage,
+// each a best-effort read (a missing doc just means "no data yet", not an
+// error). The lifetime AI-message total isn't stored as one number anywhere
+// (see anthropic-proxy.js's daily ai-usage:* docs) — it's summed here from
+// every 'ai-usage:*' doc via a document-ID range query, since those ids all
+// share that prefix and sort lexicographically right after it.
+async function loadUserStats(uid){
+  const dataCol = db.collection('users').doc(uid).collection('data');
+  const [subSnap, creditsSnap, lastActiveSnap, usageSnap] = await Promise.all([
+    dataCol.doc('subscription').get().catch(()=>null),
+    dataCol.doc('credits').get().catch(()=>null),
+    dataCol.doc('last-active').get().catch(()=>null),
+    dataCol.where(firebase.firestore.FieldPath.documentId(), '>=', 'ai-usage:')
+           .where(firebase.firestore.FieldPath.documentId(), '<', 'ai-usage:~')
+           .get().catch(()=>null),
+  ]);
+  const sub = subSnap && subSnap.exists ? subSnap.data() : null;
+  const isPro = !!(sub && sub.status === 'active' && sub.currentPeriodEnd && sub.currentPeriodEnd*1000 > Date.now());
+  const credits = creditsSnap && creditsSnap.exists ? (creditsSnap.data().balance || 0) : 0;
+  const lastActiveAt = lastActiveSnap && lastActiveSnap.exists ? lastActiveSnap.data().at : null;
+  let todayCount = 0, totalCount = 0;
+  if(usageSnap){
+    const todayId = 'ai-usage:' + utcDateKey();
+    usageSnap.forEach(d=>{
+      const c = (d.data().count) || 0;
+      totalCount += c;
+      if(d.id === todayId) todayCount = c;
+    });
+  }
+  return { isPro, credits, lastActiveAt, todayCount, totalCount, periodEnd: sub && sub.currentPeriodEnd };
+}
+
 function watchUserList(){
   if(usersUnsub) return;
   usersUnsub = db.collection('access').onSnapshot(snap=>{
-    const el = document.getElementById('userList');
-    if(snap.empty){ el.innerHTML = '<div class="empty">No users yet.</div>'; return; }
-    el.innerHTML = '';
+    const docs = [];
     snap.forEach(doc=>{
       if(doc.id === (currentUser && currentUser.uid)) return; // don't let the admin ban themselves
+      docs.push(doc);
+    });
+    latestAccessDocs = docs;
+    renderTable(docs);
+  }, err=>console.error('user list watch error', err));
+}
+
+function renderTable(docs){
+  const el = document.getElementById('userList');
+  if(!docs.length){ el.innerHTML = '<div class="empty">No users yet.</div>'; return; }
+  el.innerHTML = `<div class="table-scroll"><table>
+    <thead><tr>
+      <th>Member</th><th>Access</th><th>Plan</th><th>Signed up</th><th>Last active</th><th>AI msgs (today / total)</th><th></th>
+    </tr></thead>
+    <tbody>${docs.map(doc=>{
       const d = doc.data();
       const denied = d.status === 'denied';
-      const row = document.createElement('div');
-      row.className = 'row';
-      row.innerHTML = `<div class="email">${escapeHtml(d.name || d.email || doc.id)}</div>
-        <div class="status ${denied?'revoked':'active'}">${escapeHtml(d.email||'')} · ${denied?'No access':'Active'}</div>
-        <div class="actions">
-          ${denied
-            ? `<button class="primary" type="button" data-approve="${doc.id}">Restore access</button>`
-            : `<button class="ghost" type="button" data-deny="${doc.id}">Revoke access</button>`}
-          <button class="danger" type="button" data-delete="${doc.id}">Delete account</button>
-        </div>`;
-      el.appendChild(row);
+      return `<tr data-uid="${escapeHtml(doc.id)}">
+        <td><div class="name">${escapeHtml(d.name || d.email || doc.id)}</div><div class="email">${escapeHtml(d.email||'')}</div></td>
+        <td><span class="pill ${denied?'revoked':'active'}">${denied?'No access':'Active'}</span></td>
+        <td class="stat-plan muted">…</td>
+        <td>${formatDate(d.requestedAt)}</td>
+        <td class="stat-active muted">…</td>
+        <td class="stat-ai muted">…</td>
+        <td>
+          <div class="actions">
+            ${denied
+              ? `<button class="primary" type="button" data-approve="${escapeHtml(doc.id)}">Restore</button>`
+              : `<button class="ghost" type="button" data-deny="${escapeHtml(doc.id)}">Revoke</button>`}
+            <button class="danger" type="button" data-delete="${escapeHtml(doc.id)}">Delete</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+
+  el.querySelectorAll('[data-approve]').forEach(b=>{
+    b.addEventListener('click', ()=>db.collection('access').doc(b.dataset.approve).update({status:'approved'}).catch(e=>console.error(e)));
+  });
+  el.querySelectorAll('[data-deny]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      if(!confirm('This user will lose access to the app. Continue?')) return;
+      db.collection('access').doc(b.dataset.deny).update({status:'denied'}).catch(e=>console.error(e));
     });
-    el.querySelectorAll('[data-approve]').forEach(b=>{
-      b.addEventListener('click', ()=>db.collection('access').doc(b.dataset.approve).update({status:'approved'}).catch(e=>console.error(e)));
-    });
-    el.querySelectorAll('[data-deny]').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        if(!confirm('This user will lose access to the app. Continue?')) return;
-        db.collection('access').doc(b.dataset.deny).update({status:'denied'}).catch(e=>console.error(e));
-      });
-    });
-    el.querySelectorAll('[data-delete]').forEach(b=>{
-      b.addEventListener('click', ()=>adminDeleteUser(b.dataset.delete, b));
-    });
-  }, err=>console.error('user list watch error', err));
+  });
+  el.querySelectorAll('[data-delete]').forEach(b=>{
+    b.addEventListener('click', ()=>adminDeleteUser(b.dataset.delete, b));
+  });
+
+  // Stat columns load separately (several reads per user) so the access
+  // list itself never waits on them, and one user's slow/failed read
+  // doesn't hold up anyone else's row.
+  docs.forEach(doc=>{
+    const row = el.querySelector(`tr[data-uid="${CSS.escape(doc.id)}"]`);
+    if(!row) return;
+    loadUserStats(doc.id).then(stats=>{
+      const planCell = row.querySelector('.stat-plan');
+      planCell.className = 'stat-plan';
+      planCell.innerHTML = stats.isPro
+        ? `<span class="pill pro">Pro</span>`
+        : `<span class="pill free">Free</span>${stats.credits>0 ? ` <span class="muted">+${stats.credits} credits</span>` : ''}`;
+      row.querySelector('.stat-active').textContent = formatRelative(stats.lastActiveAt);
+      row.querySelector('.stat-active').classList.remove('muted');
+      row.querySelector('.stat-ai').textContent = `${stats.todayCount} / ${stats.totalCount}`;
+      row.querySelector('.stat-ai').classList.remove('muted');
+    }).catch(e=>console.error('stats load failed for', doc.id, e));
+  });
 }
 </script>
 </body>
