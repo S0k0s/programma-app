@@ -328,8 +328,15 @@
   button.ghost:hover{border-color:var(--lime);color:var(--accent);}
 
   /* ---------- sign-in / access / onboarding gates ---------- */
-  .gate{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;
-    justify-content:center;padding:24px;overflow-y:auto;}
+  /* align-items:flex-start (not center) is deliberate: centering a flex
+     item taller than its fixed-position container clips it symmetrically
+     top-and-bottom on iOS Safari, and touch-scrolling can't reach the
+     clipped top portion at all — a real, reproduced bug on the manual
+     onboarding form, not just a theoretical one. Top-aligning plus
+     overflow-y:auto lets content simply grow downward and scroll normally
+     regardless of height, including with the on-screen keyboard open. */
+  .gate{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:flex-start;
+    justify-content:center;padding:24px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
   .gate.hidden{display:none;}
   .signin-card{max-width:340px;text-align:center;}
   .signin-card .brandmark{font-size:11px;letter-spacing:3px;color:var(--text-dim);font-weight:700;margin-bottom:10px;}
@@ -1574,6 +1581,20 @@ let handlingPasswordReset = false;
   });
 })();
 
+// Store listings (Google Play, Apple App Store) need a Privacy Policy URL
+// that works standalone, without signing in first — this is that URL
+// (index.html?legal=1). It reuses the same legal-gate view shown from the
+// sign-in screen, just reachable independently of auth state.
+let showingStandaloneLegal = false;
+(function checkForStandaloneLegalLink(){
+  if(new URLSearchParams(location.search).get('legal') !== '1') return;
+  showingStandaloneLegal = true;
+  showGate('legal-gate');
+  document.getElementById('legal-gate').scrollTop = 0;
+  const backBtn = document.getElementById('legalBackBtn');
+  if(backBtn) backBtn.classList.add('hidden');
+})();
+
 let accessUnsub = null;
 
 // Bumped on every real auth transition (sign-in, sign-out, account switch).
@@ -1590,7 +1611,7 @@ auth.onAuthStateChanged(user=>{
   authEpoch++;
   currentUser = user;
   if(accessUnsub){ accessUnsub(); accessUnsub = null; }
-  if(handlingPasswordReset) return;
+  if(handlingPasswordReset || showingStandaloneLegal) return;
   if(!user){
     signOutCleanup();
     showGate('signin-gate');
