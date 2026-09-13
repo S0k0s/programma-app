@@ -22,13 +22,32 @@
     --line:#272d31;
     --text:#F4F5EE;
     --text-dim:#8E9795;
+    --text-soft:#d9d4c8;
     --lime:#C7F36B;
+    --accent:#C7F36B;
     --amber:#D9A441;
     --success:#82D69B;
     --danger:#F08270;
+    --danger-text:#f0c9c2;
     --radius-lg:20px;
     --radius-md:14px;
     --radius-sm:10px;
+  }
+  /* Light theme — same tokens, different values. --lime (button/progress
+     FILLS, always paired with hardcoded dark text) is left unchanged so
+     those buttons keep working; --accent is the theme-aware token for
+     lime used as bare TEXT (nav highlight, links) where a pale lime would
+     be unreadable on a white surface. */
+  :root[data-theme="light"]{
+    --bg:#F3F4EE;
+    --surface:#FFFFFF;
+    --surface2:#EDEFE6;
+    --line:#DCDFD3;
+    --text:#15181A;
+    --text-dim:#5B625E;
+    --text-soft:#4A4F49;
+    --accent:#4C7A1A;
+    --danger-text:#8a2e22;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
@@ -48,9 +67,9 @@
   .screen-header-row .screen-header{margin-bottom:0;}
   .profile-shortcut-btn{background:none;border:none;cursor:pointer;padding:0;flex:none;}
   .backlink{display:inline-flex;align-items:center;gap:4px;color:var(--text-dim);font-size:12.5px;background:none;border:none;cursor:pointer;margin-bottom:10px;padding:4px 0;}
-  .backlink:hover{color:var(--lime);}
+  .backlink:hover{color:var(--accent);}
   .dash-link{display:inline-flex;align-items:center;gap:4px;color:var(--text-dim);font-size:12.5px;background:none;border:none;cursor:pointer;padding:6px 0;}
-  .dash-link:hover{color:var(--lime);}
+  .dash-link:hover{color:var(--accent);}
 
   /* ---------- bottom nav ---------- */
   .bottomnav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
@@ -62,7 +81,7 @@
   .navbtn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;
     color:var(--text-dim);font-size:10.5px;font-weight:600;padding:6px 10px;cursor:pointer;border-radius:10px;}
   .navbtn svg{width:22px;height:22px;}
-  .navbtn.active{color:var(--lime);}
+  .navbtn.active{color:var(--accent);}
   @media(min-width:900px){
     .navbtn{flex-direction:row;font-size:13px;padding:9px 16px;}
     .navbtn.active{background:var(--surface2);}
@@ -164,7 +183,7 @@
   .daypicker button .lbl{display:block;font-weight:800;font-size:14px;}
   .daypicker button .sub{display:block;font-size:11px;color:var(--text-dim);margin-top:3px;}
   .daypicker button.active{border-color:var(--lime);background:var(--surface2);}
-  .daypicker button.active .lbl{color:var(--lime);}
+  .daypicker button.active .lbl{color:var(--accent);}
   .daypicker button .donebadge{position:absolute;top:10px;right:12px;color:var(--success);font-size:13px;}
 
   .exercise-card{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);
@@ -193,6 +212,9 @@
   .weight-trend.up{color:var(--success);}
   .weight-trend.down{color:var(--danger);}
   .weight-prev-avg{font-size:11px;color:var(--text-dim);opacity:.8;}
+  .pr-badge{font-size:11px;font-weight:800;color:var(--amber);}
+  .pr-badge.pr-new{color:var(--success);animation:pr-pop .4s ease;}
+  @keyframes pr-pop{0%{transform:scale(1);}40%{transform:scale(1.25);}100%{transform:scale(1);}}
 
   .finishbar{position:sticky;bottom:70px;background:var(--bg);padding-top:10px;margin-top:4px;
     display:flex;justify-content:space-between;align-items:center;gap:12px;}
@@ -216,7 +238,7 @@
   .mealtab .title{font-weight:700;font-size:14px;}
   .mealtab .goal{font-size:11px;color:var(--text-dim);margin-top:2px;}
   .mealoptions{list-style:none;margin:10px 0 0;padding:0;}
-  .mealoptions li{font-size:13px;line-height:1.5;padding:6px 0;border-top:1px solid var(--line);color:#d9d4c8;}
+  .mealoptions li{font-size:13px;line-height:1.5;padding:6px 0;border-top:1px solid var(--line);color:var(--text-soft);}
   .mealoptions li:first-child{border-top:none;}
 
   .logform{display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);
@@ -251,12 +273,12 @@
     border-radius:var(--radius-md);padding:12px;font-size:13px;min-height:60px;resize:vertical;}
   .airesponse{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--lime);
     border-radius:var(--radius-md);padding:14px;margin-top:12px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;}
-  .airesponse.error{border-left-color:var(--danger);color:#f0c9c2;}
+  .airesponse.error{border-left-color:var(--danger);color:var(--danger-text);}
   .loading{color:var(--text-dim);font-size:13px;font-style:italic;}
   .suggbtns{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;}
   button.ghost{background:var(--surface);border:1px solid var(--line);color:var(--text);font-size:12px;
     padding:9px 13px;border-radius:99px;cursor:pointer;}
-  button.ghost:hover{border-color:var(--lime);color:var(--lime);}
+  button.ghost:hover{border-color:var(--lime);color:var(--accent);}
 
   /* ---------- sign-in / access / onboarding gates ---------- */
   .gate{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;
@@ -281,12 +303,12 @@
     border-radius:var(--radius-sm);padding:11px 13px;font-size:16px;width:100%;}
   .email-auth-btns{display:flex;gap:8px;margin-top:2px;}
   .email-auth-btns button{flex:1;}
-  .linklike{background:none;border:none;color:var(--lime);cursor:pointer;padding:0;font-size:inherit;font-family:inherit;text-decoration:underline;}
+  .linklike{background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-size:inherit;font-family:inherit;text-decoration:underline;}
   .legal-disclaimer{font-size:11px;color:var(--text-dim);margin-top:16px;line-height:1.5;}
   .legal-content{max-width:520px;width:100%;margin:0 auto;text-align:left;padding:0 4px 40px;}
   .legal-content h1{font-family:'Manrope',sans-serif;font-size:22px;font-weight:800;margin:14px 0 2px;}
   .legal-updated{font-size:12px;color:var(--text-dim);margin:0 0 20px;}
-  .legal-text{font-size:13px;line-height:1.65;color:#d9d4c8;}
+  .legal-text{font-size:13px;line-height:1.65;color:var(--text-soft);}
   .legal-text h2{color:var(--text);font-size:14.5px;font-weight:800;margin:22px 0 6px;}
   .legal-text h2:first-child{margin-top:0;}
   .legal-text p{margin:0 0 4px;}
@@ -298,7 +320,7 @@
     border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;display:flex;flex-direction:column;gap:10px;}
   .msg{max-width:85%;padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;}
   .msg.assistant{align-self:flex-start;background:var(--surface2);border:1px solid var(--line);border-bottom-left-radius:4px;}
-  .msg.assistant.error{border-color:var(--danger);color:#f0c9c2;}
+  .msg.assistant.error{border-color:var(--danger);color:var(--danger-text);}
   .msg.assistant.loading{color:var(--text-dim);font-style:italic;}
   .msg.user{align-self:flex-end;background:var(--lime);color:#101214;font-weight:600;border-bottom-right-radius:4px;}
   .onboard-inputrow{display:flex;gap:8px;margin-top:12px;}
@@ -316,6 +338,15 @@
 
   /* ---------- profile / admin ---------- */
   .profile-block{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;}
+  .training-tips{margin-top:16px;}
+  .training-tips .tip-title{font-size:12px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+  .training-tips .tip-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-size:12.5px;line-height:1.5;}
+  .training-tips .tip-row:last-child{margin-bottom:0;}
+  .training-tips .tip-row .tip-icon{flex:none;width:18px;text-align:center;}
+  .training-tips .tip-row b{color:var(--text);}
+  .training-tips .tip-row span{color:var(--text-dim);}
+  .overload-tip{margin-top:10px;font-size:12px;color:var(--text-dim);background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 12px;}
 
   /* ---------- custom modal (replaces native confirm/prompt/alert) ---------- */
   .modal-overlay{position:fixed;inset:0;background:rgba(16,18,20,.78);z-index:300;
@@ -331,19 +362,26 @@
   .modal-btns .danger-btn{color:var(--danger)!important;border-color:var(--danger)!important;background:transparent!important;}
 
   /* ---------- language switcher ---------- */
-  .lang-switch{display:inline-flex;border:1px solid var(--line);border-radius:99px;padding:2px;margin-bottom:18px;}
-  .lang-switch button{background:none;border:none;color:var(--text-dim);font-size:12px;font-weight:700;
+  .lang-switch,.theme-switch{display:inline-flex;border:1px solid var(--line);border-radius:99px;padding:2px;margin-bottom:18px;}
+  .lang-switch button,.theme-switch button{background:none;border:none;color:var(--text-dim);font-size:12px;font-weight:700;
     padding:6px 14px;border-radius:99px;cursor:pointer;}
-  .lang-switch button.active{background:var(--surface2);color:var(--lime);}
+  .lang-switch button.active,.theme-switch button.active{background:var(--surface2);color:var(--accent);}
+  .switch-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 </style>
 </head>
 <body>
 
 <div id="signin-gate" class="gate">
   <div class="signin-card">
-    <div class="lang-switch" id="langSwitchSignin">
-      <button type="button" data-lang="el">ΕΛ</button>
-      <button type="button" data-lang="en">EN</button>
+    <div class="switch-row" style="margin-bottom:18px;justify-content:center;">
+      <div class="lang-switch" id="langSwitchSignin" style="margin-bottom:0;">
+        <button type="button" data-lang="el">ΕΛ</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <div class="theme-switch" id="themeSwitchSignin" style="margin-bottom:0;">
+        <button type="button" data-theme="dark">🌙</button>
+        <button type="button" data-theme="light">☀️</button>
+      </div>
     </div>
     <div class="brandmark">AI Coach</div>
     <h1 data-i18n="signin_title">Σύνδεση</h1>
@@ -497,6 +535,8 @@
       <div class="progress" id="progressLabel"></div>
       <button class="primary" id="finishBtn" data-i18n="training_finish">Ολοκλήρωση προπόνησης</button>
     </div>
+    <div class="overload-tip hidden" id="overloadTip"></div>
+    <div class="profile-block training-tips" id="trainingTips"></div>
   </section>
 
   <!-- NUTRITION -->
@@ -577,9 +617,15 @@
   <section id="tab-profile">
     <button class="backlink" type="button" id="profileBackBtn" data-i18n="history_back">← Πίσω στην Αρχική</button>
     <div class="screen-header" data-i18n="profile_title">Προφίλ</div>
-    <div class="lang-switch" id="langSwitchProfile" style="margin-bottom:16px;">
-      <button type="button" data-lang="el">ΕΛ</button>
-      <button type="button" data-lang="en">EN</button>
+    <div class="switch-row" style="margin-bottom:16px;">
+      <div class="lang-switch" id="langSwitchProfile" style="margin-bottom:0;">
+        <button type="button" data-lang="el">ΕΛ</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <div class="theme-switch" id="themeSwitchProfile" style="margin-bottom:0;">
+        <button type="button" data-theme="dark">🌙</button>
+        <button type="button" data-theme="light">☀️</button>
+      </div>
     </div>
     <div id="profileSummary"></div>
     <button class="dash-link" type="button" id="redoOnboardingBtn" data-i18n="profile_redo">Ξαναρώτησε το AI Coach για νέο πρόγραμμα →</button>
@@ -802,6 +848,11 @@ const I18N = {
     rest_label:'Διάλειμμα', completed_tag:'Ολοκληρώθηκε', complete_exercise_aria:'Ολοκλήρωση', weight_label:'Κιλά',
     weight_prev_month_avg:'μ.ό. προηγ. μήνα: {avg}kg',
     nutrition_supplements:'Συμπληρώματα: whey 1-2 μεζούρες/ημέρα · κρεατίνη μονοϋδρική 5g/ημέρα (χωρίς φόρτωση)',
+    tips_title:'Συμβουλές προπόνησης',
+    tips_warmup_label:'Προθέρμανση', tips_warmup_text:'5-10′ ελαφρύ cardio + δυναμικές διατάσεις, μετά 1-2 προθερμαντικά σετ με μικρότερο βάρος στην πρώτη άσκηση.',
+    tips_cardio_label:'Cardio',
+    tips_deload_label:'Ξεκούραση', tips_deload_text:'Κάθε 6-8 εβδομάδες συνεχούς προπόνησης, μπες σε μια πιο ελαφριά εβδομάδα (λιγότερο βάρος/όγκος) για να αποφύγεις υπερκόπωση.',
+    overload_tip:'💪 Τα πήγες όλα σήμερα! Αν σου φάνηκαν εύκολα, δοκίμασε λίγο παραπάνω βάρος (+2.5-5%) στις ίδιες ασκήσεις την επόμενη φορά.',
     nutrition_extra_link:'Καταγραφή έξτρα φαγητού →',
     extra_back:'← Πίσω στη Διατροφή', extra_title:'Έξτρα φαγητό',
     extra_name_placeholder:'Τι έφαγες (π.χ. protein bar)', extra_name_aria:'Όνομα τροφίμου',
@@ -911,6 +962,11 @@ const I18N = {
     rest_label:'Rest', completed_tag:'Completed', complete_exercise_aria:'Complete', weight_label:'Weight',
     weight_prev_month_avg:'last month avg: {avg}kg',
     nutrition_supplements:'Supplements: whey 1-2 scoops/day · creatine monohydrate 5g/day (no loading)',
+    tips_title:'Training tips',
+    tips_warmup_label:'Warm-up', tips_warmup_text:'5-10′ light cardio + dynamic stretching, then 1-2 warm-up sets with a lighter weight on the first exercise.',
+    tips_cardio_label:'Cardio',
+    tips_deload_label:'Deload', tips_deload_text:'Every 6-8 weeks of continuous training, take a lighter week (less weight/volume) to avoid overtraining.',
+    overload_tip:'💪 You completed everything today! If it felt easy, try a bit more weight (+2.5-5%) on the same exercises next time.',
     nutrition_extra_link:'Log extra food →',
     extra_back:'← Back to Nutrition', extra_title:'Extra food',
     extra_name_placeholder:'What did you eat (e.g. protein bar)', extra_name_aria:'Food name',
@@ -1039,6 +1095,27 @@ function setLang(newLang){
 document.querySelectorAll('.lang-switch').forEach(sw=>{
   sw.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>setLang(b.dataset.lang)));
 });
+
+// ---------- theme (dark default, light opt-in) ----------
+let theme = localStorage.getItem('theme') === 'light' ? 'light' : 'dark';
+function applyThemeSwitchUI(){
+  document.querySelectorAll('.theme-switch button').forEach(b=>b.classList.toggle('active', b.dataset.theme===theme));
+}
+function applyTheme(){
+  document.documentElement.dataset.theme = theme;
+  applyThemeSwitchUI();
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', theme === 'light' ? '#F3F4EE' : '#101214');
+}
+function setTheme(newTheme){
+  theme = newTheme === 'light' ? 'light' : 'dark';
+  localStorage.setItem('theme', theme);
+  applyTheme();
+}
+document.querySelectorAll('.theme-switch').forEach(sw=>{
+  sw.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>setTheme(b.dataset.theme)));
+});
+applyTheme();
 // The legal-disclaimer / signin-legal text embeds the "Terms" button as raw
 // HTML (data-i18n-html), so its click listener is delegated here instead of
 // bound directly — the button element itself gets replaced on every
@@ -1200,6 +1277,7 @@ function signOutCleanup(){
   checkedState = {};
   exerciseWeights = {};
   exerciseWeightHistory = {};
+  personalRecords = {};
   // Clear the in-memory AI chat too, so a tab left open on the AI Coach
   // across a sign-out doesn't keep showing the previous account's messages.
   aiMessages = [];
@@ -1696,6 +1774,12 @@ function personalizeDay(day, profile){
   return { label: day.label, sub: day.sub, exercises };
 }
 
+// Protein per kg of bodyweight, by goal — higher in a calorie deficit
+// (fat_loss/recomp) to protect lean mass while losing fat, per standard
+// sports-nutrition guidance; muscle_gain doesn't need more than ~2g/kg to
+// support building since it already has a calorie surplus to work with;
+// maintenance uses a more modest general-health baseline.
+const PROTEIN_PER_KG = { fat_loss: 2.2, recomp: 2.2, muscle_gain: 2.0, maintenance: 1.8 };
 function computeTargets(p){
   const bmr = p.sex === 'female'
     ? (10*p.weightKg + 6.25*p.heightCm - 5*p.age - 161)
@@ -1705,7 +1789,7 @@ function computeTargets(p){
   if(p.goal === 'fat_loss') kcal -= 500;
   else if(p.goal === 'muscle_gain') kcal += 300;
   kcal = Math.max(1400, Math.round(kcal/10)*10);
-  const protein = Math.round(2.0 * p.weightKg);
+  const protein = Math.round((PROTEIN_PER_KG[p.goal] || 2.0) * p.weightKg);
   const fat = Math.round((kcal*0.25)/9);
   const carbs = Math.max(0, Math.round((kcal - protein*4 - fat*9)/4));
   return {kcal, protein, fat, carbs};
@@ -1741,6 +1825,16 @@ const EXPERIENCE_LABELS = {
   advanced: D('Προχωρημένος','Advanced'),
 };
 const LOCATION_LABELS = { gym: D('Γυμναστήριο','Gym'), home: D('Σπίτι / ύπαιθρος','Home / outdoors') };
+
+// Cardio guidance by goal — kept as general, standard-practice defaults
+// (not medical advice, see the app's own disclaimer): more for fat loss,
+// minimal for muscle gain to protect recovery, moderate otherwise.
+const CARDIO_GUIDANCE = {
+  fat_loss: D('2-3x/εβδομάδα, 20-30′ μέτριας έντασης (γρήγορο περπάτημα, ποδήλατο, ελλειπτικό)','2-3x/week, 20-30′ moderate intensity (brisk walk, bike, elliptical)'),
+  recomp: D('2x/εβδομάδα, 20-25′ μέτριας έντασης','2x/week, 20-25′ moderate intensity'),
+  muscle_gain: D('1-2x/εβδομάδα, 10-15′ ελαφρύ — μόνο για καρδιαγγειακή υγεία, όχι παραπάνω ώστε να μην επηρεαστεί η ανάκαμψη','1-2x/week, 10-15′ light — just for cardiovascular health, not more so recovery isn’t affected'),
+  maintenance: D('1-2x/εβδομάδα της επιλογής σου, για γενική υγεία','1-2x/week of your choice, for general health'),
+};
 
 function defaultProfile(){
   return {
@@ -1781,6 +1875,7 @@ function applyProfile(profile){
   currentDay = Object.keys(DAYS)[0];
   buildDayPicker();
   renderTargets();
+  renderTrainingTips();
   renderMealGrid();
   setGreeting();
   // Re-render every per-tab view unconditionally (not just the one currently
@@ -1810,6 +1905,19 @@ function renderTargets(){
     <div class="t"><div class="v">${tg.protein}g</div><div class="l">${t('protein')}</div></div>
     <div class="t"><div class="v">${tg.fat}g</div><div class="l">${t('fat')}</div></div>
     <div class="t"><div class="v">${tg.carbs}g</div><div class="l">${t('carbs')}</div></div>`;
+}
+
+// Three short, standing coaching reminders a real trainer wouldn't leave
+// out — warm-up, cardio (varies by goal), and periodic deload — shown once
+// per profile render rather than as an interruptive one-time dialog.
+function renderTrainingTips(){
+  const p = currentProfile || defaultProfile();
+  const cardio = L2(CARDIO_GUIDANCE[p.goal] || CARDIO_GUIDANCE.maintenance);
+  document.getElementById('trainingTips').innerHTML = `
+    <div class="tip-title">${t('tips_title')}</div>
+    <div class="tip-row"><span class="tip-icon">🔥</span><span><b>${t('tips_warmup_label')}:</b> ${t('tips_warmup_text')}</span></div>
+    <div class="tip-row"><span class="tip-icon">🏃</span><span><b>${t('tips_cardio_label')}:</b> ${cardio}</span></div>
+    <div class="tip-row"><span class="tip-icon">🛌</span><span><b>${t('tips_deload_label')}:</b> ${t('tips_deload_text')}</span></div>`;
 }
 
 // Google sign-ins arrive with a displayName already; email/password ones
@@ -1942,6 +2050,20 @@ function monthlyAverage(id, mk){
   const entry = exerciseWeightHistory[id] && exerciseWeightHistory[id][mk];
   return entry ? Math.round((entry.sum/entry.count)*10)/10 : null;
 }
+
+// All-time personal best per exercise — just one number each, so this never
+// grows regardless of how often anyone logs (same "don't log everything"
+// principle as the monthly averages above, taken to its simplest form).
+let personalRecords = {}; // {exerciseId: kg}
+async function loadPersonalRecords(){
+  try{
+    const r = await storage.get('exercise-prs');
+    personalRecords = JSON.parse(r.value) || {};
+  }catch(e){ personalRecords = {}; }
+}
+async function savePersonalRecords(){
+  try{ await storage.set('exercise-prs', JSON.stringify(personalRecords)); }catch(e){ console.error(e); }
+}
 function findExerciseName(id){
   if(EX[id]) return L2(EX[id].name);
   if(typeof DAYS !== 'undefined' && DAYS){
@@ -2031,6 +2153,7 @@ function renderExercises(){
           <input type="number" id="weight-${ex.id}" class="weight-input" inputmode="decimal" step="0.5" min="0" max="500" data-id="${ex.id}" placeholder="kg" value="${savedWeight!=null?savedWeight:''}">
           <span>kg</span>
           <span class="weight-trend"></span>
+          <span class="pr-badge"${personalRecords[ex.id]==null?' hidden':''}>🏆 ${personalRecords[ex.id]||''}kg</span>
           ${prevAvg!=null ? `<span class="weight-prev-avg">${t('weight_prev_month_avg',{avg:prevAvg})}</span>` : ''}
         </div>
         <div class="done-tag">✓ ${t('completed_tag')}</div>
@@ -2073,6 +2196,25 @@ function renderExercises(){
         trendEl.title = `${prevValue}kg → ${v}kg`;
         clearTimeout(trendEl._fadeTimer);
         trendEl._fadeTimer = setTimeout(()=>{ trendEl.textContent=''; trendEl.className='weight-trend'; }, 5000);
+      }
+      // Personal record — just one number ever kept per exercise (see
+      // personalRecords above), so this never grows the database. Only
+      // flash the celebratory highlight when actually beating a *previous*
+      // record, not on the first-ever value logged for an exercise.
+      if(personalRecords[id] == null || v > personalRecords[id]){
+        const brokeRecord = personalRecords[id] != null;
+        personalRecords[id] = v;
+        savePersonalRecords();
+        const prBadge = inp.closest('.weight-row').querySelector('.pr-badge');
+        if(prBadge){
+          prBadge.textContent = `🏆 ${v}kg`;
+          prBadge.hidden = false;
+          if(brokeRecord){
+            prBadge.classList.add('pr-new');
+            clearTimeout(prBadge._fadeTimer);
+            prBadge._fadeTimer = setTimeout(()=>prBadge.classList.remove('pr-new'), 4000);
+          }
+        }
       }
     });
   });
@@ -2127,6 +2269,18 @@ document.getElementById('finishBtn').addEventListener('click', async ()=>{
   if(badge) badge.style.display = 'inline';
   document.getElementById('finishBtn').textContent = t('training_logged');
   setTimeout(()=>{ document.getElementById('finishBtn').textContent = t('training_finish'); }, 1800);
+  // A quick progressive-overload nudge when every exercise in the session
+  // was completed — the core lever for actually getting stronger over time,
+  // and otherwise nothing in the app ever suggests it.
+  const exs = DAYS[currentDay].exercises;
+  const allDone = exs.length>0 && exs.every(e=>checkedState[e.id]);
+  if(allDone){
+    const tipEl = document.getElementById('overloadTip');
+    tipEl.textContent = t('overload_tip');
+    tipEl.classList.remove('hidden');
+    clearTimeout(tipEl._fadeTimer);
+    tipEl._fadeTimer = setTimeout(()=>{ tipEl.classList.add('hidden'); }, 7000);
+  }
   renderDashboard();
 });
 
@@ -2494,15 +2648,15 @@ Valid fields and values: trainingLocation ("gym"|"home"), goal ("fat_loss"|"musc
 // list (swap one exercise for another, or add a new one) so a suggestion
 // like "I don't like squats, give me something else" actually shows up in
 // the Προπόνηση tab instead of only existing as chat text.
-async function applyExerciseUpdate(jsonText){
-  let obj;
-  try{ obj = JSON.parse(jsonText); }catch(e){ return false; }
-  if(!obj || !obj.day || !DAYS[obj.day] || !Array.isArray(obj.changes) || !obj.changes.length) return false;
-  const day = obj.day;
+// Pure: builds a new exercise list for one day from AI-proposed changes
+// (replace-by-id, or append if no match/no id given) — shared by the
+// ongoing AI Coach's exercise-update handling and the onboarding flow's
+// injury-aware setup, so both go through the exact same sanitization.
+function sanitizeExerciseChanges(baseExercises, changes){
   const validCats = Object.keys(CATS);
-  let list = DAYS[day].exercises.map(e=>Object.assign({}, e));
+  let list = baseExercises.map(e=>Object.assign({}, e));
   let changed = false;
-  obj.changes.forEach(ch=>{
+  (changes||[]).forEach(ch=>{
     if(!ch || !ch.exercise) return;
     const ex = ch.exercise;
     if(!ex.id || !ex.name) return;
@@ -2522,14 +2676,51 @@ async function applyExerciseUpdate(jsonText){
     }
     changed = true;
   });
+  return { list, changed };
+}
+
+async function applyExerciseUpdate(jsonText){
+  let obj;
+  try{ obj = JSON.parse(jsonText); }catch(e){ return false; }
+  if(!obj || !obj.day || !DAYS[obj.day] || !Array.isArray(obj.changes) || !obj.changes.length) return false;
+  const { list, changed } = sanitizeExerciseChanges(DAYS[obj.day].exercises, obj.changes);
   if(!changed) return false;
   if(!currentProfile) currentProfile = defaultProfile();
   if(!currentProfile.customDays) currentProfile.customDays = {};
-  currentProfile.customDays[day] = list;
+  currentProfile.customDays[obj.day] = list;
   try{ await storage.set('profile', JSON.stringify(currentProfile)); }catch(e){ console.error(e); }
   applyProfile(currentProfile);
   if(appInitialized) refreshAppData();
-  return L2(DAYS[day].label);
+  return L2(DAYS[obj.day].label);
+}
+
+// Pure: merges AI-proposed target/meal-option overrides onto existing
+// values — shared by the ongoing coach and onboarding's diet-aware setup.
+function sanitizeNutritionUpdate(currentTargets, currentCustomMeals, obj){
+  let targets = Object.assign({}, currentTargets);
+  let customMeals = Object.assign({}, currentCustomMeals);
+  let changed = false;
+  if(obj.targets && typeof obj.targets === 'object'){
+    const bounds = {kcal:[1200,6000], protein:[0,400], fat:[0,300], carbs:[0,800]};
+    Object.keys(bounds).forEach(k=>{
+      if(obj.targets[k] !== undefined){
+        const v = Number(obj.targets[k]);
+        if(!isNaN(v) && v>=bounds[k][0] && v<=bounds[k][1]){ targets[k] = Math.round(v); changed = true; }
+      }
+    });
+  }
+  if(obj.meals && typeof obj.meals === 'object'){
+    Object.keys(obj.meals).forEach(key=>{
+      if(!MEALS[key]) return;
+      const entry = obj.meals[key];
+      const opts = entry && Array.isArray(entry.options) ? entry.options.map(o=>String(o).slice(0,200)).filter(Boolean).slice(0,10) : null;
+      if(opts && opts.length){
+        customMeals[key] = opts;
+        changed = true;
+      }
+    });
+  }
+  return { targets, customMeals, changed };
 }
 
 // Applies an AI-Coach-proposed change to nutrition — direct macro/calorie
@@ -2540,31 +2731,10 @@ async function applyNutritionUpdate(jsonText){
   let obj;
   try{ obj = JSON.parse(jsonText); }catch(e){ return false; }
   if(!currentProfile) currentProfile = defaultProfile();
-  let changed = false;
-  if(obj.targets && typeof obj.targets === 'object'){
-    const bounds = {kcal:[1200,6000], protein:[0,400], fat:[0,300], carbs:[0,800]};
-    const t = Object.assign({}, currentProfile.targets);
-    Object.keys(bounds).forEach(k=>{
-      if(obj.targets[k] !== undefined){
-        const v = Number(obj.targets[k]);
-        if(!isNaN(v) && v>=bounds[k][0] && v<=bounds[k][1]){ t[k] = Math.round(v); changed = true; }
-      }
-    });
-    currentProfile.targets = t;
-  }
-  if(obj.meals && typeof obj.meals === 'object'){
-    if(!currentProfile.customMeals) currentProfile.customMeals = {};
-    Object.keys(obj.meals).forEach(key=>{
-      if(!MEALS[key]) return;
-      const entry = obj.meals[key];
-      const opts = entry && Array.isArray(entry.options) ? entry.options.map(o=>String(o).slice(0,200)).filter(Boolean).slice(0,10) : null;
-      if(opts && opts.length){
-        currentProfile.customMeals[key] = opts;
-        changed = true;
-      }
-    });
-  }
+  const { targets, customMeals, changed } = sanitizeNutritionUpdate(currentProfile.targets, currentProfile.customMeals||{}, obj);
   if(!changed) return false;
+  currentProfile.targets = targets;
+  currentProfile.customMeals = customMeals;
   try{ await storage.set('profile', JSON.stringify(currentProfile)); }catch(e){ console.error(e); }
   renderTargets();
   renderMealGrid();
@@ -2777,7 +2947,18 @@ ONLY after the user confirms (e.g. "yes", "correct", "let's go") or corrects som
 {"name":"...","trainingLocation":"gym|home","goal":"fat_loss|muscle_gain|recomp|maintenance","sex":"male|female","age":0,"heightCm":0,"weightKg":0,"activityLevel":"sedentary|light|moderate|active|very_active","daysPerWeek":0,"experience":"beginner|intermediate|advanced","dietaryNotes":"...","injuries":"..."}
 \`\`\`
 
-Do not output this JSON before you actually have all the answers AND explicit confirmation from the user after the summary. Do not write anything after the JSON block.`;
+If — and only if — the injuries/movement limitations they gave you would make a *default* exercise unsuitable (e.g. knee pain with squats/lunges, shoulder pain with overhead press/bench press, lower back pain with deadlifts), add one or more exercise-update blocks right after the json block to swap out just those specific exercises for safer alternatives. The day keys depend on daysPerWeek: exactly upperA/lowerA/upperB/lowerB for 4-5 days/week, fullA/fullB/fullC for 1-3 days/week, or pushA/pullA/legsA/pushB/pullB/legsB for 6-7 days/week (same keys regardless of gym vs home). Use your general knowledge of which common exercise a person likely means to set "replaceId" (e.g. a squat variant is usually id "la1" or "hla1" depending on gym/home) — if unsure, omit replaceId and the safer exercise is simply added instead of replacing anything, which is a safe fallback:
+\`\`\`exercise-update
+{"day":"lowerA","changes":[{"replaceId":"la1","exercise":{"id":"custom_leg_press","name":"Leg press (lighter, knee-friendly)","sets":3,"reps":"12-15","rest":90,"cat":"legs"}}]}
+\`\`\`
+
+If — and only if — the dietary preferences/restrictions they gave you mean the generic default meal options wouldn't actually work for them (e.g. vegetarian/vegan, lactose-free, gluten-free, a real allergy — NOT just "no big deal" preferences), add ONE nutrition-update block right after the json block (and after any exercise-update blocks) replacing ONLY the affected meal categories' options — the meal keys are exactly: breakfast, officeSnack, lunch, afternoonSnack, dinner, beforeBed. Give 3-7 realistic replacement options per affected meal, each with an approximate quantity, in English:
+\`\`\`nutrition-update
+{"meals":{"lunch":{"options":["Tofu stir-fry (200g) with rice (100g) and vegetables","Lentil curry (1 bowl, ~350g) with rice (100g)"]}}}
+\`\`\`
+Do not add either of these blocks for run-of-the-mill answers ("no injuries", "no restrictions", or a mild preference that doesn't conflict with anything) — only when something they said would genuinely make a default choice wrong for them.
+
+Do not output the json block before you actually have all the answers AND explicit confirmation from the user after the summary. Do not write anything after these blocks.`;
   }
   const nameInstruction = firstName
     ? `Ο χρήστης λέγεται ${firstName} — χρησιμοποίησε το όνομά του/της για να τον/την προσφωνείς στη συνομιλία. Βάλε αυτό το όνομα και στο τελικό JSON ως "name".`
@@ -2799,7 +2980,18 @@ ${nameInstruction} Σκοπός σου: να μάθεις όσα χρειάζε�
 {"name":"...","trainingLocation":"gym|home","goal":"fat_loss|muscle_gain|recomp|maintenance","sex":"male|female","age":0,"heightCm":0,"weightKg":0,"activityLevel":"sedentary|light|moderate|active|very_active","daysPerWeek":0,"experience":"beginner|intermediate|advanced","dietaryNotes":"...","injuries":"..."}
 \`\`\`
 
-Μην βγάλεις αυτό το JSON πριν έχεις πραγματικά όλες τις απαντήσεις ΚΑΙ ρητή επιβεβαίωση από τον χρήστη μετά τη σύνοψη. Μην γράψεις τίποτα άλλο μετά το JSON block.`;
+Αν — και ΜΟΝΟ αν — οι τραυματισμοί/περιορισμοί κίνησης που ανέφερε κάνουν κάποια ΠΡΟΕΠΙΛΕΓΜΕΝΗ άσκηση ακατάλληλη (π.χ. πρόβλημα γόνατος με squats/lunges, πρόβλημα ώμου με ωθήσεις πάνω από το κεφάλι/πάγκο, πρόβλημα μέσης με deadlifts), πρόσθεσε ένα ή περισσότερα exercise-update blocks αμέσως μετά το json block για να αντικαταστήσεις ΜΟΝΟ αυτές τις συγκεκριμένες ασκήσεις με ασφαλέστερες εναλλακτικές. Τα day keys εξαρτώνται από το daysPerWeek: ακριβώς upperA/lowerA/upperB/lowerB για 4-5 μέρες/εβδομάδα, fullA/fullB/fullC για 1-3 μέρες/εβδομάδα, ή pushA/pullA/legsA/pushB/pullB/legsB για 6-7 μέρες/εβδομάδα (ίδια keys ανεξαρτήτως γυμναστηρίου/σπιτιού). Χρησιμοποίησε τη γενική σου γνώση για ποια συνηθισμένη άσκηση εννοεί πιθανότατα ο χρήστης για να βάλεις σωστό "replaceId" (π.χ. μια παραλλαγή squat είναι συνήθως id "la1" ή "hla1" ανάλογα με γυμναστήριο/σπίτι) — αν δεν είσαι σίγουρος/η, παράλειψε το replaceId και η ασφαλέστερη άσκηση απλώς προστίθεται αντί να αντικαταστήσει κάτι, που είναι ένα ασφαλές fallback:
+\`\`\`exercise-update
+{"day":"lowerA","changes":[{"replaceId":"la1","exercise":{"id":"custom_leg_press","name":"Leg press (ελαφρύτερο, φιλικό στο γόνατο)","sets":3,"reps":"12-15","rest":90,"cat":"legs"}}]}
+\`\`\`
+
+Αν — και ΜΟΝΟ αν — οι διατροφικές προτιμήσεις/περιορισμοί που ανέφερε σημαίνουν ότι οι προεπιλεγμένες επιλογές γευμάτων δεν θα του/της ταίριαζαν πραγματικά (π.χ. χορτοφάγος/vegan, δίχως λακτόζη, δίχως γλουτένη, πραγματική αλλεργία — ΟΧΙ απλά μια ήπια προτίμηση), πρόσθεσε ΕΝΑ nutrition-update block αμέσως μετά το json block (και μετά από τυχόν exercise-update blocks) που αντικαθιστά ΜΟΝΟ τις επηρεαζόμενες κατηγορίες γεύματος — τα meal keys είναι ακριβώς: breakfast, officeSnack, lunch, afternoonSnack, dinner, beforeBed. Δώσε 3-7 ρεαλιστικές εναλλακτικές επιλογές ανά επηρεαζόμενο γεύμα, η καθεμία με κατά προσέγγιση ποσότητα, στα ελληνικά:
+\`\`\`nutrition-update
+{"meals":{"lunch":{"options":["Στιφάδο με τόφου (200γρ) με ρύζι (100γρ) και λαχανικά","Κάρι φακών (1 μπολ, ~350γρ) με ρύζι (100γρ)"]}}}
+\`\`\`
+Μην προσθέσεις κανένα από τα δύο blocks για συνηθισμένες απαντήσεις ("καμία", "χωρίς περιορισμούς", ή μια ήπια προτίμηση που δεν έρχεται σε σύγκρουση με τίποτα) — μόνο όταν κάτι που είπε κάνει πραγματικά μια προεπιλογή λανθασμένη γι' αυτόν/αυτήν.
+
+Μην βγάλεις το json block πριν έχεις πραγματικά όλες τις απαντήσεις ΚΑΙ ρητή επιβεβαίωση από τον χρήστη μετά τη σύνοψη. Μην γράψεις τίποτα άλλο μετά από αυτά τα blocks.`;
 }
 
 function startOnboardingChat(){
@@ -2854,7 +3046,15 @@ async function sendOnboardingTurn(userText){
     if(displayText) appendChatBubble('assistant', displayText);
     onboardMessages.push({role:'assistant', content:text});
     if(jsonMatch){
-      const ok = tryFinalizeOnboarding(jsonMatch[1]);
+      // Injury/diet-aware setup: the model may follow the profile json with
+      // exercise-update block(s) (unsuitable default exercises swapped for
+      // safer ones) and/or one nutrition-update block (meal options that
+      // don't fit a stated dietary restriction) — same block format the
+      // ongoing AI Coach uses, applied once up front instead of leaving the
+      // person to notice the mismatch later and ask for a fix themselves.
+      const exerciseMatches = [...text.matchAll(/```exercise-update\s*([\s\S]*?)```/g)].map(m=>m[1]);
+      const nutritionMatch = text.match(/```nutrition-update\s*([\s\S]*?)```/);
+      const ok = tryFinalizeOnboarding(jsonMatch[1], exerciseMatches, nutritionMatch && nutritionMatch[1]);
       if(!ok) appendChatBubble('assistant', t('onboard_bad_data'));
     }
   }catch(e){
@@ -2867,7 +3067,7 @@ async function sendOnboardingTurn(userText){
   document.getElementById('onboardInput').focus();
 }
 
-function tryFinalizeOnboarding(jsonText){
+function tryFinalizeOnboarding(jsonText, exerciseUpdateJsons, nutritionUpdateJson){
   let obj;
   try{ obj = JSON.parse(jsonText); }catch(e){ return false; }
   const required = ['trainingLocation','goal','sex','age','heightCm','weightKg','activityLevel','daysPerWeek','experience'];
@@ -2892,6 +3092,33 @@ function tryFinalizeOnboarding(jsonText){
   if(cleanName) profile.name = cleanName;
   profile.splitKey = chooseSplitKey(daysPerWeek, obj.trainingLocation);
   profile.targets = computeTargets(profile);
+
+  // Injury-aware exercise swaps, applied to the base split's own exercises
+  // (before personalizeDay's experience/age/goal sets-and-reps pass, which
+  // still runs on top of these at render time — same as any other day).
+  const base = TEMPLATES[profile.splitKey] || TEMPLATES.gym_upperLower4;
+  (exerciseUpdateJsons||[]).forEach(jt=>{
+    let eObj; try{ eObj = JSON.parse(jt); }catch(e){ return; }
+    if(!eObj || !eObj.day || !base[eObj.day] || !Array.isArray(eObj.changes) || !eObj.changes.length) return;
+    const { list, changed } = sanitizeExerciseChanges(base[eObj.day].exercises, eObj.changes);
+    if(changed){
+      if(!profile.customDays) profile.customDays = {};
+      profile.customDays[eObj.day] = list;
+    }
+  });
+
+  // Diet-aware meal-option swaps, merged the same way the ongoing coach does.
+  if(nutritionUpdateJson){
+    let nObj; try{ nObj = JSON.parse(nutritionUpdateJson); }catch(e){ nObj = null; }
+    if(nObj){
+      const { targets, customMeals, changed } = sanitizeNutritionUpdate(profile.targets, {}, nObj);
+      if(changed){
+        profile.targets = targets;
+        profile.customMeals = customMeals;
+      }
+    }
+  }
+
   finalizeProfile(profile);
   return true;
 }
@@ -3089,7 +3316,7 @@ let appInitialized = false;
 function refreshAppData(){
   loadTodayWorkout();
   renderFoodLog();
-  Promise.all([loadExerciseWeights(), loadExerciseWeightHistory()]).then(()=>{ if(typeof renderExercises === 'function') renderExercises(); });
+  Promise.all([loadExerciseWeights(), loadExerciseWeightHistory(), loadPersonalRecords()]).then(()=>{ if(typeof renderExercises === 'function') renderExercises(); });
 }
 function initApp(){
   if(appInitialized) return;
