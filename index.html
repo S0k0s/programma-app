@@ -2346,7 +2346,17 @@ function switchTab(name){
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.tab===navTarget));
   if(name==='dashboard') renderDashboard();
   if(name==='history') renderHistory();
-  if(name==='profile') renderProfileTab();
+  if(name==='profile'){
+    renderProfileTab();
+    // currentUser.emailVerified reflects whatever was true at the last
+    // sign-in/token refresh — Firebase doesn't push updates when the user
+    // clicks the verification link in a different tab, so without an
+    // explicit reload() the Profile tab keeps showing "verify your email"
+    // forever even after they've actually done it.
+    if(currentUser){
+      currentUser.reload().then(()=>renderProfileTab()).catch(()=>{});
+    }
+  }
   if(name==='ai') loadAiChatHistory();
   window.scrollTo(0,0);
 }
