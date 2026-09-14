@@ -184,6 +184,19 @@ async function adminDeleteUser(uid, btn){
   // (deleted as part of deleteAllUserData) — nothing else to refresh here.
 }
 
+// Every users/{uid}/data/{docId} document — written by the client's own
+// storage.set() shim or by the Worker's matching REST helper — holds a
+// single 'value' field containing a JSON *string*, not flat top-level
+// fields (see index.html's `storage` object and anthropic-proxy.js's
+// firestoreSetUserDoc). Reading snap.data().status directly would always
+// be undefined; this unwraps that shim the same way index.html does.
+function parseStorageDoc(snap){
+  if(!snap || !snap.exists) return null;
+  const raw = snap.data().value;
+  if(!raw) return null;
+  try{ return JSON.parse(raw); }catch(e){ return null; }
+}
+
 // Surface-level per-user stats for the dashboard — plan, sign-up already
 // comes from the access doc; this fills in subscription/credits/AI usage,
 // each a best-effort read (a missing doc just means "no data yet", not an
@@ -201,16 +214,19 @@ async function loadUserStats(uid){
            .where(firebase.firestore.FieldPath.documentId(), '<', 'ai-usage:~')
            .get().catch(()=>null),
   ]);
-  const sub = subSnap && subSnap.exists ? subSnap.data() : null;
+  const sub = parseStorageDoc(subSnap);
   const isPro = !!(sub && sub.status === 'active' && sub.currentPeriodEnd && sub.currentPeriodEnd*1000 > Date.now());
   const isComp = isPro && !!sub.grantedByAdmin;
-  const credits = creditsSnap && creditsSnap.exists ? (creditsSnap.data().balance || 0) : 0;
-  const lastActiveAt = lastActiveSnap && lastActiveSnap.exists ? lastActiveSnap.data().at : null;
+  const creditsObj = parseStorageDoc(creditsSnap);
+  const credits = (creditsObj && creditsObj.balance) || 0;
+  const lastActiveObj = parseStorageDoc(lastActiveSnap);
+  const lastActiveAt = lastActiveObj && lastActiveObj.at;
   let todayCount = 0, totalCount = 0;
   if(usageSnap){
     const todayId = 'ai-usage:' + utcDateKey();
     usageSnap.forEach(d=>{
-      const c = (d.data().count) || 0;
+      const usage = parseStorageDoc(d);
+      const c = (usage && usage.count) || 0;
       totalCount += c;
       if(d.id === todayId) todayCount = c;
     });
