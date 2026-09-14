@@ -203,6 +203,7 @@ async function loadUserStats(uid){
   ]);
   const sub = subSnap && subSnap.exists ? subSnap.data() : null;
   const isPro = !!(sub && sub.status === 'active' && sub.currentPeriodEnd && sub.currentPeriodEnd*1000 > Date.now());
+  const isComp = isPro && !!sub.grantedByAdmin;
   const credits = creditsSnap && creditsSnap.exists ? (creditsSnap.data().balance || 0) : 0;
   const lastActiveAt = lastActiveSnap && lastActiveSnap.exists ? lastActiveSnap.data().at : null;
   let todayCount = 0, totalCount = 0;
@@ -214,7 +215,61 @@ async function loadUserStats(uid){
       if(d.id === todayId) todayCount = c;
     });
   }
-  return { isPro, credits, lastActiveAt, todayCount, totalCount, periodEnd: sub && sub.currentPeriodEnd };
+  return { isPro, isComp, credits, lastActiveAt, todayCount, totalCount, periodEnd: sub && sub.currentPeriodEnd };
+}
+
+// Manual "give this person free Pro" toggle — goes through the Worker (see
+// admin-set-plan in anthropic-proxy.js) since only the service account can
+// write the subscription doc. Revoking is refused server-side if the user
+// has turned out to have a real Stripe subscription in the meantime, so
+// this can't accidentally cancel something someone is actually paying for.
+async function adminSetPlan(uid, grant, btn){
+  if(grant && !confirm('Grant this user a free Pro plan (no payment)? You can revoke it anytime.')) return;
+  if(!grant && !confirm('Revoke this user\'s free Pro plan? They will drop back to the free tier.')) return;
+  btn.disabled = true;
+  try{
+    const idToken = await currentUser.getIdToken();
+    const res = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'admin-set-plan', idToken, targetUid: uid, grant }),
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.ok){
+      if(data.error === 'has_real_subscription'){
+        alert('This user has a real, paid subscription — revoke it from the Stripe dashboard instead.');
+      }else{
+        alert('Something went wrong changing this user\'s plan. Please try again.');
+      }
+      btn.disabled = false;
+      return;
+    }
+    const row = btn.closest('tr');
+    if(row) loadUserStats(uid).then(stats=>updatePlanCell(row, stats));
+  }catch(e){
+    console.error('admin set plan failed', e);
+    alert('Something went wrong changing this user\'s plan. Please try again.');
+    btn.disabled = false;
+  }
+}
+
+function updatePlanCell(row, stats){
+  const planCell = row.querySelector('.stat-plan');
+  planCell.className = 'stat-plan';
+  const uid = row.dataset.uid;
+  if(stats.isComp){
+    planCell.innerHTML = `<span class="pill pro">Pro (comp)</span>
+      <div style="margin-top:6px;"><button class="ghost" type="button" data-revoke-pro="${escapeHtml(uid)}" style="padding:4px 10px;font-size:11px;">Revoke</button></div>`;
+  }else if(stats.isPro){
+    planCell.innerHTML = `<span class="pill pro">Pro (paid)</span>`;
+  }else{
+    planCell.innerHTML = `<span class="pill free">Free</span>${stats.credits>0 ? ` <span class="muted">+${stats.credits} credits</span>` : ''}
+      <div style="margin-top:6px;"><button class="ghost" type="button" data-grant-pro="${escapeHtml(uid)}" style="padding:4px 10px;font-size:11px;">Grant free Pro</button></div>`;
+  }
+  const grantBtn = planCell.querySelector('[data-grant-pro]');
+  if(grantBtn) grantBtn.addEventListener('click', ()=>adminSetPlan(uid, true, grantBtn));
+  const revokeBtn = planCell.querySelector('[data-revoke-pro]');
+  if(revokeBtn) revokeBtn.addEventListener('click', ()=>adminSetPlan(uid, false, revokeBtn));
 }
 
 function watchUserList(){
@@ -279,11 +334,7 @@ function renderTable(docs){
     const row = el.querySelector(`tr[data-uid="${CSS.escape(doc.id)}"]`);
     if(!row) return;
     loadUserStats(doc.id).then(stats=>{
-      const planCell = row.querySelector('.stat-plan');
-      planCell.className = 'stat-plan';
-      planCell.innerHTML = stats.isPro
-        ? `<span class="pill pro">Pro</span>`
-        : `<span class="pill free">Free</span>${stats.credits>0 ? ` <span class="muted">+${stats.credits} credits</span>` : ''}`;
+      updatePlanCell(row, stats);
       row.querySelector('.stat-active').textContent = formatRelative(stats.lastActiveAt);
       row.querySelector('.stat-active').classList.remove('muted');
       row.querySelector('.stat-ai').textContent = `${stats.todayCount} / ${stats.totalCount}`;

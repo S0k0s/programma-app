@@ -166,6 +166,14 @@ async function firestoreSetUserDoc(accessToken, uid, docId, obj) {
   if (!res.ok) throw new Error('firestore_set_failed: ' + res.status);
 }
 
+async function firestoreDeleteUserDoc(accessToken, uid, docId) {
+  const res = await fetch(firestoreDocUrl(uid, docId), {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok && res.status !== 404) throw new Error('firestore_delete_failed: ' + res.status);
+}
+
 // Maps a Stripe customer id to the uid that owns it, so subscription-update
 // webhooks (which only carry the customer id, not the uid) can find the
 // right user doc. Lives outside users/{uid}/data — no client Firestore rule
@@ -562,6 +570,44 @@ async function handleAdminDeleteUser(body, cors, env) {
   }
 }
 
+// Manual admin override for comping a free Pro plan to a specific user —
+// entirely separate from the Stripe-driven subscription doc above. Marked
+// with grantedByAdmin so tierFromSubscription() treats it exactly like a
+// paid Pro subscription, and so revoking it can never touch a real paying
+// customer's Stripe-managed subscription doc by mistake.
+async function handleAdminSetPlan(body, cors, env) {
+  const { idToken, targetUid, grant } = body;
+  if (!targetUid || typeof targetUid !== 'string') {
+    return new Response(JSON.stringify({ error: 'missing_target_uid' }), { status: 400, headers: cors });
+  }
+  const okAdmin = await isVerifiedAdminToken(idToken).catch(() => false);
+  if (!okAdmin) {
+    return new Response(JSON.stringify({ error: 'forbidden_not_admin' }), { status: 403, headers: cors });
+  }
+  try {
+    const accessToken = await getServiceAccountAccessToken(env);
+    if (grant) {
+      await firestoreSetUserDoc(accessToken, targetUid, 'subscription', {
+        status: 'active',
+        grantedByAdmin: true,
+        currentPeriodEnd: Math.floor(Date.now() / 1000) + 100 * 365 * 24 * 60 * 60,
+        updatedAt: Math.floor(Date.now() / 1000),
+      });
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json', ...cors } });
+    }
+    const existing = await firestoreGetUserDoc(accessToken, targetUid, 'subscription').catch(() => null);
+    if (existing && !existing.grantedByAdmin) {
+      // A real, Stripe-managed subscription — leave it alone rather than
+      // silently cancelling something the customer is actually paying for.
+      return new Response(JSON.stringify({ error: 'has_real_subscription' }), { status: 409, headers: cors });
+    }
+    await firestoreDeleteUserDoc(accessToken, targetUid, 'subscription');
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json', ...cors } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'admin_set_plan_error', message: String(e && e.message || e) }), { status: 500, headers: cors });
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -611,6 +657,9 @@ export default {
 
     if (body.action === 'admin-delete-user') {
       return handleAdminDeleteUser(body, cors, env);
+    }
+    if (body.action === 'admin-set-plan') {
+      return handleAdminSetPlan(body, cors, env);
     }
     if (body.action === 'create-checkout-session') {
       return handleCreateCheckoutSession(body, cors, env);

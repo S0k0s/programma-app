@@ -1148,6 +1148,7 @@ const I18N = {
     profile_ai_plan_pro_desc:'150 AI Coach messages/day.',
     profile_ai_upgrade_btn:'Upgrade to Pro — €2.99/month',
     profile_ai_manage_btn:'Manage subscription →',
+    profile_ai_comp_note:'Free access granted by the admin.',
     profile_ai_buy_credits_btn:'Buy 50 extra messages — €1.99',
     profile_ai_credits_balance:'{n} extra messages available',
     profile_ai_upgrade_error:'Something went wrong upgrading. Please try again.',
@@ -3815,16 +3816,21 @@ async function renderAiProSection(){
   if(!el) return;
   const sub = await loadAiSubscription();
   const isPro = !!sub;
+  // An admin-granted comp plan has no Stripe customer behind it — there's
+  // nothing for "Manage subscription" to open, so show a note instead.
+  const isComp = isPro && !!sub.grantedByAdmin;
   const credits = isPro ? 0 : await loadAiCredits();
   el.innerHTML = `
     <div class="stat-label">${t('profile_ai_plan_title')}</div>
     <div style="font-weight:700;margin-top:4px;">${isPro ? t('profile_ai_plan_pro') : t('profile_ai_plan_free')}</div>
     <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${isPro ? t('profile_ai_plan_pro_desc') : t('profile_ai_plan_free_desc')}</div>
+    ${isComp ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_comp_note')}</div>` : ''}
     ${!isPro && credits > 0 ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_credits_balance', {n: credits})}</div>` : ''}
-    <button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${isPro ? t('profile_ai_manage_btn') : t('profile_ai_upgrade_btn')}</button>
+    ${!isComp ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${isPro ? t('profile_ai_manage_btn') : t('profile_ai_upgrade_btn')}</button>` : ''}
     ${!isPro ? `<button class="ghost" type="button" id="aiCreditsActionBtn" style="margin-top:8px;">${t('profile_ai_buy_credits_btn')}</button>` : ''}
   `;
-  document.getElementById('aiProActionBtn').addEventListener('click', (e)=>{
+  const proBtn = document.getElementById('aiProActionBtn');
+  if(proBtn) proBtn.addEventListener('click', (e)=>{
     startStripeAction(e.target, isPro ? 'create-portal-session' : 'create-checkout-session');
   });
   const creditsBtn = document.getElementById('aiCreditsActionBtn');
