@@ -3794,14 +3794,18 @@ async function loadAiCredits(){
   }catch(e){ return 0; }
 }
 
-// Trusted Web Activity (the Android app) sets this referrer scheme on
-// launch — it's Google's own documented way to tell a TWA apart from a
-// normal browser tab on the same origin. New purchases must not be
-// initiated from inside a Play-distributed app without Google Play
-// Billing (see Payments policy); existing-subscription management via the
+// Detects both wrapped-app shells this site ships as: the Android Trusted
+// Web Activity (referrer scheme is Google's own documented way to tell a
+// TWA apart from a normal browser tab) and the iOS Capacitor app (its
+// native bridge injects `window.Capacitor` into every page it loads,
+// including this remote one — see ios-capacitor/capacitor.config.json's
+// server.url). New purchases must not be initiated from inside either
+// store's app without that store's own billing (Play Billing policy /
+// App Store Guideline 3.1.1); existing-subscription management via the
 // Stripe portal isn't a new purchase, so it stays available either way.
-function isRunningInTwa(){
-  return document.referrer.startsWith('android-app://');
+function isRunningInNativeApp(){
+  return document.referrer.startsWith('android-app://')
+    || (typeof Capacitor !== 'undefined' && !!Capacitor.isNativePlatform && Capacitor.isNativePlatform());
 }
 
 async function startStripeAction(btn, action){
@@ -3832,19 +3836,20 @@ async function renderAiProSection(){
   // nothing for "Manage subscription" to open, so show a note instead.
   const isComp = isPro && !!sub.grantedByAdmin;
   const credits = isPro ? 0 : await loadAiCredits();
-  // Only *new* purchases are restricted inside the Android app (Play
-  // Payments policy) — managing an existing Stripe subscription isn't a
-  // purchase, so Pro users keep that button even inside the TWA.
-  const inTwa = isRunningInTwa();
+  // Only *new* purchases are restricted inside the Android or iOS app
+  // (Play Payments policy / App Store Guideline 3.1.1) — managing an
+  // existing Stripe subscription isn't a purchase, so Pro users keep that
+  // button even inside the wrapped app.
+  const inNativeApp = isRunningInNativeApp();
   el.innerHTML = `
     <div class="stat-label">${t('profile_ai_plan_title')}</div>
     <div style="font-weight:700;margin-top:4px;">${isPro ? t('profile_ai_plan_pro') : t('profile_ai_plan_free')}</div>
     <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${isPro ? t('profile_ai_plan_pro_desc') : t('profile_ai_plan_free_desc')}</div>
     ${isComp ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_comp_note')}</div>` : ''}
     ${!isPro && credits > 0 ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_credits_balance', {n: credits})}</div>` : ''}
-    ${!isComp && (isPro || !inTwa) ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${isPro ? t('profile_ai_manage_btn') : t('profile_ai_upgrade_btn')}</button>` : ''}
-    ${!isPro && !inTwa ? `<button class="ghost" type="button" id="aiCreditsActionBtn" style="margin-top:8px;">${t('profile_ai_buy_credits_btn')}</button>` : ''}
-    ${!isPro && inTwa ? `<div style="font-size:12px;color:var(--text-dim);margin-top:10px;">${t('profile_ai_twa_note')}</div>` : ''}
+    ${!isComp && (isPro || !inNativeApp) ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${isPro ? t('profile_ai_manage_btn') : t('profile_ai_upgrade_btn')}</button>` : ''}
+    ${!isPro && !inNativeApp ? `<button class="ghost" type="button" id="aiCreditsActionBtn" style="margin-top:8px;">${t('profile_ai_buy_credits_btn')}</button>` : ''}
+    ${!isPro && inNativeApp ? `<div style="font-size:12px;color:var(--text-dim);margin-top:10px;">${t('profile_ai_twa_note')}</div>` : ''}
   `;
   const proBtn = document.getElementById('aiProActionBtn');
   if(proBtn) proBtn.addEventListener('click', (e)=>{
