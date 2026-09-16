@@ -1153,6 +1153,8 @@ const I18N = {
     profile_ai_buy_credits_btn:'Buy 50 extra messages — €1.99',
     profile_ai_twa_note:'To upgrade to Pro or buy extra messages, open this app in your phone\'s regular browser instead of the installed app.',
     profile_ai_credits_balance:'{n} extra messages available',
+    rest_timer_notif_title:'Rest is over 💪',
+    rest_timer_notif_body:'Time for your next set.',
     profile_ai_upgrade_error:'Something went wrong upgrading. Please try again.',
     profile_ai_upgrade_activating:'Finishing the upgrade… this can take a few seconds.',
     profile_terms_link:'Terms of Use & Privacy Policy →', profile_delete_account:'Delete account →',
@@ -2498,6 +2500,7 @@ function renderExercises(){
             prBadge.classList.add('pr-new');
             clearTimeout(prBadge._fadeTimer);
             prBadge._fadeTimer = setTimeout(()=>prBadge.classList.remove('pr-new'), 4000);
+            hapticImpact('Heavy');
           }
         }
       }
@@ -2524,17 +2527,24 @@ function renderExercises(){
 }
 
 function startRestTimer(btn){
-  if(btn._interval){ clearInterval(btn._interval); btn._interval=null; btn.classList.remove('running'); btn.textContent='▶ Timer'; return; }
+  if(btn._interval){
+    clearInterval(btn._interval); btn._interval=null; btn.classList.remove('running'); btn.textContent='▶ Timer';
+    if(btn._notifId != null){ cancelRestTimerNotification(btn._notifId); btn._notifId = null; }
+    return;
+  }
   let remaining = parseInt(btn.dataset.rest,10);
   btn.classList.add('running');
   btn.textContent = remaining+'"';
+  scheduleRestTimerNotification(remaining).then(id=>{ btn._notifId = id; });
   btn._interval = setInterval(()=>{
     remaining--;
     if(remaining<=0){
       clearInterval(btn._interval); btn._interval=null;
       btn.classList.remove('running'); btn.textContent='▶ Timer';
+      btn._notifId = null;
       btn.closest('.exercise-card').style.outline = '2px solid var(--success)';
       setTimeout(()=>{ btn.closest('.exercise-card').style.outline=''; }, 1200);
+      hapticImpact('Medium');
     } else {
       btn.textContent = remaining+'"';
     }
@@ -3806,6 +3816,67 @@ async function loadAiCredits(){
 function isRunningInNativeApp(){
   return document.referrer.startsWith('android-app://')
     || (typeof Capacitor !== 'undefined' && !!Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+}
+
+// Capacitor auto-registers any native-installed plugin onto
+// Capacitor.Plugins even in remote-URL mode (no bundler/import needed on
+// this plain-script site) — see ios-capacitor/package.json for the
+// @capacitor/haptics and @capacitor/local-notifications native deps this
+// looks up. Undefined everywhere else (plain browser, Android TWA), so
+// every caller here already guards on the plugin object being truthy.
+function nativePlugin(name){
+  return typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()
+    && Capacitor.Plugins && Capacitor.Plugins[name];
+}
+
+function hapticImpact(style){
+  const Haptics = nativePlugin('Haptics');
+  if(Haptics) Haptics.impact({style: style || 'Medium'}).catch(()=>{});
+}
+
+// Local (on-device) notifications need a one-time permission grant. Cached
+// per session so we only prompt the first time a rest timer actually
+// finishes, not on every app launch.
+let _restTimerNotifPermission = null;
+async function ensureRestTimerNotifPermission(){
+  const LocalNotifications = nativePlugin('LocalNotifications');
+  if(!LocalNotifications) return false;
+  if(_restTimerNotifPermission != null) return _restTimerNotifPermission;
+  try{
+    const check = await LocalNotifications.checkPermissions();
+    if(check.display === 'granted'){ _restTimerNotifPermission = true; return true; }
+    const req = await LocalNotifications.requestPermissions();
+    _restTimerNotifPermission = req.display === 'granted';
+  }catch(e){ _restTimerNotifPermission = false; }
+  return _restTimerNotifPermission;
+}
+
+// Schedules a "rest is over" notification for `seconds` from now, so the
+// lock screen tells you when to go again even if you've switched apps or
+// locked the phone — a rest timer running only in this tab's setInterval
+// (see startRestTimer) can't do that, which is exactly the kind of native
+// capability a plain website doesn't have.
+async function scheduleRestTimerNotification(seconds){
+  const LocalNotifications = nativePlugin('LocalNotifications');
+  if(!LocalNotifications) return null;
+  const granted = await ensureRestTimerNotifPermission();
+  if(!granted) return null;
+  const id = Math.floor(Math.random() * 2147483647);
+  try{
+    await LocalNotifications.schedule({ notifications: [{
+      id,
+      title: t('rest_timer_notif_title'),
+      body: t('rest_timer_notif_body'),
+      schedule: { at: new Date(Date.now() + seconds * 1000) },
+    }]});
+    return id;
+  }catch(e){ return null; }
+}
+
+async function cancelRestTimerNotification(id){
+  const LocalNotifications = nativePlugin('LocalNotifications');
+  if(!LocalNotifications || id == null) return;
+  LocalNotifications.cancel({ notifications: [{id}] }).catch(()=>{});
 }
 
 async function startStripeAction(btn, action){
