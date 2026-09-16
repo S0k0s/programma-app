@@ -463,7 +463,7 @@
 
     <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:10px;color:var(--muted,#9aa0a6);">
       <input type="checkbox" id="ageConfirmCheckbox" style="margin-top:3px;flex-shrink:0;">
-      <span data-i18n="signin_age_confirm">I confirm I am at least 16 years old.</span>
+      <span data-i18n="signin_age_confirm">I confirm I am at least 18 years old.</span>
     </label>
 
     <p class="legal-disclaimer" data-i18n-html="signin_legal">Συνδεόμενος/η ή εγγραφόμενος/η αποδέχεσαι τους
@@ -904,6 +904,8 @@ const LEGAL_BODY_EL = `
 <p>Χρησιμοποιούμε αυτά τα δεδομένα αποκλειστικά για να λειτουργήσει η εφαρμογή για εσένα: να υπολογίσουμε το πρόγραμμά σου και τους διατροφικούς σου στόχους, να δείξουμε το ιστορικό σου, και να απαντήσει ο AI Coach στις ερωτήσεις σου με βάση το δικό σου προφίλ. Δεν πουλάμε ή μοιραζόμαστε τα δεδομένα σου με τρίτους για διαφημιστικούς σκοπούς.</p>
 <h2>Τρίτοι πάροχοι υπηρεσιών</h2>
 <p>Τα δεδομένα σου αποθηκεύονται στην υποδομή της Google (Firebase/Firestore), με πρόσβαση κλειδωμένη ώστε μόνο εσύ (και, σε περιορισμένο βαθμό, ο διαχειριστής της εφαρμογής για λόγους διαχείρισης λογαριασμών) να μπορεί να δει τα δικά σου δεδομένα — κανένας άλλος χρήστης δεν έχει πρόσβαση σε αυτά. Όταν χρησιμοποιείς τον AI Coach, το ερώτημά σου μαζί με μια σύντομη περίληψη του προφίλ/ιστορικού σου αποστέλλεται στην Anthropic (την εταιρεία πίσω από το μοντέλο Claude) μέσω ενός ενδιάμεσου server, αποκλειστικά για να παραχθεί η απάντηση — δεν χρησιμοποιείται για να εκπαιδευτούν μοντέλα τρίτων εκτός αν η Anthropic ορίζει διαφορετικά στη δική της πολιτική.</p>
+<h2>Διεθνής διαβίβαση δεδομένων</h2>
+<p>Η Anthropic εδρεύει στις ΗΠΑ, οπότε τα δεδομένα που της αποστέλλονται για την παραγωγή απαντήσεων του AI Coach διαβιβάζονται εκτός Ευρωπαϊκού Οικονομικού Χώρου. Αυτή η διαβίβαση πραγματοποιείται βάσει κατάλληλων εγγυήσεων (όπως Τυποποιημένες Συμβατικές Ρήτρες της Ευρωπαϊκής Επιτροπής), όπως προβλέπεται από τον Γενικό Κανονισμό Προστασίας Δεδομένων (GDPR).</p>
 <h2>Διατήρηση &amp; διαγραφή δεδομένων</h2>
 <p>Τα δεδομένα σου παραμένουν όσο διατηρείς τον λογαριασμό σου ενεργό. Μπορείς να διαγράψεις μόνιμα τον λογαριασμό σου και όλα τα δεδομένα σου ανά πάσα στιγμή από την καρτέλα Προφίλ. Η διαγραφή είναι οριστική και δεν μπορεί να αναιρεθεί.</p>
 <h2>Ασφάλεια</h2>
@@ -911,7 +913,7 @@ const LEGAL_BODY_EL = `
 <h2>Ιατρική αποποίηση ευθύνης</h2>
 <p>Το AI Coach δεν παρέχει ιατρική, διαιτολογική ή άλλη επαγγελματική συμβουλή υγείας. Οι προτάσεις είναι γενικού χαρακτήρα. Συμβουλέψου γιατρό ή διαιτολόγο πριν ξεκινήσεις οποιοδήποτε πρόγραμμα άσκησης ή διατροφής, ειδικά αν έχεις προϋπάρχουσες παθήσεις.</p>
 <h2>Ηλικιακό όριο</h2>
-<p>Η χρήση της εφαρμογής προϋποθέτει ότι είσαι τουλάχιστον 16 ετών.</p>
+<p>Η χρήση της εφαρμογής προϋποθέτει ότι είσαι τουλάχιστον 18 ετών.</p>
 <h2>Περιεχόμενο από Τεχνητή Νοημοσύνη</h2>
 <p>Οι απαντήσεις του AI Coach παράγονται από ένα σύστημα τεχνητής νοημοσύνης (μοντέλο Claude της Anthropic), όχι από άνθρωπο ειδικό. Μπορεί να περιέχουν ανακρίβειες. Δεν αντικαθιστούν επαγγελματική συμβουλή — δες την «Ιατρική αποποίηση ευθύνης» παραπάνω.</p>
 <h2>Πληρωμές &amp; δικαίωμα υπαναχώρησης</h2>
@@ -932,6 +934,8 @@ const LEGAL_BODY_EN = `
 <p>We use this data solely to run the app for you: to calculate your program and nutrition targets, to show your history, and to let the AI Coach answer your questions based on your own profile. We do not sell or share your data with third parties for advertising purposes.</p>
 <h2>Third-party service providers</h2>
 <p>Your data is stored on Google's infrastructure (Firebase/Firestore), access-locked so that only you (and, to a limited extent, the app's administrator for account-management purposes) can see your own data — no other user has access to it. When you use the AI Coach, your question along with a short summary of your profile/history is sent to Anthropic (the company behind the Claude model) through an intermediary server, solely to generate the reply — it is not used to train third-party models unless Anthropic's own policy states otherwise.</p>
+<h2>International data transfers</h2>
+<p>Anthropic is based in the United States, so data sent to it to generate AI Coach replies is transferred outside the European Economic Area. This transfer relies on appropriate safeguards (such as the European Commission's Standard Contractual Clauses), as required by the General Data Protection Regulation (GDPR).</p>
 <h2>Data retention &amp; deletion</h2>
 <p>Your data remains for as long as you keep your account active. You can permanently delete your account and all your data at any time from the Προφίλ (Profile) tab. Deletion is final and cannot be undone.</p>
 <h2>Security</h2>
@@ -939,7 +943,7 @@ const LEGAL_BODY_EN = `
 <h2>Medical disclaimer</h2>
 <p>AI Coach does not provide medical, dietetic, or other professional health advice. Suggestions are general in nature. Consult a doctor or dietitian before starting any exercise or nutrition program, especially if you have pre-existing conditions.</p>
 <h2>Age requirement</h2>
-<p>Use of this app requires that you are at least 16 years old.</p>
+<p>Use of this app requires that you are at least 18 years old.</p>
 <h2>AI-generated content</h2>
 <p>AI Coach's replies are generated by an artificial intelligence system (Anthropic's Claude model), not a human expert. They may contain inaccuracies and do not replace professional advice — see "Medical disclaimer" above.</p>
 <h2>Payments &amp; right of withdrawal</h2>
@@ -958,8 +962,8 @@ const I18N = {
     signin_password_placeholder:'Κωδικός (8+ χαρακτήρες, κεφαλαίο, πεζό, αριθμό, σύμβολο)',
     signin_submit:'Σύνδεση', signin_register:'Εγγραφή', signin_forgot:'Ξέχασες τον κωδικό;',
     signin_legal:'Συνδεόμενος/η ή εγγραφόμενος/η αποδέχεσαι τους <button type="button" class="linklike" id="showTermsBtn">Όρους Χρήσης &amp; Πολιτική Απορρήτου</button>.',
-    signin_age_confirm:'Επιβεβαιώνω ότι είμαι τουλάχιστον 16 ετών.',
-    signin_age_required:'Πρέπει να επιβεβαιώσεις ότι είσαι τουλάχιστον 16 ετών για να δημιουργήσεις λογαριασμό.',
+    signin_age_confirm:'Επιβεβαιώνω ότι είμαι τουλάχιστον 18 ετών.',
+    signin_age_required:'Πρέπει να επιβεβαιώσεις ότι είσαι τουλάχιστον 18 ετών για να δημιουργήσεις λογαριασμό.',
     legal_back:'← Πίσω', legal_title:'Όροι Χρήσης & Πολιτική Απορρήτου', legal_updated:'Τελευταία ενημέρωση: Σεπτέμβριος 2026',
     legal_body: LEGAL_BODY_EL,
     signout:'Αποσύνδεση',
@@ -1089,8 +1093,8 @@ const I18N = {
     signin_password_placeholder:'Password (8+ chars, upper, lower, digit, symbol)',
     signin_submit:'Sign in', signin_register:'Register', signin_forgot:'Forgot your password?',
     signin_legal:'By signing in or registering you accept the <button type="button" class="linklike" id="showTermsBtn">Terms of Use &amp; Privacy Policy</button>.',
-    signin_age_confirm:'I confirm I am at least 16 years old.',
-    signin_age_required:'You must confirm you are at least 16 years old to create an account.',
+    signin_age_confirm:'I confirm I am at least 18 years old.',
+    signin_age_required:'You must confirm you are at least 18 years old to create an account.',
     legal_back:'← Back', legal_title:'Terms of Use & Privacy Policy', legal_updated:'Last updated: September 2026',
     legal_body: LEGAL_BODY_EN,
     signout:'Sign out',
@@ -1101,7 +1105,7 @@ const I18N = {
     onboard_manual_age:'Age', onboard_manual_height:'Height (cm)', onboard_manual_weight:'Weight (kg)',
     onboard_manual_activity:'Activity level', onboard_manual_days:'Training days per week', onboard_manual_experience:'Experience',
     onboard_manual_submit:'Build my program', onboard_manual_back:'← Back to chat',
-    onboard_manual_error:'Please fill in every field with a realistic value (age 16-100, height 100-230cm, weight 30-300kg, 1-7 days/week).',
+    onboard_manual_error:'Please fill in every field with a realistic value (age 18-100, height 100-230cm, weight 30-300kg, 1-7 days/week).',
     greet_morning:'Good morning', greet_afternoon:'Good afternoon', greet_evening:'Good evening',
     dash_hero_label:"Today's workout", dash_exercises:'Exercises', dash_continue:'→ Continue',
     dash_ai_preview_text:'Need an idea for your next meal, or a progress check?', dash_ask_coach:'Ask the Coach',
@@ -1150,6 +1154,7 @@ const I18N = {
     profile_ai_manage_btn:'Manage subscription →',
     profile_ai_comp_note:'Free access granted by the admin.',
     profile_ai_buy_credits_btn:'Buy 50 extra messages — €1.99',
+    profile_ai_twa_note:'To upgrade to Pro or buy extra messages, open this app in your phone\'s regular browser instead of the installed app.',
     profile_ai_credits_balance:'{n} extra messages available',
     profile_ai_upgrade_error:'Something went wrong upgrading. Please try again.',
     profile_ai_upgrade_activating:'Finishing the upgrade… this can take a few seconds.',
@@ -2662,7 +2667,7 @@ async function renderFoodLog(){
   tbody.innerHTML = '';
   entries.forEach((e,i)=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${e.time}</td><td>${e.name}</td><td class="num" data-label="kcal">${e.kcal||0}</td><td class="num" data-label="${t('extra_th_protein')}">${e.protein||0}</td><td class="num" data-label="${t('extra_th_carbs')}">${e.carbs||0}</td><td class="num" data-label="${t('extra_th_fat')}">${e.fat||0}</td><td><button class="del" type="button" data-i="${i}" aria-label="${t('delete_label')} ${e.name}">✕</button></td>`;
+    tr.innerHTML = `<td>${escapeHtml(e.time)}</td><td>${escapeHtml(e.name)}</td><td class="num" data-label="kcal">${e.kcal||0}</td><td class="num" data-label="${t('extra_th_protein')}">${e.protein||0}</td><td class="num" data-label="${t('extra_th_carbs')}">${e.carbs||0}</td><td class="num" data-label="${t('extra_th_fat')}">${e.fat||0}</td><td><button class="del" type="button" data-i="${i}" aria-label="${escapeHtml(t('delete_label'))} ${escapeHtml(e.name)}">✕</button></td>`;
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('.del').forEach(b=>{
@@ -3203,7 +3208,7 @@ async function applyProfileUpdate(jsonText){
   if(obj.daysPerWeek !== undefined){ const d = Number(obj.daysPerWeek); if(d>=1 && d<=7){ p.daysPerWeek = d; changed = true; } }
   if(obj.weightKg !== undefined){ const w = Number(obj.weightKg); if(w>=30 && w<=300){ p.weightKg = w; changed = true; } }
   if(obj.heightCm !== undefined){ const h = Number(obj.heightCm); if(h>=100 && h<=230){ p.heightCm = h; changed = true; } }
-  if(obj.age !== undefined){ const a = Number(obj.age); if(a>=16 && a<=100){ p.age = a; changed = true; } }
+  if(obj.age !== undefined){ const a = Number(obj.age); if(a>=18 && a<=100){ p.age = a; changed = true; } }
   if(!changed) return false;
   p.splitKey = chooseSplitKey(p.daysPerWeek, p.trainingLocation);
   p.targets = computeTargets(p);
@@ -3535,7 +3540,7 @@ function tryFinalizeOnboarding(jsonText, exerciseUpdateJsons, nutritionUpdateJso
   const goals = Object.keys(GOAL_LABELS), acts = Object.keys(ACTIVITY_LABELS), exps = Object.keys(EXPERIENCE_LABELS), locs = Object.keys(LOCATION_LABELS);
   if(!locs.includes(obj.trainingLocation) || !goals.includes(obj.goal) || !acts.includes(obj.activityLevel) || !exps.includes(obj.experience)) return false;
   const age = Number(obj.age), heightCm = Number(obj.heightCm), weightKg = Number(obj.weightKg), daysPerWeek = Number(obj.daysPerWeek);
-  if(!(age>=16 && age<=100)) return false;
+  if(!(age>=18 && age<=100)) return false;
   if(!(heightCm>=100 && heightCm<=230)) return false;
   if(!(weightKg>=30 && weightKg<=300)) return false;
   if(!(daysPerWeek>=1 && daysPerWeek<=7)) return false;
@@ -3649,7 +3654,7 @@ document.getElementById('manualSubmitBtn').addEventListener('click', async ()=>{
   const weightKg = Number(document.getElementById('manualWeight').value);
   const daysPerWeek = Number(document.getElementById('manualDays').value);
   const errEl = document.getElementById('manualFormError');
-  const valid = age>=16 && age<=100 && heightCm>=100 && heightCm<=230 && weightKg>=30 && weightKg<=300 && daysPerWeek>=1 && daysPerWeek<=7;
+  const valid = age>=18 && age<=100 && heightCm>=100 && heightCm<=230 && weightKg>=30 && weightKg<=300 && daysPerWeek>=1 && daysPerWeek<=7;
   if(!valid){
     errEl.textContent = t('onboard_manual_error');
     errEl.classList.remove('hidden');
@@ -3792,6 +3797,16 @@ async function loadAiCredits(){
   }catch(e){ return 0; }
 }
 
+// Trusted Web Activity (the Android app) sets this referrer scheme on
+// launch — it's Google's own documented way to tell a TWA apart from a
+// normal browser tab on the same origin. New purchases must not be
+// initiated from inside a Play-distributed app without Google Play
+// Billing (see Payments policy); existing-subscription management via the
+// Stripe portal isn't a new purchase, so it stays available either way.
+function isRunningInTwa(){
+  return document.referrer.startsWith('android-app://');
+}
+
 async function startStripeAction(btn, action){
   btn.disabled = true;
   try{
@@ -3820,14 +3835,19 @@ async function renderAiProSection(){
   // nothing for "Manage subscription" to open, so show a note instead.
   const isComp = isPro && !!sub.grantedByAdmin;
   const credits = isPro ? 0 : await loadAiCredits();
+  // Only *new* purchases are restricted inside the Android app (Play
+  // Payments policy) — managing an existing Stripe subscription isn't a
+  // purchase, so Pro users keep that button even inside the TWA.
+  const inTwa = isRunningInTwa();
   el.innerHTML = `
     <div class="stat-label">${t('profile_ai_plan_title')}</div>
     <div style="font-weight:700;margin-top:4px;">${isPro ? t('profile_ai_plan_pro') : t('profile_ai_plan_free')}</div>
     <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${isPro ? t('profile_ai_plan_pro_desc') : t('profile_ai_plan_free_desc')}</div>
     ${isComp ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_comp_note')}</div>` : ''}
     ${!isPro && credits > 0 ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_credits_balance', {n: credits})}</div>` : ''}
-    ${!isComp ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${isPro ? t('profile_ai_manage_btn') : t('profile_ai_upgrade_btn')}</button>` : ''}
-    ${!isPro ? `<button class="ghost" type="button" id="aiCreditsActionBtn" style="margin-top:8px;">${t('profile_ai_buy_credits_btn')}</button>` : ''}
+    ${!isComp && (isPro || !inTwa) ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${isPro ? t('profile_ai_manage_btn') : t('profile_ai_upgrade_btn')}</button>` : ''}
+    ${!isPro && !inTwa ? `<button class="ghost" type="button" id="aiCreditsActionBtn" style="margin-top:8px;">${t('profile_ai_buy_credits_btn')}</button>` : ''}
+    ${!isPro && inTwa ? `<div style="font-size:12px;color:var(--text-dim);margin-top:10px;">${t('profile_ai_twa_note')}</div>` : ''}
   `;
   const proBtn = document.getElementById('aiProActionBtn');
   if(proBtn) proBtn.addEventListener('click', (e)=>{
