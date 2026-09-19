@@ -799,6 +799,16 @@
   </div>
 </div>
 
+<div id="camOverlay" class="cam-overlay hidden" role="dialog" aria-modal="true">
+  <video id="camVideo" playsinline muted autoplay></video>
+  <div class="cam-frame" id="camFrame"></div>
+  <div class="cam-hint" id="camHint"></div>
+  <div class="cam-bar">
+    <span></span>
+    <button type="button" class="cam-shutter" id="camShutter" aria-label="Capture"></button>
+    <button type="button" class="ghost" id="camClose" data-i18n="cam_close">Κλείσιμο</button>
+  </div>
+</div>
 <script>
 // ---------- config: fill in after deploying the Cloudflare Worker ----------
 // Replace with your deployed Worker URL, e.g. https://programma-ai.YOUR-SUBDOMAIN.workers.dev
@@ -1006,6 +1016,7 @@ const I18N = {
     extra_fat_placeholder:'λίπος g', extra_fat_aria:'Λίπος σε γραμμάρια',
     scan_btn:'📷 Σάρωση φαγητού με φωτογραφία', scan_busy:'Αναλύω τη φωτογραφία…', scan_fail:'Δεν κατάφερα να διαβάσω τη φωτογραφία. Δοκίμασε ξανά ή συμπλήρωσε χειροκίνητα.', scan_nofood:'Δεν βρήκα φαγητό στη φωτογραφία.', scan_note:'Εκτίμηση από φωτογραφία (AI) — έλεγξε και προσάρμοσε τις τιμές πριν πατήσεις «Προσθήκη».', scan_quota:'Έφτασες το ημερήσιο όριο του Pro. Δοκίμασε αύριο.',
     cam_close:'Κλείσιμο', cam_hint_photo:'Στόχευσε το πιάτο και πάτα το κουμπί',
+    scan_pro:'Η σάρωση φαγητού με φωτογραφία είναι διαθέσιμη μόνο στο Pro. Αναβάθμισε από την καρτέλα Προφίλ.',
     extra_prefill_note:'Οι τιμές είναι εκτίμηση — προσάρμοσέ τις αν χρειάζεται, μετά πάτα «Προσθήκη».',
     nutri_today:'Σήμερα', nutri_of:'από',
     meal_add_log:'+ Πρόσθεσε στην καταγραφή', meal_kcal_estimate:'≈{kcal} kcal',
@@ -1144,6 +1155,7 @@ const I18N = {
     extra_fat_placeholder:'fat g', extra_fat_aria:'Fat in grams',
     scan_btn:'📷 Scan food with a photo', scan_busy:'Analyzing the photo…', scan_fail:'Could not read the photo. Try again or fill in manually.', scan_nofood:'No food found in the photo.', scan_note:'AI estimate from a photo — check and adjust the values before pressing "Add".', scan_quota:'You reached the daily Pro limit. Try again tomorrow.',
     cam_close:'Close', cam_hint_photo:'Point at your plate and press the button',
+    scan_pro:'Food photo scanning is available on Pro only. Upgrade from the Profile tab.',
     extra_prefill_note:'These values are an estimate — adjust if needed, then press "Add".',
     nutri_today:'Today', nutri_of:'of',
     meal_add_log:'+ Add to log', meal_kcal_estimate:'≈{kcal} kcal',
@@ -4099,15 +4111,5 @@ function initApp(){
   refreshAppData();
 }
 </script>
-<div id="camOverlay" class="cam-overlay hidden" role="dialog" aria-modal="true">
-  <video id="camVideo" playsinline muted autoplay></video>
-  <div class="cam-frame" id="camFrame"></div>
-  <div class="cam-hint" id="camHint"></div>
-  <div class="cam-bar">
-    <span></span>
-    <button type="button" class="cam-shutter" id="camShutter" aria-label="Capture"></button>
-    <button type="button" class="ghost" id="camClose" data-i18n="cam_close">Κλείσιμο</button>
-  </div>
-</div>
 </body>
 </html>
