@@ -29,7 +29,7 @@ button, existing Pro users still work).
    - Create the app (bundle id `io.github.s0k0s.aicoach`, or change it in Xcode first).
    - Agreements, Tax, and Banking → accept the *Paid Apps Agreement*, add bank + tax info.
    - App → Subscriptions → create a group and an **auto-renewable monthly** subscription
-     (product id e.g. `pro_monthly`, price €2.99, localised name/description).
+     (product id e.g. `pro_monthly`, price €4.99, localised name/description).
      Consider joining the *App Store Small Business Program* (15% instead of 30%).
 3. **RevenueCat** (revenuecat.com, free tier)
    - New project → add the iOS app (bundle id above), upload the App Store Connect

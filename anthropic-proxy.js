@@ -33,7 +33,11 @@ const AI_MAX_TOKENS_CAP = 700;
 // bounded onboarding allowance below. Every regular AI Coach message needs
 // an active Pro subscription or a purchased credit; see checkAndConsumeQuota.
 const FREE_DAILY_LIMIT = 0;
-const PRO_DAILY_LIMIT = 150;
+// Pro is capped per calendar month (UTC) rather than per day so a heavy user
+// can't run the API bill far past the subscription price; photo scans are
+// metered separately because each one costs more than a text message.
+const PRO_MONTHLY_LIMIT = 200;
+const PRO_MONTHLY_PHOTO_LIMIT = 40;
 // One-time top-up so someone who doesn't want a subscription can still pay
 // per use: once the (zero) free allowance is exhausted, a purchased credit
 // is spent instead of blocking. Pro users never need these.
@@ -213,6 +217,10 @@ function utcDateKey() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
+function utcMonthKey() {
+  return new Date().toISOString().slice(0, 7); // YYYY-MM
+}
+
 function tierFromSubscription(sub) {
   if (sub && sub.status === 'active' && sub.currentPeriodEnd && sub.currentPeriodEnd * 1000 > Date.now()) return 'pro';
   return 'free';
@@ -224,9 +232,11 @@ function tierFromSubscription(sub) {
 // the day's free messages spend a purchased credit instead of being blocked,
 // if they have any (see CREDIT_PACK_SIZE) — Pro users never touch credits,
 // their daily limit is already high.
-async function checkAndConsumeQuota(accessToken, uid, tier) {
-  const limit = tier === 'pro' ? PRO_DAILY_LIMIT : FREE_DAILY_LIMIT;
-  const docId = 'ai-usage:' + utcDateKey();
+async function checkAndConsumeQuota(accessToken, uid, tier, isPhoto) {
+  const limit = tier === 'pro' ? (isPhoto ? PRO_MONTHLY_PHOTO_LIMIT : PRO_MONTHLY_LIMIT) : FREE_DAILY_LIMIT;
+  const docId = tier === 'pro'
+    ? (isPhoto ? 'ai-photo-usage:' : 'ai-usage-month:') + utcMonthKey()
+    : 'ai-usage:' + utcDateKey();
   const existing = await firestoreGetUserDoc(accessToken, uid, docId);
   const count = (existing && existing.count) || 0;
   if (count < limit) {
@@ -283,7 +293,7 @@ async function handleAiProxy(body, cors, env) {
   if (gotFreeOnboardingMessage) {
     quota = { ok: true, limit: null, remaining: null };
   } else {
-    quota = await checkAndConsumeQuota(accessToken, user.uid, tier).catch(() => null);
+    quota = await checkAndConsumeQuota(accessToken, user.uid, tier, body.phase === 'food-photo').catch(() => null);
   }
   if (!quota) {
     return new Response(JSON.stringify({ error: 'server_error' }), { status: 500, headers: cors });
@@ -311,6 +321,9 @@ async function handleAiProxy(body, cors, env) {
     if (!anthropicRes.ok) {
       return new Response(JSON.stringify(data), { status: anthropicRes.status, headers: { 'Content-Type': 'application/json', ...cors } });
     }
+    // Real token usage, so the per-message cost assumption can be checked in
+    // the Worker logs (wrangler tail / Cloudflare dashboard).
+    if (data.usage) console.log('ai_usage', JSON.stringify({ phase: body.phase || 'chat', tier, in: data.usage.input_tokens, out: data.usage.output_tokens }));
     return new Response(JSON.stringify({ ...data, tier, limit: quota.limit, remaining: quota.remaining, viaCredit: !!quota.viaCredit, creditsRemaining: quota.creditsRemaining }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...cors },

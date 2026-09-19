@@ -24,7 +24,7 @@ the iOS app uses Apple IAP; all three write the same
    closed testing track. (Play needs a build with the billing permission before
    you can create subscriptions.)
 2. **Play Console** → Monetize with Play: complete the payments profile, then
-   Subscriptions → create `pro_monthly` (base plan monthly, €2.99). Activate it.
+   Subscriptions → create `pro_monthly` (base plan monthly, €4.99). Activate it.
    Add yourself under Setup → License testing.
 3. **RevenueCat** (same project as iOS): add an Android app (package
    `io.github.s0k0s.aicoach`), upload a Google Play service-account JSON (Play
