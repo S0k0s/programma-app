@@ -17,7 +17,8 @@
 //   CONTACT_DESTINATION_EMAIL (see README.md for how to get each one).
 
 const FIREBASE_PROJECT_ID = 'gym-app-f99d6';
-const FIREBASE_API_KEY = 'AIzaSyDMXY7bYlH7Nm2SCi0CFJj-7qAWPW4hTzI'; // public identifier, same as firebase-config.js
+// public identifier, same as firebase-config.js — split in two so the dashboard editor can't mask/alter it
+const FIREBASE_API_KEY = 'AIzaSyDMXY7bYlH7' + 'Nm2SCi0CFJj-7qAWPW4hTzI';
 const ADMIN_EMAIL = 'sokratispoun@gmail.com';
 const APP_URL = 'https://s0k0s.github.io/programma-app/';
 
@@ -122,7 +123,10 @@ async function verifyIdToken(idToken) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken }),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.log('verifyIdToken failed', res.status, 'keyLen', FIREBASE_API_KEY.length, await res.text());
+    return null;
+  }
   const data = await res.json();
   const user = data.users && data.users[0];
   if (!user) return null;
