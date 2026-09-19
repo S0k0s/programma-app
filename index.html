@@ -68,6 +68,7 @@
   .profile-shortcut-btn{background:none;border:none;cursor:pointer;padding:0;flex:none;}
   .backlink{display:inline-flex;align-items:center;gap:4px;color:var(--text-dim);font-size:12.5px;background:none;border:none;cursor:pointer;margin-bottom:10px;padding:4px 0;}
   .backlink:hover{color:var(--accent);}
+  .nutri-links{display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
   .dash-link{display:inline-flex;align-items:center;gap:4px;color:var(--text-dim);font-size:12.5px;background:none;border:none;cursor:pointer;padding:6px 0;}
   .dash-link:hover{color:var(--accent);}
 
@@ -668,8 +669,10 @@
     <div class="targets" id="targetsGrid"></div>
     <div class="nutri-progress" id="nutriProgress"></div>
     <div class="mealgrid" id="mealGrid"></div>
-    <button class="dash-link" type="button" id="resetMealsBtn" data-i18n="meals_reset">Επαναφορά γευμάτων</button>
-    <button class="dash-link" type="button" id="toExtraBtn" data-i18n="nutrition_extra_link">Καταγραφή έξτρα φαγητού →</button>
+    <div class="nutri-links">
+      <button class="dash-link" type="button" id="toExtraBtn" data-i18n="nutrition_extra_link">Καταγραφή έξτρα φαγητού →</button>
+      <button class="dash-link" type="button" id="resetMealsBtn" data-i18n="meals_reset">Επαναφορά γευμάτων</button>
+    </div>
   </section>
 
   <!-- EXTRA FOOD -->
@@ -2828,19 +2831,24 @@ async function scanFoodPhoto(file){
   btn.disabled = true; show(t('scan_busy'));
   try{
     const data64 = await scanImageToBase64(file);
-    const idToken = await currentUser.getIdToken();
     const sys = 'You are a nutrition estimator. Look at the photo and estimate the TOTAL nutrition of the meal/food shown for the visible portion. '
       + 'Reply with ONLY a JSON object, no prose, no markdown: {"name":"short food name in '+(lang==='en'?'English':'Greek')+'","kcal":number,"protein":number,"carbs":number,"fat":number}. '
       + 'Numbers are whole numbers (kcal, grams). If there is no food in the photo reply {"name":null}.';
-    const res = await fetch(WORKER_URL, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ idToken, phase:'food-photo', max_tokens:200, system: sys,
-        messages:[{role:'user', content:[
-          {type:'image', source:{type:'base64', media_type:'image/jpeg', data:data64}},
-          {type:'text', text:'Estimate this food.'}
-        ]}] })
-    });
-    const data = await res.json().catch(()=>({}));
+    const send = async (forceRefresh)=>{
+      const idToken = await currentUser.getIdToken(forceRefresh);
+      const r = await fetch(WORKER_URL, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ idToken, phase:'food-photo', max_tokens:200, system: sys,
+          messages:[{role:'user', content:[
+            {type:'image', source:{type:'base64', media_type:'image/jpeg', data:data64}},
+            {type:'text', text:'Estimate this food.'}
+          ]}] })
+      });
+      return { res: r, data: await r.json().catch(()=>({})) };
+    };
+    // A 401 can mean the cached sign-in token went stale — refresh it and retry once.
+    let { res, data } = await send(false);
+    if(res.status === 401) ({ res, data } = await send(true));
     if(authEpoch !== epochAtStart) return;
     if(res.status === 403 && data.error === 'pro_required'){ show(t('scan_pro')); return; }
     if(res.status === 403 && data.error === 'quota_exceeded'){ show(t('scan_quota')); return; }
