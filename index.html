@@ -3182,6 +3182,9 @@ function buildCoachSystemPrompt(){
   const name = getFirstName();
   const dayList = (typeof DAYS !== 'undefined' && DAYS) ? Object.keys(DAYS).map(k=>`${k} (${L2(DAYS[k].label)})`).join(', ') : '';
   const mealList = Object.keys(MEALS).map(k=>`${k} (${L2(MEALS[k].label)})`).join(', ');
+  // The coach must see the current options: an update REPLACES a meal's whole
+  // list, so without them it can only invent a fresh (often single-item) list.
+  const mealOptionsNow = Object.keys(MEALS).map(k=>`${k}: ` + getMealOptions(k).map((o,i)=>`${i+1}) ${L2(o && o.text ? o.text : o)}`).join(' | ')).join('\n');
 
   if(lang === 'en'){
     const pronoun = p.sex === 'female' ? 'a woman' : 'a man';
@@ -3206,7 +3209,7 @@ Valid fields and values: trainingLocation ("gym"|"home"), goal ("fat_loss"|"musc
 \`\`\`nutrition-update
 {"targets":{"carbs":300},"meals":{"lunch":{"options":["Option 1 with details","Option 2 with details"]}}}
 \`\`\`
-"targets" is an optional partial override on top of the targets (fields: kcal, protein, fat, carbs — numbers). "meals" is optional — key MUST be one of the meal keys above, and "options" is the FULL new list of options for that meal (replaces the old one, 3-7 realistic options, in English, each with an approximate quantity like "150-200g" or "1 cup" — not just the food name). Use this ONLY when they explicitly ask to change nutrition/targets/food options, not for a simple "what should I eat now" question.`;
+"targets" is an optional partial override on top of the targets (fields: kcal, protein, fat, carbs — numbers). "meals" is optional — key MUST be one of the meal keys above, and "options" is the FULL new list of options for that meal (replaces the old one entirely — so start from the CURRENT options listed below and change ONLY what the user asked for, keeping every other option and the same number of options; never return fewer than 3; each with an approximate quantity like "150-200g" or "1 cup" — not just the food name). Current options:\n${mealOptionsNow}\n Use this ONLY when they explicitly ask to change nutrition/targets/food options, not for a simple "what should I eat now" question.`;
     return s;
   }
 
@@ -3232,7 +3235,7 @@ Valid fields and values: trainingLocation ("gym"|"home"), goal ("fat_loss"|"musc
 \`\`\`nutrition-update
 {"targets":{"carbs":300},"meals":{"lunch":{"options":["Επιλογή 1 με λεπτομέρειες","Επιλογή 2 με λεπτομέρειες"]}}}
 \`\`\`
-Το "targets" είναι προαιρετικό partial override πάνω στους στόχους (πεδία: kcal, protein, fat, carbs — αριθμοί). Το "meals" είναι προαιρετικό — key ΠΡΕΠΕΙ να είναι ένα από τα παραπάνω meal keys, και "options" είναι η ΠΛΗΡΗΣ νέα λίστα επιλογών για αυτό το γεύμα (αντικαθιστά την παλιά, 3-7 ρεαλιστικές επιλογές, ελληνικά, η κάθε μία με μια κατά προσέγγιση ποσότητα όπως "150-200γρ" ή "1 φλιτζάνι" — όχι μόνο το όνομα του φαγητού). Χρησιμοποίησε αυτό ΜΟΝΟ όταν ζητάει ρητά αλλαγή στη διατροφή/στόχους/επιλογές φαγητού, όχι για μια απλή ερώτηση τύπου "τι να φάω τώρα".`;
+Το "targets" είναι προαιρετικό partial override πάνω στους στόχους (πεδία: kcal, protein, fat, carbs — αριθμοί). Το "meals" είναι προαιρετικό — key ΠΡΕΠΕΙ να είναι ένα από τα παραπάνω meal keys, και "options" είναι η ΠΛΗΡΗΣ νέα λίστα επιλογών για αυτό το γεύμα (αντικαθιστά εξ ολοκλήρου την παλιά — άρα ξεκίνα από τις ΤΡΕΧΟΥΣΕΣ επιλογές που φαίνονται παρακάτω και άλλαξε ΜΟΝΟ ό,τι ζήτησε ο χρήστης, κρατώντας όλες τις άλλες επιλογές και τον ίδιο αριθμό επιλογών· ποτέ λιγότερες από 3· η κάθε μία με μια κατά προσέγγιση ποσότητα όπως "150-200γρ" ή "1 φλιτζάνι" — όχι μόνο το όνομα του φαγητού). Τρέχουσες επιλογές:\n${mealOptionsNow}\n Χρησιμοποίησε αυτό ΜΟΝΟ όταν ζητάει ρητά αλλαγή στη διατροφή/στόχους/επιλογές φαγητού, όχι για μια απλή ερώτηση τύπου "τι να φάω τώρα".`;
   return s;
 }
 
@@ -3306,7 +3309,10 @@ function sanitizeNutritionUpdate(currentTargets, currentCustomMeals, obj){
       if(!MEALS[key]) return;
       const entry = obj.meals[key];
       const opts = entry && Array.isArray(entry.options) ? entry.options.map(o=>String(o).slice(0,200)).filter(Boolean).slice(0,10) : null;
-      if(opts && opts.length){
+      // A meal update replaces the whole list — refuse one that would shrink it
+      // to a stub (<3 options), which is what a model that can't see the
+      // current options tends to produce.
+      if(opts && opts.length >= 3){
         customMeals[key] = opts;
         changed = true;
       }
