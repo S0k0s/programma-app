@@ -483,6 +483,11 @@
       <span data-i18n="signin_age_confirm">I confirm I am at least 18 years old.</span>
     </label>
 
+    <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:10px;margin-bottom:14px;color:var(--muted,#9aa0a6);">
+      <input type="checkbox" id="healthConsentCheckbox" style="margin-top:3px;flex-shrink:0;">
+      <span data-i18n="signin_health_consent">I explicitly consent to the processing of my health-related data.</span>
+    </label>
+
     <p class="legal-disclaimer" data-i18n-html="signin_legal">Συνδεόμενος/η ή εγγραφόμενος/η αποδέχεσαι τους
       <button type="button" class="linklike" id="showTermsBtn">Όρους Χρήσης &amp; Πολιτική Απορρήτου</button>.</p>
   </div>
@@ -777,6 +782,7 @@
     </div>
     <button class="dash-link" type="button" id="showTermsFromProfileBtn" style="margin-top:24px;" data-i18n="profile_terms_link">Όροι Χρήσης &amp; Πολιτική Απορρήτου →</button>
     <button class="ghost" type="button" id="profileSignOutBtn" style="margin-top:14px;color:var(--danger);border-color:var(--danger);" data-i18n="signout">Αποσύνδεση</button>
+    <button class="dash-link" type="button" id="exportDataBtn" style="margin-top:18px;" data-i18n="profile_export_data">Download my data →</button>
     <button class="dash-link" type="button" id="deleteAccountBtn" style="margin-top:18px;color:var(--danger);" data-i18n="profile_delete_account">Διαγραφή λογαριασμού →</button>
   </section>
 
@@ -935,16 +941,22 @@ let legalGateReturnTo = 'signin-gate';
 const LEGAL_BODY_EL = `
 <h2>Τι είναι το AI Coach</h2>
 <p>Το AI Coach είναι μια προσωπική εφαρμογή προπόνησης και διατροφής. Δημιουργεί εξατομικευμένο πρόγραμμα προπόνησης και στόχους διατροφής με τη βοήθεια ενός AI βοηθού, και σου επιτρέπει να καταγράφεις την πρόοδό σου.</p>
+<h2>Υπεύθυνος επεξεργασίας</h2>
+<p>Υπεύθυνος επεξεργασίας είναι ο διαχειριστής του AI Coach, τον οποίο μπορείς να προσεγγίσεις για κάθε θέμα απορρήτου στο sokratispoun@gmail.com.</p>
 <h2>Τι δεδομένα συλλέγουμε</h2>
 <p>Email διεύθυνση (για σύνδεση και επικοινωνία)· στοιχεία σώματος και στόχους που δίνεις οικειοθελώς (ηλικία, ύψος, βάρος, φύλο, στόχος, επίπεδο δραστηριότητας, τυχόν τραυματισμούς/διατροφικούς περιορισμούς)· ιστορικό προπονήσεων και καταγραφών φαγητού που καταχωρείς· και το περιεχόμενο των συνομιλιών σου με τον AI Coach.</p>
 <h2>Πώς χρησιμοποιούνται</h2>
-<p>Χρησιμοποιούμε αυτά τα δεδομένα αποκλειστικά για να λειτουργήσει η εφαρμογή για εσένα: να υπολογίσουμε το πρόγραμμά σου και τους διατροφικούς σου στόχους, να δείξουμε το ιστορικό σου, και να απαντήσει ο AI Coach στις ερωτήσεις σου με βάση το δικό σου προφίλ. Δεν πουλάμε ή μοιραζόμαστε τα δεδομένα σου με τρίτους για διαφημιστικούς σκοπούς.</p>
+<p>Χρησιμοποιούμε τα δεδομένα αυτά αποκλειστικά για να λειτουργεί η εφαρμογή για εσένα: για να υπολογίζουμε το πρόγραμμα και τους διατροφικούς σου στόχους, να εμφανίζουμε το ιστορικό σου και να απαντά ο AI Coach στις ερωτήσεις σου με βάση το δικό σου προφίλ. Δεν πουλάμε ούτε μοιραζόμαστε τα δεδομένα σου με τρίτους για διαφημιστικούς σκοπούς. Οι νομικές βάσεις είναι: η εκτέλεση της υπηρεσίας για την οποία εγγράφηκες (άρθρο 6 παρ. 1 β΄ ΓΚΠΔ) και, για τα δεδομένα υγείας, η ρητή συγκατάθεσή σου (άρθρο 9 παρ. 2 α΄ ΓΚΠΔ).</p>
+<h2>Δεδομένα υγείας &amp; η συγκατάθεσή σου</h2>
+<p>Οι σωματικές μετρήσεις, οι στόχοι, οι τραυματισμοί, οι διατροφικές σημειώσεις και το ιστορικό προπονήσεων και φαγητού είναι δεδομένα που αφορούν την υγεία («ειδική κατηγορία»). Τα επεξεργαζόμαστε μόνο με τη ρητή συγκατάθεσή σου, την οποία δίνεις κατά την εγγραφή (ή την πρώτη φορά που ανοίγεις την εφαρμογή, αν είχες εγγραφεί νωρίτερα), και μόνο για τις λειτουργίες της εφαρμογής, συμπεριλαμβανομένης της αποστολής των σχετικών στοιχείων στον πάροχο τεχνητής νοημοσύνης για την παραγωγή των απαντήσεων. Μπορείς να ανακαλέσεις τη συγκατάθεση οποτεδήποτε διαγράφοντας τον λογαριασμό σου από το Προφίλ· η ανάκληση δεν επηρεάζει την επεξεργασία που έγινε πριν από αυτήν. Χωρίς τη συγκατάθεση αυτή δεν μπορούμε να παρέχουμε την υπηρεσία.</p>
 <h2>Τρίτοι πάροχοι υπηρεσιών</h2>
-<p>Τα δεδομένα σου αποθηκεύονται στην υποδομή της Google (Firebase/Firestore), με πρόσβαση κλειδωμένη ώστε μόνο εσύ (και, σε περιορισμένο βαθμό, ο διαχειριστής της εφαρμογής για λόγους διαχείρισης λογαριασμών) να μπορεί να δει τα δικά σου δεδομένα — κανένας άλλος χρήστης δεν έχει πρόσβαση σε αυτά. Όταν χρησιμοποιείς τον AI Coach ή τη σάρωση φαγητού με φωτογραφία, το ερώτημά σου (ή η φωτογραφία, που δεν αποθηκεύεται στην εφαρμογή) μαζί με μια σύντομη περίληψη του προφίλ/ιστορικού σου αποστέλλεται στην Anthropic (την εταιρεία πίσω από το μοντέλο Claude) μέσω ενός ενδιάμεσου server, αποκλειστικά για να παραχθεί η απάντηση — δεν χρησιμοποιείται για να εκπαιδευτούν μοντέλα τρίτων εκτός αν η Anthropic ορίζει διαφορετικά στη δική της πολιτική.</p>
+<p>Τα δεδομένα σου αποθηκεύονται στην υποδομή της Google (Firebase/Firestore), με πρόσβαση κλειδωμένη ώστε μόνο εσύ (και, σε περιορισμένο βαθμό, ο διαχειριστής της εφαρμογής για λόγους διαχείρισης λογαριασμών) να μπορεί να δει τα δικά σου δεδομένα — κανένας άλλος χρήστης δεν έχει πρόσβαση σε αυτά. Όταν χρησιμοποιείς τον AI Coach ή τη σάρωση φαγητού με φωτογραφία, το ερώτημά σου (ή η φωτογραφία, που δεν αποθηκεύεται στην εφαρμογή) μαζί με μια σύντομη περίληψη του προφίλ/ιστορικού σου αποστέλλεται στην Anthropic (την εταιρεία πίσω από το μοντέλο Claude) μέσω ενός ενδιάμεσου server, αποκλειστικά για να παραχθεί η απάντηση — δεν χρησιμοποιείται για να εκπαιδευτούν μοντέλα τρίτων εκτός αν η Anthropic ορίζει διαφορετικά στη δική της πολιτική. Οι συνδρομές που αγοράζονται στην εφαρμογή iOS επεξεργάζονται από την Apple και όσες αγοράζονται στην εφαρμογή Android από το Google Play· ο πάροχος διαχείρισης συνδρομών RevenueCat λαμβάνει το αναγνωριστικό του λογαριασμού και την κατάσταση της αγοράς, για να επιβεβαιώνει τη συνδρομή σου. Τα μηνύματα που στέλνεις μέσω της φόρμας επικοινωνίας παραδίδονται μέσω Resend. Η κάμερα χρησιμοποιείται μόνο όταν πατήσεις το κουμπί σάρωσης φαγητού και μόνο για τη λήψη της φωτογραφίας που επιλέγεις να αναλυθεί. Οι πάροχοι αυτοί ενεργούν ως εκτελούντες την επεξεργασία ή ως ανεξάρτητοι υπεύθυνοι, σύμφωνα με τους δικούς τους όρους.</p>
 <h2>Διεθνής διαβίβαση δεδομένων</h2>
 <p>Η Anthropic εδρεύει στις ΗΠΑ, οπότε τα δεδομένα που της αποστέλλονται για την παραγωγή απαντήσεων του AI Coach διαβιβάζονται εκτός Ευρωπαϊκού Οικονομικού Χώρου. Αυτή η διαβίβαση πραγματοποιείται βάσει κατάλληλων εγγυήσεων (όπως Τυποποιημένες Συμβατικές Ρήτρες της Ευρωπαϊκής Επιτροπής), όπως προβλέπεται από τον Γενικό Κανονισμό Προστασίας Δεδομένων (GDPR).</p>
 <h2>Διατήρηση &amp; διαγραφή δεδομένων</h2>
-<p>Τα δεδομένα σου παραμένουν όσο διατηρείς τον λογαριασμό σου ενεργό. Μπορείς να διαγράψεις μόνιμα τον λογαριασμό σου και όλα τα δεδομένα σου ανά πάσα στιγμή από την καρτέλα Προφίλ. Η διαγραφή είναι οριστική και δεν μπορεί να αναιρεθεί.</p>
+<p>Τα δεδομένα σου παραμένουν όσο διατηρείς τον λογαριασμό σου ενεργό. Μπορείς να διαγράψεις οριστικά τον λογαριασμό και όλα τα δεδομένα σου οποτεδήποτε από την καρτέλα Προφίλ· η διαγραφή αφαιρεί το προφίλ, τα ιστορικά, τη συνομιλία και την εγγραφή του λογαριασμού από τη βάση μας και δεν αναιρείται. Τα αρχεία αγορών τηρούνται από την Apple, τη Google και τους παρόχους πληρωμών/συνδρομών όσο απαιτεί ο νόμος (π.χ. φορολογικοί και λογιστικοί κανόνες) και δεν ελέγχονται από την εφαρμογή. Το ιστορικό συνομιλίας με τον AI Coach περιορίζεται στα πιο πρόσφατα μηνύματα και οι φωτογραφίες που σαρώνεις δεν αποθηκεύονται.</p>
+<h2>Τα δικαιώματά σου</h2>
+<p>Σύμφωνα με τον ΓΚΠΔ έχεις δικαίωμα πρόσβασης, διόρθωσης, διαγραφής και περιορισμού της χρήσης των δεδομένων σου, εναντίωσης στην επεξεργασία, ανάκλησης της συγκατάθεσής σου και λήψης των δεδομένων σου σε φορητή μορφή. Μπορείς να κατεβάσεις αντίγραφο των δεδομένων σου από το Προφίλ («Λήψη των δεδομένων μου») και να διαγράψεις τον λογαριασμό σου εκεί· για οτιδήποτε άλλο, γράψε στο sokratispoun@gmail.com. Έχεις επίσης δικαίωμα υποβολής καταγγελίας στην αρχή προστασίας δεδομένων (στην Ελλάδα: Αρχή Προστασίας Δεδομένων Προσωπικού Χαρακτήρα, dpa.gr).</p>
 <h2>Ασφάλεια</h2>
 <p>Η πρόσβαση στα δεδομένα ελέγχεται από κανόνες ασφαλείας στο επίπεδο της βάσης δεδομένων, όχι μόνο από τον κώδικα της εφαρμογής — δηλαδή κανένας χρήστης δεν μπορεί τεχνικά να διαβάσει τα δεδομένα άλλου χρήστη, ούτε παρακάμπτοντας την εφαρμογή.</p>
 <h2>Ιατρική αποποίηση ευθύνης</h2>
@@ -965,16 +977,22 @@ const LEGAL_BODY_EL = `
 const LEGAL_BODY_EN = `
 <h2>What AI Coach is</h2>
 <p>AI Coach is a personal training and nutrition app. It builds a personalized training program and nutrition targets with the help of an AI assistant, and lets you track your progress.</p>
+<h2>Data controller</h2>
+<p>The data controller is the operator of AI Coach, reachable for any privacy matter at sokratispoun@gmail.com.</p>
 <h2>What data we collect</h2>
 <p>Your email address (for sign-in and communication); body stats and goals you provide voluntarily (age, height, weight, sex, goal, activity level, any injuries/dietary restrictions); your workout and food-log history; and the content of your conversations with the AI Coach.</p>
 <h2>How it's used</h2>
-<p>We use this data solely to run the app for you: to calculate your program and nutrition targets, to show your history, and to let the AI Coach answer your questions based on your own profile. We do not sell or share your data with third parties for advertising purposes.</p>
+<p>We use this data solely to run the app for you: to calculate your program and nutrition targets, to show your history, and to let the AI Coach answer your questions based on your own profile. We do not sell or share your data with third parties for advertising purposes. Our legal bases are: performing the service you signed up for (Art. 6(1)(b) GDPR) and, for your health-related data, your explicit consent (Art. 9(2)(a) GDPR).</p>
+<h2>Health data &amp; your consent</h2>
+<p>Body measurements, goals, injuries, dietary notes, and your workout and food logs are health-related ("special category") data. We process them only with your explicit consent, which you give when you register (or the first time you open the app if you registered earlier), and only to provide the app's features, including sending the relevant parts to our AI provider to generate your coaching replies. You can withdraw your consent at any time by deleting your account from the Profile tab; withdrawal does not affect processing done before it. Without this consent we cannot provide the service.</p>
 <h2>Third-party service providers</h2>
-<p>Your data is stored on Google's infrastructure (Firebase/Firestore), access-locked so that only you (and, to a limited extent, the app's administrator for account-management purposes) can see your own data — no other user has access to it. When you use the AI Coach or photo food scanning, your question (or the photo, which is not stored in the app) along with a short summary of your profile/history is sent to Anthropic (the company behind the Claude model) through an intermediary server, solely to generate the reply — it is not used to train third-party models unless Anthropic's own policy states otherwise.</p>
+<p>Your data is stored on Google's infrastructure (Firebase/Firestore), access-locked so that only you (and, to a limited extent, the app's administrator for account-management purposes) can see your own data — no other user has access to it. When you use the AI Coach or photo food scanning, your question (or the photo, which is not stored in the app) along with a short summary of your profile/history is sent to Anthropic (the company behind the Claude model) through an intermediary server, solely to generate the reply — it is not used to train third-party models unless Anthropic's own policy states otherwise. Subscriptions bought in the iOS app are processed by Apple, and those bought in the Android app by Google Play; our subscription-management provider RevenueCat receives your account ID and the purchase status to confirm your subscription. Emails you send through the contact form are delivered via Resend. The camera is used only when you tap the food-scan button and only to capture the photo you choose to analyse. These providers act as our processors or independent controllers under their own terms.</p>
 <h2>International data transfers</h2>
 <p>Anthropic is based in the United States, so data sent to it to generate AI Coach replies is transferred outside the European Economic Area. This transfer relies on appropriate safeguards (such as the European Commission's Standard Contractual Clauses), as required by the General Data Protection Regulation (GDPR).</p>
 <h2>Data retention &amp; deletion</h2>
-<p>Your data remains for as long as you keep your account active. You can permanently delete your account and all your data at any time from the Profile tab. Deletion is final and cannot be undone.</p>
+<p>Your data remains for as long as you keep your account active. You can permanently delete your account and all your data at any time from the Profile tab; deletion removes your profile, logs, chat history and account record from our database and cannot be undone. Purchase records are kept by Apple, Google and our payment/subscription providers for as long as the law (e.g. tax and accounting rules) requires and are outside the app's control. AI Coach chat history is limited to your most recent messages, and photos you scan are not stored.</p>
+<h2>Your rights</h2>
+<p>Under the GDPR you have the right to access, correct, delete and restrict the use of your data, to object to its processing, to withdraw your consent, and to receive your data in a portable format. You can download a copy of your data from the Profile tab ("Download my data") and delete your account there as well; for anything else, write to sokratispoun@gmail.com. You also have the right to lodge a complaint with your data protection authority (in Greece: the Hellenic Data Protection Authority, dpa.gr).</p>
 <h2>Security</h2>
 <p>Access to data is enforced by security rules at the database level, not just by the app's code — meaning no user can technically read another user's data, even by bypassing the app itself.</p>
 <h2>Medical disclaimer</h2>
@@ -1030,6 +1048,9 @@ const I18N = {
     cam_close:'Κλείσιμο', cam_hint_photo:'Στόχευσε το πιάτο και πάτα το κουμπί',
     scan_pro:'Η σάρωση φαγητού με φωτογραφία είναι διαθέσιμη μόνο στο Pro. Αναβάθμισε από την καρτέλα Προφίλ.',
     cam_fallback:'Η ζωντανή κάμερα δεν είναι διαθέσιμη. Πάτα ξανά το κουμπί για να τραβήξεις φωτογραφία με την κάμερα του κινητού.', meals_reset:'Επαναφορά γευμάτων', meals_reset_confirm:'Να επαναφερθούν όλα τα γεύματα στις προεπιλεγμένες επιλογές; Οι αλλαγές που έγιναν από τον AI Coach θα χαθούν.', meals_reset_done:'Τα γεύματα επαναφέρθηκαν.',
+    signin_health_consent:'Συναινώ ρητά στην επεξεργασία των δεδομένων υγείας μου (βάρος, ύψος, ηλικία, τραυματισμοί, διατροφικές σημειώσεις, ιστορικό προπόνησης και φαγητού) από το AI Coach, συμπεριλαμβανομένης της αποστολής τους στον πάροχο τεχνητής νοημοσύνης για την παραγωγή απαντήσεων. Μπορώ να ανακαλέσω τη συγκατάθεση διαγράφοντας τον λογαριασμό μου.', signin_health_required:'Για να δημιουργήσεις λογαριασμό πρέπει να δώσεις τη ρητή συγκατάθεσή σου για την επεξεργασία των δεδομένων υγείας.',
+    consent_modal_message:'Το AI Coach επεξεργάζεται δεδομένα που αφορούν την υγεία σου (βάρος, ύψος, ηλικία, τραυματισμούς, διατροφικές σημειώσεις, ιστορικό προπόνησης και φαγητού), συμπεριλαμβανομένης της αποστολής των σχετικών στοιχείων στον πάροχο τεχνητής νοημοσύνης για τις απαντήσεις του Coach. Συναινείς ρητά; Μπορείς να ανακαλέσεις τη συγκατάθεση διαγράφοντας τον λογαριασμό σου. Χωρίς συγκατάθεση δεν μπορούμε να παρέχουμε την υπηρεσία.', consent_modal_ok:'Συναινώ', consent_modal_decline:'Αποσύνδεση',
+    profile_export_data:'Λήψη των δεδομένων μου →', export_done:'Τα δεδομένα σου ετοιμάστηκαν.', export_error:'Δεν ήταν δυνατή η λήψη των δεδομένων. Δοκίμασε ξανά.', export_copy_note:'Αντίγραψε το κείμενο παρακάτω και αποθήκευσέ το σε αρχείο (.json):',
     extra_prefill_note:'Οι τιμές είναι εκτίμηση — προσάρμοσέ τις αν χρειάζεται, μετά πάτα «Προσθήκη».',
     nutri_today:'Σήμερα', nutri_of:'από',
     meal_add_log:'+ Πρόσθεσε στην καταγραφή', meal_kcal_estimate:'≈{kcal} kcal',
@@ -1172,6 +1193,9 @@ const I18N = {
     cam_close:'Close', cam_hint_photo:'Point at your plate and press the button',
     scan_pro:'Food photo scanning is available on Pro only. Upgrade from the Profile tab.',
     cam_fallback:'Live camera is not available. Tap the button again to take a photo with your phone camera.', meals_reset:'Reset meals', meals_reset_confirm:'Restore all meals to the default options? Changes made by the AI Coach will be lost.', meals_reset_done:'Meals restored.',
+    signin_health_consent:'I explicitly consent to the processing of my health-related data (weight, height, age, injuries, dietary notes, workout and food logs) by AI Coach, including sending it to the AI provider to generate replies. I can withdraw my consent by deleting my account.', signin_health_required:'To create an account you must give your explicit consent to the processing of health data.',
+    consent_modal_message:'AI Coach processes data about your health (weight, height, age, injuries, dietary notes, workout and food logs), including sending the relevant parts to the AI provider to generate the Coach\'s replies. Do you explicitly consent? You can withdraw your consent by deleting your account. Without consent we cannot provide the service.', consent_modal_ok:'I consent', consent_modal_decline:'Sign out',
+    profile_export_data:'Download my data →', export_done:'Your data is ready.', export_error:'Could not download your data. Please try again.', export_copy_note:'Copy the text below and save it as a .json file:',
     extra_prefill_note:'These values are an estimate — adjust if needed, then press "Add".',
     nutri_today:'Today', nutri_of:'of',
     meal_add_log:'+ Add to log', meal_kcal_estimate:'≈{kcal} kcal',
@@ -1378,6 +1402,15 @@ document.getElementById('googleSignInBtn').addEventListener('click', async ()=>{
         showSigninError(t('signin_age_required'));
         return;
       }
+      if(!document.getElementById('healthConsentCheckbox').checked){
+        const uid = result.user.uid;
+        await db.collection('access').doc(uid).delete().catch(()=>{});
+        await result.user.delete().catch(()=>{});
+        signOutCleanup();
+        showSigninError(t('signin_health_required'));
+        return;
+      }
+      healthConsentFromSignup = true;
       if(result.user.email){
         let methods = [];
         try{ methods = await auth.fetchSignInMethodsForEmail(result.user.email); }catch(e){}
@@ -1461,6 +1494,11 @@ document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>
     showSigninError(t('signin_age_required'));
     return;
   }
+  if(!document.getElementById('healthConsentCheckbox').checked){
+    showSigninError(t('signin_health_required'));
+    return;
+  }
+  healthConsentFromSignup = true;
   const strengthError = passwordStrengthError(password);
   if(strengthError){
     showSigninError(strengthError);
@@ -1535,6 +1573,44 @@ document.getElementById('showTermsFromProfileBtn').addEventListener('click', ()=
 });
 document.getElementById('legalBackBtn').addEventListener('click', ()=>{
   showGate(legalGateReturnTo);
+});
+
+// ---------- data export (GDPR access / portability) ----------
+// Collects everything stored for the signed-in user under users/{uid}/data
+// (profile, logs, chat history, consent record, subscription status) into one
+// JSON file. Shared via the system share sheet where the browser supports
+// file sharing (iOS/Android), otherwise downloaded, otherwise shown to copy.
+async function exportUserData(){
+  const snap = await db.collection('users').doc(currentUser.uid).collection('data').get();
+  const data = {};
+  snap.forEach(doc=>{
+    const v = doc.data().value;
+    try{ data[doc.id] = JSON.parse(v); }catch(e){ data[doc.id] = v; }
+  });
+  return { exportedAt: new Date().toISOString(), account: { uid: currentUser.uid, email: currentUser.email || null }, data };
+}
+document.getElementById('exportDataBtn').addEventListener('click', async (e)=>{
+  const btn = e.currentTarget; btn.disabled = true;
+  try{
+    const json = JSON.stringify(await exportUserData(), null, 2);
+    const name = 'ai-coach-data-'+todayKey()+'.json';
+    const file = new File([json], name, {type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:name});
+    }else{
+      try{
+        const url = URL.createObjectURL(new Blob([json], {type:'application/json'}));
+        const a = document.createElement('a'); a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 5000);
+        await customAlert(t('export_done'));
+      }catch(err){
+        await showModal({message: t('export_copy_note')+'\n\n'+json.slice(0,4000), mode:'alert'});
+      }
+    }
+  }catch(err){
+    if(err && err.name === 'AbortError') { /* user closed the share sheet */ }
+    else{ console.error('export failed', err); await customAlert(t('export_error')); }
+  }finally{ btn.disabled = false; }
 });
 
 // ---------- account deletion ----------
@@ -1770,8 +1846,35 @@ function watchAccess(user){
   }, err=>{ console.error('access watch error', err); });
 }
 
+// Health data is a GDPR "special category": it needs explicit consent. New
+// accounts give it with the sign-up checkbox; accounts created before that
+// existed are asked once, here, before the app opens. The consent (and when)
+// is stored in the user's own data (users/{uid}/data/consent).
+let healthConsentFromSignup = false;
+async function ensureHealthConsent(){
+  const epochAtStart = authEpoch;
+  let existing = null;
+  try{
+    const r = await storage.get('consent');
+    existing = JSON.parse(r.value);
+  }catch(e){
+    if(!(e && e.message === 'not found')) return true; // can't tell (offline etc.) — don't lock the user out
+  }
+  if(existing && existing.health) return true;
+  let agreed = healthConsentFromSignup;
+  if(!agreed){
+    agreed = await showModal({message: t('consent_modal_message'), okLabel: t('consent_modal_ok'), cancelLabel: t('consent_modal_decline')});
+  }
+  if(authEpoch !== epochAtStart) return false;
+  if(!agreed){ signOutCleanup(); auth.signOut(); return false; }
+  try{ await storage.set('consent', JSON.stringify({health:true, at:new Date().toISOString(), version:1})); }catch(e){ console.error(e); }
+  healthConsentFromSignup = false;
+  return true;
+}
+
 async function onAccessApproved(){
   const epochAtStart = authEpoch;
+  if(!(await ensureHealthConsent())) return;
   let profile = null;
   try{
     const res = await storage.get('profile');
