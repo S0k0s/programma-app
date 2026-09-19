@@ -16,9 +16,7 @@ Not legal or tax advice — have a lawyer/accountant confirm the open items.
 - Store paperwork drafts in `store-assets/` (privacy label, listing, review notes).
 
 ## Still needs YOU
-1. **Controller identity:** the policy names "the operator of AI Coach" + email only. As a sole
-   trader/individual, add your full name and a contact address (postal or business) in
-   `LEGAL_BODY_EN/EL` ("Data controller"). Apple also shows the seller name publicly.
+1. **Controller identity:** the name (Sokratis Pouneridis) is now in the policy; consider adding a contact address (postal or business) in `LEGAL_BODY_EN/EL` ("Data controller"). Apple also shows the seller name publicly.
 2. **Business registration & tax (Greece):** register the activity (e.g. sole proprietorship),
    get the accountant to handle VAT/income tax on Apple/Google payouts and invoicing.
 3. **Processor agreements:** accept the DPAs of Google (Firebase), Anthropic, RevenueCat,

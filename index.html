@@ -478,6 +478,7 @@
 
     <div class="signin-error" id="signinError" style="display:none;"></div>
 
+    <div id="registerConsents" class="hidden">
     <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:10px;color:var(--muted,#9aa0a6);">
       <input type="checkbox" id="ageConfirmCheckbox" style="margin-top:3px;flex-shrink:0;">
       <span data-i18n="signin_age_confirm">I confirm I am at least 18 years old.</span>
@@ -487,6 +488,7 @@
       <input type="checkbox" id="healthConsentCheckbox" style="margin-top:3px;flex-shrink:0;">
       <span data-i18n="signin_health_consent">I explicitly consent to the processing of my health-related data.</span>
     </label>
+    </div>
 
     <p class="legal-disclaimer" data-i18n-html="signin_legal">Συνδεόμενος/η ή εγγραφόμενος/η αποδέχεσαι τους
       <button type="button" class="linklike" id="showTermsBtn">Όρους Χρήσης &amp; Πολιτική Απορρήτου</button>.</p>
@@ -772,6 +774,7 @@
       </select>
     </div>
     <div id="profileSummary"></div>
+    <div id="consentInfo" class="profile-block"></div>
     <div id="aiProSection" class="profile-block"></div>
     <button class="dash-link" type="button" id="redoOnboardingBtn" data-i18n="profile_redo">Ξαναρώτησε το AI Coach για νέο πρόγραμμα →</button>
     <div class="profile-block" style="margin-top:24px;">
@@ -942,7 +945,7 @@ const LEGAL_BODY_EL = `
 <h2>Τι είναι το AI Coach</h2>
 <p>Το AI Coach είναι μια προσωπική εφαρμογή προπόνησης και διατροφής. Δημιουργεί εξατομικευμένο πρόγραμμα προπόνησης και στόχους διατροφής με τη βοήθεια ενός AI βοηθού, και σου επιτρέπει να καταγράφεις την πρόοδό σου.</p>
 <h2>Υπεύθυνος επεξεργασίας</h2>
-<p>Υπεύθυνος επεξεργασίας είναι ο διαχειριστής του AI Coach, τον οποίο μπορείς να προσεγγίσεις για κάθε θέμα απορρήτου στο sokratispoun@gmail.com.</p>
+<p>Υπεύθυνος επεξεργασίας είναι ο Σωκράτης Πουνερίδης (Sokratis Pouneridis), διαχειριστής του AI Coach, τον οποίο μπορείς να προσεγγίσεις για κάθε θέμα απορρήτου στο sokratispoun@gmail.com.</p>
 <h2>Τι δεδομένα συλλέγουμε</h2>
 <p>Email διεύθυνση (για σύνδεση και επικοινωνία)· στοιχεία σώματος και στόχους που δίνεις οικειοθελώς (ηλικία, ύψος, βάρος, φύλο, στόχος, επίπεδο δραστηριότητας, τυχόν τραυματισμούς/διατροφικούς περιορισμούς)· ιστορικό προπονήσεων και καταγραφών φαγητού που καταχωρείς· και το περιεχόμενο των συνομιλιών σου με τον AI Coach.</p>
 <h2>Πώς χρησιμοποιούνται</h2>
@@ -978,7 +981,7 @@ const LEGAL_BODY_EN = `
 <h2>What AI Coach is</h2>
 <p>AI Coach is a personal training and nutrition app. It builds a personalized training program and nutrition targets with the help of an AI assistant, and lets you track your progress.</p>
 <h2>Data controller</h2>
-<p>The data controller is the operator of AI Coach, reachable for any privacy matter at sokratispoun@gmail.com.</p>
+<p>The data controller is Sokratis Pouneridis, the operator of AI Coach, reachable for any privacy matter at sokratispoun@gmail.com.</p>
 <h2>What data we collect</h2>
 <p>Your email address (for sign-in and communication); body stats and goals you provide voluntarily (age, height, weight, sex, goal, activity level, any injuries/dietary restrictions); your workout and food-log history; and the content of your conversations with the AI Coach.</p>
 <h2>How it's used</h2>
@@ -1051,6 +1054,7 @@ const I18N = {
     signin_health_consent:'Συναινώ ρητά στην επεξεργασία των δεδομένων υγείας μου (βάρος, ύψος, ηλικία, τραυματισμοί, διατροφικές σημειώσεις, ιστορικό προπόνησης και φαγητού) από το AI Coach, συμπεριλαμβανομένης της αποστολής τους στον πάροχο τεχνητής νοημοσύνης για την παραγωγή απαντήσεων. Μπορώ να ανακαλέσω τη συγκατάθεση διαγράφοντας τον λογαριασμό μου.', signin_health_required:'Για να δημιουργήσεις λογαριασμό πρέπει να δώσεις τη ρητή συγκατάθεσή σου για την επεξεργασία των δεδομένων υγείας.',
     consent_modal_message:'Το AI Coach επεξεργάζεται δεδομένα που αφορούν την υγεία σου (βάρος, ύψος, ηλικία, τραυματισμούς, διατροφικές σημειώσεις, ιστορικό προπόνησης και φαγητού), συμπεριλαμβανομένης της αποστολής των σχετικών στοιχείων στον πάροχο τεχνητής νοημοσύνης για τις απαντήσεις του Coach. Συναινείς ρητά; Μπορείς να ανακαλέσεις τη συγκατάθεση διαγράφοντας τον λογαριασμό σου. Χωρίς συγκατάθεση δεν μπορούμε να παρέχουμε την υπηρεσία.', consent_modal_ok:'Συναινώ', consent_modal_decline:'Αποσύνδεση',
     profile_export_data:'Λήψη των δεδομένων μου →', export_done:'Τα δεδομένα σου ετοιμάστηκαν.', export_error:'Δεν ήταν δυνατή η λήψη των δεδομένων. Δοκίμασε ξανά.', export_copy_note:'Αντίγραψε το κείμενο παρακάτω και αποθήκευσέ το σε αρχείο (.json):',
+    signin_confirm_then_register:'Επιβεβαίωσε τα δύο πεδία παρακάτω και πάτησε ξανά «Εγγραφή».', profile_consents_title:'Συγκαταθέσεις', profile_consent_health:'Συγκατάθεση για την επεξεργασία δεδομένων υγείας', profile_consent_age:'Επιβεβαίωση ότι είσαι τουλάχιστον 18 ετών', profile_consent_on:'δόθηκε στις {date}',
     extra_prefill_note:'Οι τιμές είναι εκτίμηση — προσάρμοσέ τις αν χρειάζεται, μετά πάτα «Προσθήκη».',
     nutri_today:'Σήμερα', nutri_of:'από',
     meal_add_log:'+ Πρόσθεσε στην καταγραφή', meal_kcal_estimate:'≈{kcal} kcal',
@@ -1196,6 +1200,7 @@ const I18N = {
     signin_health_consent:'I explicitly consent to the processing of my health-related data (weight, height, age, injuries, dietary notes, workout and food logs) by AI Coach, including sending it to the AI provider to generate replies. I can withdraw my consent by deleting my account.', signin_health_required:'To create an account you must give your explicit consent to the processing of health data.',
     consent_modal_message:'AI Coach processes data about your health (weight, height, age, injuries, dietary notes, workout and food logs), including sending the relevant parts to the AI provider to generate the Coach\'s replies. Do you explicitly consent? You can withdraw your consent by deleting your account. Without consent we cannot provide the service.', consent_modal_ok:'I consent', consent_modal_decline:'Sign out',
     profile_export_data:'Download my data →', export_done:'Your data is ready.', export_error:'Could not download your data. Please try again.', export_copy_note:'Copy the text below and save it as a .json file:',
+    signin_confirm_then_register:'Please confirm the two boxes below, then tap Register again.', profile_consents_title:'Consents', profile_consent_health:'Consent to the processing of health data', profile_consent_age:'Confirmation that you are at least 18 years old', profile_consent_on:'given on {date}',
     extra_prefill_note:'These values are an estimate — adjust if needed, then press "Add".',
     nutri_today:'Today', nutri_of:'of',
     meal_add_log:'+ Add to log', meal_kcal_estimate:'≈{kcal} kcal',
@@ -1488,6 +1493,15 @@ document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>
   document.getElementById('signinError').style.display = 'none';
   if(!email){
     showSigninError(t('signin_invalid_email'));
+    return;
+  }
+  // The two confirmations only appear when someone actually registers —
+  // signing in to an existing account doesn't ask for them again (they're
+  // recorded once and shown in the Profile tab).
+  const consentsBox = document.getElementById('registerConsents');
+  if(consentsBox.classList.contains('hidden')){
+    consentsBox.classList.remove('hidden');
+    showSigninError(t('signin_confirm_then_register'));
     return;
   }
   if(!document.getElementById('ageConfirmCheckbox').checked){
@@ -1867,7 +1881,7 @@ async function ensureHealthConsent(){
   }
   if(authEpoch !== epochAtStart) return false;
   if(!agreed){ signOutCleanup(); auth.signOut(); return false; }
-  try{ await storage.set('consent', JSON.stringify({health:true, at:new Date().toISOString(), version:1})); }catch(e){ console.error(e); }
+  try{ await storage.set('consent', JSON.stringify({health:true, age18:!!healthConsentFromSignup, at:new Date().toISOString(), version:1})); }catch(e){ console.error(e); }
   healthConsentFromSignup = false;
   return true;
 }
@@ -4057,6 +4071,21 @@ document.getElementById('redoOnboardingBtn').addEventListener('click', async ()=
 
 // ---------- profile tab ----------
 
+// Shows the consents recorded in users/{uid}/data/consent (given once, at
+// registration or via the one-time prompt) instead of asking on every sign-in.
+async function renderConsentInfo(){
+  const el = document.getElementById('consentInfo');
+  if(!el) return;
+  let c = null;
+  try{ c = JSON.parse((await storage.get('consent')).value); }catch(e){}
+  if(!c || !c.health){ el.innerHTML = ''; return; }
+  const date = c.at ? new Date(c.at).toLocaleDateString(lang==='en'?'en-GB':'el-GR') : '';
+  const on = date ? ' — '+t('profile_consent_on', {date}) : '';
+  el.innerHTML = `<div class="stat-label">${t('profile_consents_title')}</div>
+    <div style="font-size:13px;margin-top:6px;">✓ ${t('profile_consent_health')}${on}</div>
+    ${c.age18 ? `<div style="font-size:13px;margin-top:4px;">✓ ${t('profile_consent_age')}${on}</div>` : ''}`;
+}
+
 function renderProfileTab(){
   const p = currentProfile || defaultProfile();
   const tg = p.targets || {};
@@ -4142,6 +4171,7 @@ function renderProfileTab(){
   }
 
   renderAiProSection();
+  renderConsentInfo();
 }
 
 // ---------- AI Coach Pro subscription + credit packs (Stripe) ----------
