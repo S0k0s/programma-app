@@ -525,38 +525,41 @@ async function handleStripeWebhook(request, env) {
 // secret key and use what it says.
 const RC_ENTITLEMENT_ID = 'pro';
 
-async function fetchRevenueCatProExpiry(env, uid) {
+async function fetchRevenueCatProEntitlement(env, uid) {
   const res = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(uid)}`, {
     headers: { Authorization: `Bearer ${env.REVENUECAT_SECRET_KEY}`, 'Content-Type': 'application/json' },
   });
   if (!res.ok) throw new Error('revenuecat_get_failed: ' + res.status);
   const data = await res.json();
-  const ent = data.subscriber && data.subscriber.entitlements && data.subscriber.entitlements[RC_ENTITLEMENT_ID];
+  const sub = data.subscriber || {};
+  const ent = sub.entitlements && sub.entitlements[RC_ENTITLEMENT_ID];
   if (!ent || !ent.expires_date) return null;
   const expiresMs = Date.parse(ent.expires_date);
-  return expiresMs > Date.now() ? Math.floor(expiresMs / 1000) : null;
+  if (!(expiresMs > Date.now())) return null;
+  const store = sub.subscriptions && sub.subscriptions[ent.product_identifier] && sub.subscriptions[ent.product_identifier].store;
+  return { expiry: Math.floor(expiresMs / 1000), source: store === 'play_store' ? 'google' : 'apple' };
 }
 
 async function syncAppleSubscription(env, accessToken, uid) {
-  const expiry = await fetchRevenueCatProExpiry(env, uid);
+  const ent = await fetchRevenueCatProEntitlement(env, uid);
   const existing = await firestoreGetUserDoc(accessToken, uid, 'subscription').catch(() => null);
   // Never overwrite an admin-granted plan or a live Stripe subscription.
   if (existing && (existing.grantedByAdmin || (existing.stripeCustomerId && tierFromSubscription(existing) === 'pro'))) {
     return { ok: true, skipped: true };
   }
-  if (expiry) {
+  if (ent) {
     await firestoreSetUserDoc(accessToken, uid, 'subscription', {
       status: 'active',
-      source: 'apple',
-      currentPeriodEnd: expiry,
+      source: ent.source,
+      currentPeriodEnd: ent.expiry,
       updatedAt: Math.floor(Date.now() / 1000),
     });
     return { ok: true, active: true };
   }
-  if (existing && existing.source === 'apple') {
+  if (existing && (existing.source === 'apple' || existing.source === 'google')) {
     await firestoreSetUserDoc(accessToken, uid, 'subscription', {
       status: 'canceled',
-      source: 'apple',
+      source: existing.source,
       currentPeriodEnd: existing.currentPeriodEnd,
       updatedAt: Math.floor(Date.now() / 1000),
     });
@@ -575,6 +578,41 @@ async function handleIosSyncPurchase(body, cors, env) {
     return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', ...cors } });
   } catch (e) {
     return new Response(JSON.stringify({ error: 'ios_sync_error' }), { status: 500, headers: cors });
+  }
+}
+
+// ---------- Android in-app purchases (Google Play Billing via RevenueCat) ----------
+//
+// The Android app is a Trusted Web Activity, so purchases happen through the
+// browser's Digital Goods API (Play Billing). The page only gets an opaque
+// purchase token; we hand it to RevenueCat, which validates it with Google
+// (and acknowledges it), then re-read the subscriber exactly like iOS. The
+// product id is fixed here — never taken from the client.
+const ANDROID_PRODUCT_ID = 'pro_monthly';
+
+async function handleAndroidSyncPurchase(body, cors, env) {
+  const user = await verifyIdToken(body.idToken).catch(() => null);
+  if (!user) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: cors });
+  const tokens = (Array.isArray(body.purchaseTokens) ? body.purchaseTokens : [])
+    .filter(t => typeof t === 'string' && t.length > 0 && t.length < 2000).slice(0, 5);
+  try {
+    for (const token of tokens) {
+      const res = await fetch('https://api.revenuecat.com/v1/receipts', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.REVENUECAT_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+          'X-Platform': 'android',
+        },
+        body: JSON.stringify({ app_user_id: user.uid, fetch_token: token, product_id: ANDROID_PRODUCT_ID }),
+      });
+      if (!res.ok) throw new Error('revenuecat_receipt_failed: ' + res.status);
+    }
+    const accessToken = await getServiceAccountAccessToken(env);
+    const result = await syncAppleSubscription(env, accessToken, user.uid);
+    return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', ...cors } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'android_sync_error' }), { status: 500, headers: cors });
   }
 }
 
@@ -723,13 +761,18 @@ export default {
       return handleRevenueCatWebhook(request, env);
     }
 
+    // The site (GitHub Pages) and the store apps that bundle the same files
+    // locally: iOS Capacitor serves them from capacitor://localhost, Android
+    // Capacitor from https://localhost. The CORS header must echo the caller's
+    // origin (a single fixed value can't cover several), so only origins on
+    // this list ever get echoed back.
+    const ALLOWED_ORIGINS = ['https://s0k0s.github.io', 'capacitor://localhost', 'https://localhost'];
+    const origin = request.headers.get('Origin') || '';
     const cors = {
-      // Tighten this to your actual github.io URL once you know it, e.g.
-      // 'https://yourusername.github.io', instead of '*' — otherwise any
-      // website could use your Worker (and your API credits) from a browser.
-      'Access-Control-Allow-Origin': 'https://s0k0s.github.io',
+      'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : 'https://s0k0s.github.io',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      'Vary': 'Origin',
     };
 
     if (request.method === 'OPTIONS') {
@@ -748,8 +791,7 @@ export default {
     // needs upgrading the Firebase project off the free Spark plan first.
     // Real authentication for the AI Coach and Stripe actions below comes
     // from verifyIdToken, not from this Origin check.
-    const origin = request.headers.get('Origin') || '';
-    if (origin !== 'https://s0k0s.github.io') {
+    if (!ALLOWED_ORIGINS.includes(origin)) {
       return new Response(JSON.stringify({ error: 'forbidden_origin' }), { status: 403, headers: cors });
     }
 
@@ -777,6 +819,9 @@ export default {
     }
     if (body.action === 'ios-sync-purchase') {
       return handleIosSyncPurchase(body, cors, env);
+    }
+    if (body.action === 'android-sync-purchase') {
+      return handleAndroidSyncPurchase(body, cors, env);
     }
     if (body.action === 'send-contact-message') {
       return handleContactMessage(body, cors, env);

@@ -2,5 +2,9 @@
   "appId": "io.github.s0k0s.aicoach",
   "appName": "AI Coach",
   "webDir": "www",
+  "server": {
+    "url": "https://s0k0s.github.io/programma-app/",
+    "cleartext": false
+  },
   "backgroundColor": "#101214"
 }
