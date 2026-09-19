@@ -668,6 +668,7 @@
     <div class="targets" id="targetsGrid"></div>
     <div class="nutri-progress" id="nutriProgress"></div>
     <div class="mealgrid" id="mealGrid"></div>
+    <button class="dash-link" type="button" id="resetMealsBtn" data-i18n="meals_reset">Επαναφορά γευμάτων</button>
     <button class="dash-link" type="button" id="toExtraBtn" data-i18n="nutrition_extra_link">Καταγραφή έξτρα φαγητού →</button>
   </section>
 
@@ -1025,6 +1026,7 @@ const I18N = {
     scan_btn:'📷 Σάρωση φαγητού με φωτογραφία', scan_busy:'Αναλύω τη φωτογραφία…', scan_fail:'Δεν κατάφερα να διαβάσω τη φωτογραφία. Δοκίμασε ξανά ή συμπλήρωσε χειροκίνητα.', scan_nofood:'Δεν βρήκα φαγητό στη φωτογραφία.', scan_note:'Εκτίμηση από φωτογραφία (AI) — έλεγξε και προσάρμοσε τις τιμές πριν πατήσεις «Προσθήκη».', scan_quota:'Έφτασες το ημερήσιο όριο του Pro. Δοκίμασε αύριο.',
     cam_close:'Κλείσιμο', cam_hint_photo:'Στόχευσε το πιάτο και πάτα το κουμπί',
     scan_pro:'Η σάρωση φαγητού με φωτογραφία είναι διαθέσιμη μόνο στο Pro. Αναβάθμισε από την καρτέλα Προφίλ.',
+    cam_fallback:'Η ζωντανή κάμερα δεν είναι διαθέσιμη. Πάτα ξανά το κουμπί για να τραβήξεις φωτογραφία με την κάμερα του κινητού.', meals_reset:'Επαναφορά γευμάτων', meals_reset_confirm:'Να επαναφερθούν όλα τα γεύματα στις προεπιλεγμένες επιλογές; Οι αλλαγές που έγιναν από τον AI Coach θα χαθούν.', meals_reset_done:'Τα γεύματα επαναφέρθηκαν.',
     extra_prefill_note:'Οι τιμές είναι εκτίμηση — προσάρμοσέ τις αν χρειάζεται, μετά πάτα «Προσθήκη».',
     nutri_today:'Σήμερα', nutri_of:'από',
     meal_add_log:'+ Πρόσθεσε στην καταγραφή', meal_kcal_estimate:'≈{kcal} kcal',
@@ -1164,6 +1166,7 @@ const I18N = {
     scan_btn:'📷 Scan food with a photo', scan_busy:'Analyzing the photo…', scan_fail:'Could not read the photo. Try again or fill in manually.', scan_nofood:'No food found in the photo.', scan_note:'AI estimate from a photo — check and adjust the values before pressing "Add".', scan_quota:'You reached the daily Pro limit. Try again tomorrow.',
     cam_close:'Close', cam_hint_photo:'Point at your plate and press the button',
     scan_pro:'Food photo scanning is available on Pro only. Upgrade from the Profile tab.',
+    cam_fallback:'Live camera is not available. Tap the button again to take a photo with your phone camera.', meals_reset:'Reset meals', meals_reset_confirm:'Restore all meals to the default options? Changes made by the AI Coach will be lost.', meals_reset_done:'Meals restored.',
     extra_prefill_note:'These values are an estimate — adjust if needed, then press "Add".',
     nutri_today:'Today', nutri_of:'of',
     meal_add_log:'+ Add to log', meal_kcal_estimate:'≈{kcal} kcal',
@@ -2686,6 +2689,19 @@ function renderMealGrid(){
 }
 renderMealGrid();
 
+document.getElementById('resetMealsBtn').addEventListener('click', async ()=>{
+  if(!currentProfile || !currentProfile.customMeals || !Object.keys(currentProfile.customMeals).length){
+    await showModal({message: t('meals_reset_done'), mode:'alert'});
+    return;
+  }
+  const ok = await showModal({message: t('meals_reset_confirm'), dangerous:true});
+  if(!ok) return;
+  delete currentProfile.customMeals;
+  try{ await storage.set('profile', JSON.stringify(currentProfile)); }catch(e){ console.error(e); }
+  renderMealGrid();
+  await showModal({message: t('meals_reset_done'), mode:'alert'});
+});
+
 // ---------- extra food log ----------
 async function loadFoodLog(){
   try{
@@ -2864,8 +2880,19 @@ function closeCamera(){
   document.getElementById('camVideo').srcObject = null;
   document.getElementById('camOverlay').classList.add('hidden');
 }
+// Browsers only open the file picker from a direct tap — not after an await —
+// so when the live camera can't open we ask for a second tap instead of
+// trying to open the picker from the failure handler (which is silently
+// blocked and looked like "the button does nothing").
+let camFallback = false;
 async function openCamera(){
   const status = document.getElementById('scanStatus');
+  if(camFallback){
+    camFallback = false;
+    status.classList.add('hidden');
+    document.getElementById('scanFoodInput').click();
+    return;
+  }
   if(!(await loadAiSubscription())){
     status.textContent = t('scan_pro'); status.classList.remove('hidden'); return;
   }
@@ -2880,7 +2907,8 @@ async function openCamera(){
   }catch(e){
     console.error(e);
     closeCamera();
-    document.getElementById('scanFoodInput').click();
+    camFallback = true;
+    status.textContent = t('cam_fallback'); status.classList.remove('hidden');
   }
 }
 document.getElementById('camClose').addEventListener('click', closeCamera);
