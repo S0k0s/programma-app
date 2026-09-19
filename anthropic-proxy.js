@@ -265,6 +265,12 @@ async function handleAiProxy(body, cors, env) {
   const sub = await firestoreGetUserDoc(accessToken, user.uid, 'subscription').catch(() => null);
   const tier = tierFromSubscription(sub);
 
+  // Photo food scanning is a Pro-only feature — enforced here, not just in
+  // the UI, since the request body is client-controlled.
+  if (body.phase === 'food-photo' && tier !== 'pro') {
+    return new Response(JSON.stringify({ error: 'pro_required' }), { status: 403, headers: cors });
+  }
+
   let quota;
   const isOnboarding = body.phase === 'onboarding';
   const gotFreeOnboardingMessage = isOnboarding && await consumeOnboardingFreeAllowance(accessToken, user.uid).catch(() => false);
