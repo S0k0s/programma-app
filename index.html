@@ -1053,6 +1053,7 @@ const I18N = {
     profile_ai_plan_title:'AI Coach', profile_ai_plan_free:'Δωρεάν πλάνο', profile_ai_plan_pro:'Pro πλάνο',
     profile_ai_plan_free_desc:'8 μηνύματα/ημέρα στον AI Coach.',
     profile_ai_plan_pro_desc:'150 μηνύματα/ημέρα στον AI Coach.',
+    profile_ai_google_manage_btn:'Διαχείριση συνδρομής στο Google Play →', profile_ai_google_disclosure:'Η χρέωση γίνεται στον λογαριασμό σου στο Google Play κατά την επιβεβαίωση της αγοράς. Η συνδρομή ανανεώνεται αυτόματα κάθε μήνα μέχρι να την ακυρώσεις. Μπορείς να τη διαχειριστείς ή να την ακυρώσεις οποιαδήποτε στιγμή στο Google Play.',
     profile_ai_upgrade_btn_ios:'Αναβάθμιση σε Pro', profile_ai_upgrade_btn_ios_price:'Αναβάθμιση σε Pro — {price}/μήνα', profile_ai_restore_btn:'Επαναφορά αγορών', profile_ai_apple_manage_btn:'Διαχείριση συνδρομής στο App Store →', profile_ai_ios_disclosure:'Η πληρωμή χρεώνεται στον λογαριασμό Apple ID σου κατά την επιβεβαίωση της αγοράς. Η συνδρομή ανανεώνεται αυτόματα κάθε μήνα, εκτός αν την ακυρώσεις τουλάχιστον 24 ώρες πριν από το τέλος της τρέχουσας περιόδου. Μπορείς να τη διαχειριστείς ή να την ακυρώσεις από τις ρυθμίσεις του Apple ID σου.', profile_ai_ios_terms_link:'Όροι Χρήσης & Πολιτική Απορρήτου', profile_ai_ios_error:'Η αγορά δεν ολοκληρώθηκε. Δοκίμασε ξανά σε λίγο.', profile_ai_ios_restored:'Οι αγορές επαναφέρθηκαν.', profile_ai_ios_nothing:'Δεν βρέθηκε ενεργή συνδρομή για επαναφορά.', profile_ai_ios_unavailable:'Η αγορά δεν είναι διαθέσιμη αυτή τη στιγμή.',
     profile_ai_upgrade_btn:'Αναβάθμιση σε Pro — €2.99/μήνα',
     profile_ai_manage_btn:'Διαχείριση συνδρομής →',
@@ -1194,6 +1195,7 @@ const I18N = {
     profile_ai_plan_title:'AI Coach', profile_ai_plan_free:'Free plan', profile_ai_plan_pro:'Pro plan',
     profile_ai_plan_free_desc:'Free for your initial setup conversation. Upgrade or buy messages to keep chatting with the AI Coach.',
     profile_ai_plan_pro_desc:'150 AI Coach messages/day.',
+    profile_ai_google_manage_btn:'Manage subscription in Google Play →', profile_ai_google_disclosure:'Payment is charged to your Google Play account at confirmation of purchase. The subscription renews automatically every month until you cancel it. You can manage or cancel it at any time in Google Play.',
     profile_ai_upgrade_btn_ios:'Upgrade to Pro', profile_ai_upgrade_btn_ios_price:'Upgrade to Pro — {price}/month', profile_ai_restore_btn:'Restore purchases', profile_ai_apple_manage_btn:'Manage subscription in the App Store →', profile_ai_ios_disclosure:'Payment is charged to your Apple ID account at confirmation of purchase. The subscription renews automatically every month unless it is cancelled at least 24 hours before the end of the current period. You can manage or cancel it in your Apple ID settings.', profile_ai_ios_terms_link:'Terms of Use & Privacy Policy', profile_ai_ios_error:'The purchase could not be completed. Please try again in a moment.', profile_ai_ios_restored:'Purchases restored.', profile_ai_ios_nothing:'No active subscription was found to restore.', profile_ai_ios_unavailable:'Purchasing is not available right now.',
     profile_ai_upgrade_btn:'Upgrade to Pro — €2.99/month',
     profile_ai_manage_btn:'Manage subscription →',
@@ -4202,6 +4204,85 @@ async function iapRestore(btn){
   }
 }
 
+// ---------- Android in-app purchase (Google Play Billing) ----------
+// The Android app is a Trusted Web Activity, so the Pro plan is bought with
+// Play Billing through the browser's Digital Goods API (Play Payments
+// policy) — Stripe stays for the web. The page only receives an opaque
+// purchase token; the Worker hands it to RevenueCat, which validates and
+// acknowledges it with Google, then mirrors the entitlement into the same
+// `subscription` doc (anthropic-proxy.js, android-sync-purchase). The
+// purchase option only appears once Play returns the product's details, so
+// builds/accounts without the subscription set up behave exactly as before.
+const ANDROID_PRODUCT_ID = 'pro_monthly';
+const ANDROID_PACKAGE_ID = 'io.github.s0k0s.aicoach';
+const PLAY_BILLING_METHOD = 'https://play.google.com/billing';
+function isAndroidTwa(){
+  return document.referrer.startsWith('android-app://') && typeof window.getDigitalGoodsService === 'function';
+}
+let androidBillingSvc = null;
+async function androidBillingService(){
+  if(!isAndroidTwa()) return null;
+  if(androidBillingSvc) return androidBillingSvc;
+  try{ androidBillingSvc = await window.getDigitalGoodsService(PLAY_BILLING_METHOD); }catch(e){ androidBillingSvc = null; }
+  return androidBillingSvc;
+}
+async function androidProductDetails(){
+  const svc = await androidBillingService();
+  if(!svc) return null;
+  try{ const d = await svc.getDetails([ANDROID_PRODUCT_ID]); return (d && d[0]) || null; }catch(e){ return null; }
+}
+function androidPriceString(details){
+  try{ return new Intl.NumberFormat(undefined, {style:'currency', currency: details.price.currency}).format(Number(details.price.value)); }
+  catch(e){ return ''; }
+}
+async function androidSyncWithServer(tokens){
+  const idToken = await currentUser.getIdToken();
+  const res = await fetch(WORKER_URL, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'android-sync-purchase', idToken, purchaseTokens: tokens })
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error('sync failed');
+  return !!data.active;
+}
+async function androidPurchase(btn){
+  btn.disabled = true;
+  try{
+    const request = new PaymentRequest(
+      [{ supportedMethods: PLAY_BILLING_METHOD, data: { sku: ANDROID_PRODUCT_ID } }],
+      { total: { label: 'Pro', amount: { currency: 'USD', value: '0' } } }
+    );
+    let response;
+    try{ response = await request.show(); }catch(e){ return; } // dismissed the Play sheet
+    const token = response.details && response.details.purchaseToken;
+    await response.complete(token ? 'success' : 'fail');
+    if(!token) throw new Error('no purchase token');
+    await androidSyncWithServer([token]);
+    await renderAiProSection();
+  }catch(e){
+    console.error('Android purchase failed', e);
+    await customAlert(t('profile_ai_ios_error'));
+  }finally{
+    btn.disabled = false;
+  }
+}
+async function androidRestore(btn){
+  btn.disabled = true;
+  try{
+    const svc = await androidBillingService();
+    const purchases = svc ? await svc.listPurchases() : [];
+    const tokens = purchases.filter(p=>p.itemId === ANDROID_PRODUCT_ID).map(p=>p.purchaseToken);
+    const active = tokens.length ? await androidSyncWithServer(tokens) : false;
+    await customAlert(t(active ? 'profile_ai_ios_restored' : 'profile_ai_ios_nothing'));
+    await renderAiProSection();
+  }catch(e){
+    console.error('Android restore failed', e);
+    await customAlert(t('profile_ai_ios_error'));
+  }finally{
+    btn.disabled = false;
+  }
+}
+
 async function renderAiProSection(){
   const el = document.getElementById('aiProSection');
   if(!el) return;
@@ -4219,6 +4300,10 @@ async function renderAiProSection(){
   // iOS app with in-app purchase set up: sell through Apple instead of hiding the button.
   const iosIap = iapAvailable();
   const isApple = isPro && sub.source === 'apple';
+  const isGoogle = isPro && sub.source === 'google';
+  const androidDetails = (!isPro && isAndroidTwa()) ? await androidProductDetails() : null;
+  const androidIap = !!androidDetails;
+  const androidPrice = androidIap ? androidPriceString(androidDetails) : '';
   let iosPrice = '';
   if(iosIap && !isPro){
     try{ const pkg = await iapCurrentPackage(); iosPrice = pkg && pkg.product && pkg.product.priceString || ''; }catch(e){ console.error(e); }
@@ -4229,14 +4314,19 @@ async function renderAiProSection(){
     <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${isPro ? t('profile_ai_plan_pro_desc') : t('profile_ai_plan_free_desc')}</div>
     ${isComp ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_comp_note')}</div>` : ''}
     ${!isPro && credits > 0 ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_credits_balance', {n: credits})}</div>` : ''}
-    ${!isComp && !isApple && (isPro || !inNativeApp) ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${isPro ? t('profile_ai_manage_btn') : t('profile_ai_upgrade_btn')}</button>` : ''}
+    ${!isComp && !isApple && !isGoogle && (isPro || !inNativeApp) ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${isPro ? t('profile_ai_manage_btn') : t('profile_ai_upgrade_btn')}</button>` : ''}
     ${isApple ? `<button class="ghost" type="button" id="aiAppleManageBtn" style="margin-top:10px;">${t('profile_ai_apple_manage_btn')}</button>` : ''}
+    ${isGoogle ? `<button class="ghost" type="button" id="aiGoogleManageBtn" style="margin-top:10px;">${t('profile_ai_google_manage_btn')}</button>` : ''}
+    ${!isPro && androidIap ? `<button class="ghost" type="button" id="aiAndroidIapBtn" style="margin-top:10px;">${androidPrice ? t('profile_ai_upgrade_btn_ios_price', {price: androidPrice}) : t('profile_ai_upgrade_btn_ios')}</button>
+      <button class="ghost" type="button" id="aiAndroidRestoreBtn" style="margin-top:8px;">${t('profile_ai_restore_btn')}</button>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.4;">${t('profile_ai_google_disclosure')}</div>
+      <button class="dash-link" type="button" id="aiIapTermsBtn">${t('profile_ai_ios_terms_link')}</button>` : ''}
     ${!isPro && iosIap ? `<button class="ghost" type="button" id="aiIapBtn" style="margin-top:10px;">${iosPrice ? t('profile_ai_upgrade_btn_ios_price', {price: iosPrice}) : t('profile_ai_upgrade_btn_ios')}</button>
       <button class="ghost" type="button" id="aiIapRestoreBtn" style="margin-top:8px;">${t('profile_ai_restore_btn')}</button>
       <div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.4;">${t('profile_ai_ios_disclosure')}</div>
       <button class="dash-link" type="button" id="aiIapTermsBtn">${t('profile_ai_ios_terms_link')}</button>` : ''}
     ${!isPro && !inNativeApp ? `<button class="ghost" type="button" id="aiCreditsActionBtn" style="margin-top:8px;">${t('profile_ai_buy_credits_btn')}</button>` : ''}
-    ${!isPro && inNativeApp && !iosIap ? `<div style="font-size:12px;color:var(--text-dim);margin-top:10px;">${t('profile_ai_twa_note')}</div>` : ''}
+    ${!isPro && inNativeApp && !iosIap && !androidIap ? `<div style="font-size:12px;color:var(--text-dim);margin-top:10px;">${t('profile_ai_twa_note')}</div>` : ''}
   `;
   const iapBtn = document.getElementById('aiIapBtn');
   if(iapBtn) iapBtn.addEventListener('click', ()=>iapPurchase(iapBtn));
@@ -4244,6 +4334,12 @@ async function renderAiProSection(){
   if(iapRestoreBtn) iapRestoreBtn.addEventListener('click', ()=>iapRestore(iapRestoreBtn));
   const iapTermsBtn = document.getElementById('aiIapTermsBtn');
   if(iapTermsBtn) iapTermsBtn.addEventListener('click', ()=>document.getElementById('showTermsFromProfileBtn').click());
+  const androidIapBtn = document.getElementById('aiAndroidIapBtn');
+  if(androidIapBtn) androidIapBtn.addEventListener('click', ()=>androidPurchase(androidIapBtn));
+  const androidRestoreBtn = document.getElementById('aiAndroidRestoreBtn');
+  if(androidRestoreBtn) androidRestoreBtn.addEventListener('click', ()=>androidRestore(androidRestoreBtn));
+  const googleManageBtn = document.getElementById('aiGoogleManageBtn');
+  if(googleManageBtn) googleManageBtn.addEventListener('click', ()=>{ window.location.href = 'https://play.google.com/store/account/subscriptions?sku=' + ANDROID_PRODUCT_ID + '&package=' + ANDROID_PACKAGE_ID; });
   const appleManageBtn = document.getElementById('aiAppleManageBtn');
   if(appleManageBtn) appleManageBtn.addEventListener('click', ()=>{ window.location.href = 'https://apps.apple.com/account/subscriptions'; });
   const proBtn = document.getElementById('aiProActionBtn');
