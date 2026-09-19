@@ -2831,8 +2831,8 @@ async function scanFoodPhoto(file){
   btn.disabled = true; show(t('scan_busy'));
   try{
     const data64 = await scanImageToBase64(file);
-    const sys = 'You are a nutrition estimator. Look at the photo and estimate the TOTAL nutrition of the meal/food shown for the visible portion. '
-      + 'Reply with ONLY a JSON object, no prose, no markdown: {"name":"short food name in '+(lang==='en'?'English':'Greek')+'","kcal":number,"protein":number,"carbs":number,"fat":number}. '
+    const sys = 'You are a nutrition estimator. Look at the photo and estimate the TOTAL nutrition of everything edible shown (all items on the plate together, for the visible portion sizes). '
+      + 'Reply with ONLY a JSON object, no prose, no markdown: {"name":"short name of the dish in '+(lang==='en'?'English':'Greek')+', listing its main components (e.g. beef steak with potatoes and green beans), starting with a capital letter","kcal":number,"protein":number,"carbs":number,"fat":number}. '
       + 'Numbers are whole numbers (kcal, grams). If there is no food in the photo reply {"name":null}.';
     const send = async (forceRefresh)=>{
       const idToken = await currentUser.getIdToken(forceRefresh);
@@ -2875,7 +2875,9 @@ async function scanFoodPhoto(file){
     const r = JSON.parse(m[0]);
     if(!r.name){ show(t('scan_nofood')); return; }
     const n = v=>String(Math.max(0, Math.round(Number(v)||0)));
-    prefillExtraLog(String(r.name).slice(0,80), {kcal:n(r.kcal), protein:n(r.protein), carbs:n(r.carbs), fat:n(r.fat)});
+    // Capitalise the first letter (model output is often lower-case: "banana").
+    const foodName = String(r.name).trim().slice(0,100);
+    prefillExtraLog(foodName.charAt(0).toLocaleUpperCase(lang==='el'?'el-GR':'en-US') + foodName.slice(1), {kcal:n(r.kcal), protein:n(r.protein), carbs:n(r.carbs), fat:n(r.fat)});
     document.getElementById('extraPrefillNote').textContent = t('scan_note');
     status.classList.add('hidden');
   }catch(e){
