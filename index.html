@@ -2849,6 +2849,18 @@ async function scanFoodPhoto(file){
     // A 401 can mean the cached sign-in token went stale — refresh it and retry once.
     let { res, data } = await send(false);
     if(res.status === 401) ({ res, data } = await send(true));
+    if(res.status === 401){
+      // Diagnostic: describe the token we sent (no secrets — just claims) so a
+      // wrong project / expired token / skewed phone clock is visible on-device.
+      let info = '';
+      try{
+        const tok = await currentUser.getIdToken();
+        const c = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+        const now = Math.round(Date.now()/1000);
+        info = ' aud='+c.aud+' issuedAgo='+(now-c.iat)+'s expIn='+(c.exp-now)+'s signIn='+(c.firebase&&c.firebase.sign_in_provider);
+      }catch(e2){ info = ' (token unreadable)'; }
+      throw new Error('HTTP 401 unauthorized'+info);
+    }
     if(authEpoch !== epochAtStart) return;
     if(res.status === 403 && data.error === 'pro_required'){ show(t('scan_pro')); return; }
     if(res.status === 403 && data.error === 'quota_exceeded'){ show(t('scan_quota')); return; }
