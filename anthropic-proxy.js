@@ -13,8 +13,10 @@
 // dashboard (Workers & Pages > your worker > Edit code), then:
 //   Settings > Variables and Secrets > add secrets named ANTHROPIC_API_KEY,
 //   FIREBASE_SERVICE_ACCOUNT_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
-//   STRIPE_PRICE_ID, STRIPE_CREDIT_PRICE_ID, RESEND_API_KEY and
-//   CONTACT_DESTINATION_EMAIL (see README.md for how to get each one).
+//   STRIPE_PRICE_ID, STRIPE_CREDIT_PRICE_ID, RESEND_API_KEY,
+//   CONTACT_DESTINATION_EMAIL, and — for iOS in-app purchases via RevenueCat —
+//   REVENUECAT_SECRET_KEY and REVENUECAT_WEBHOOK_AUTH (see README.md and
+//   IOS-PAYMENTS.md for how to get each one).
 
 const FIREBASE_PROJECT_ID = 'gym-app-f99d6';
 // public identifier, same as firebase-config.js — split in two so the dashboard editor can't mask/alter it
@@ -509,6 +511,95 @@ async function handleStripeWebhook(request, env) {
   return new Response(JSON.stringify({ received: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
+// ---------- iOS in-app purchases (RevenueCat) ----------
+//
+// The iOS app sells the Pro plan through Apple's In-App Purchase (App Store
+// Guideline 3.1.1). RevenueCat handles the StoreKit side; here we mirror its
+// result into the same users/{uid}/data/subscription doc that the Stripe
+// flow writes, so the rest of the app (and tierFromSubscription) treats an
+// App Store subscriber exactly like a Stripe one. The RevenueCat app user id
+// is the Firebase uid (the app calls Purchases.logIn(uid)).
+//
+// We never trust a client claim or a webhook payload for the entitlement —
+// both paths re-read the subscriber from RevenueCat's REST API with the
+// secret key and use what it says.
+const RC_ENTITLEMENT_ID = 'pro';
+
+async function fetchRevenueCatProExpiry(env, uid) {
+  const res = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(uid)}`, {
+    headers: { Authorization: `Bearer ${env.REVENUECAT_SECRET_KEY}`, 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('revenuecat_get_failed: ' + res.status);
+  const data = await res.json();
+  const ent = data.subscriber && data.subscriber.entitlements && data.subscriber.entitlements[RC_ENTITLEMENT_ID];
+  if (!ent || !ent.expires_date) return null;
+  const expiresMs = Date.parse(ent.expires_date);
+  return expiresMs > Date.now() ? Math.floor(expiresMs / 1000) : null;
+}
+
+async function syncAppleSubscription(env, accessToken, uid) {
+  const expiry = await fetchRevenueCatProExpiry(env, uid);
+  const existing = await firestoreGetUserDoc(accessToken, uid, 'subscription').catch(() => null);
+  // Never overwrite an admin-granted plan or a live Stripe subscription.
+  if (existing && (existing.grantedByAdmin || (existing.stripeCustomerId && tierFromSubscription(existing) === 'pro'))) {
+    return { ok: true, skipped: true };
+  }
+  if (expiry) {
+    await firestoreSetUserDoc(accessToken, uid, 'subscription', {
+      status: 'active',
+      source: 'apple',
+      currentPeriodEnd: expiry,
+      updatedAt: Math.floor(Date.now() / 1000),
+    });
+    return { ok: true, active: true };
+  }
+  if (existing && existing.source === 'apple') {
+    await firestoreSetUserDoc(accessToken, uid, 'subscription', {
+      status: 'canceled',
+      source: 'apple',
+      currentPeriodEnd: existing.currentPeriodEnd,
+      updatedAt: Math.floor(Date.now() / 1000),
+    });
+  }
+  return { ok: true, active: false };
+}
+
+// Called by the app right after a purchase / restore so Pro shows up
+// immediately instead of waiting for the webhook.
+async function handleIosSyncPurchase(body, cors, env) {
+  const user = await verifyIdToken(body.idToken).catch(() => null);
+  if (!user) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: cors });
+  try {
+    const accessToken = await getServiceAccountAccessToken(env);
+    const result = await syncAppleSubscription(env, accessToken, user.uid);
+    return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', ...cors } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'ios_sync_error' }), { status: 500, headers: cors });
+  }
+}
+
+// RevenueCat -> Worker webhook (renewals, cancellations, expirations…).
+// Authenticated with a shared secret set in RevenueCat's webhook config as
+// the Authorization header value. The payload only tells us *who* changed;
+// the real state is re-fetched from RevenueCat.
+async function handleRevenueCatWebhook(request, env) {
+  if (!env.REVENUECAT_WEBHOOK_AUTH || request.headers.get('Authorization') !== env.REVENUECAT_WEBHOOK_AUTH) {
+    return new Response('unauthorized', { status: 401 });
+  }
+  let payload;
+  try { payload = await request.json(); } catch (e) { return new Response('bad json', { status: 400 }); }
+  const uid = payload && payload.event && payload.event.app_user_id;
+  // Anonymous RevenueCat ids ($RCAnonymousID:…) aren't Firebase uids — nothing to sync.
+  if (!uid || String(uid).startsWith('$RCAnonymousID')) return new Response('ignored', { status: 200 });
+  try {
+    const accessToken = await getServiceAccountAccessToken(env);
+    await syncAppleSubscription(env, accessToken, uid);
+  } catch (e) {
+    return new Response('webhook processing failed', { status: 500 }); // RevenueCat retries on non-2xx
+  }
+  return new Response(JSON.stringify({ received: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+}
+
 // ---------- Contact form / bug reports (Resend) ----------
 
 const CONTACT_MESSAGE_MAX_LEN = 4000;
@@ -627,6 +718,10 @@ export default {
     if (url.pathname === '/stripe-webhook' && request.method === 'POST') {
       return handleStripeWebhook(request, env);
     }
+    // Same idea for RevenueCat: server-to-server, authenticated by a shared secret.
+    if (url.pathname === '/revenuecat-webhook' && request.method === 'POST') {
+      return handleRevenueCatWebhook(request, env);
+    }
 
     const cors = {
       // Tighten this to your actual github.io URL once you know it, e.g.
@@ -679,6 +774,9 @@ export default {
     }
     if (body.action === 'create-portal-session') {
       return handleCreatePortalSession(body, cors, env);
+    }
+    if (body.action === 'ios-sync-purchase') {
+      return handleIosSyncPurchase(body, cors, env);
     }
     if (body.action === 'send-contact-message') {
       return handleContactMessage(body, cors, env);
