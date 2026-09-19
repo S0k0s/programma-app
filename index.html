@@ -2844,11 +2844,14 @@ async function scanFoodPhoto(file){
     if(authEpoch !== epochAtStart) return;
     if(res.status === 403 && data.error === 'pro_required'){ show(t('scan_pro')); return; }
     if(res.status === 403 && data.error === 'quota_exceeded'){ show(t('scan_quota')); return; }
-    if(!res.ok) throw new Error('bad status');
+    if(!res.ok){
+      const why = (data.error && (data.error.message || data.error.type)) || (typeof data.error === 'string' ? data.error : '');
+      throw new Error('HTTP '+res.status+(why?' '+why:''));
+    }
     lastAiQuota = { tier: data.tier, limit: data.limit, remaining: data.remaining, viaCredit: data.viaCredit, creditsRemaining: data.creditsRemaining };
     const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
     const m = text.match(/\{[\s\S]*\}/);
-    if(!m) throw new Error('no json');
+    if(!m) throw new Error('unreadable reply: '+text.slice(0,60));
     const r = JSON.parse(m[0]);
     if(!r.name){ show(t('scan_nofood')); return; }
     const n = v=>String(Math.max(0, Math.round(Number(v)||0)));
@@ -2857,7 +2860,8 @@ async function scanFoodPhoto(file){
     status.classList.add('hidden');
   }catch(e){
     console.error(e);
-    if(authEpoch === epochAtStart) show(t('scan_fail'));
+    // The reason is appended (short, technical) so a failure can be diagnosed from a phone.
+    if(authEpoch === epochAtStart) show(t('scan_fail')+' ('+String(e && e.message || e).slice(0,120)+')');
   }finally{
     btn.disabled = false;
   }
