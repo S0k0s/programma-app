@@ -1225,7 +1225,7 @@ const I18N = {
     ai_new_chat:'New conversation →',
     profile_title:'Profile', profile_redo:'Ask the AI Coach again for a new program →',
     profile_ai_plan_title:'AI Coach', profile_ai_plan_free:'Free plan', profile_ai_plan_pro:'Pro plan',
-    profile_ai_plan_free_desc:'Free for your initial setup conversation. Upgrade or buy messages to keep chatting with the AI Coach.',
+    profile_ai_plan_free_desc:'Free for your initial setup conversation. Upgrade to Pro to keep chatting with the AI Coach.',
     profile_ai_plan_pro_desc:'200 AI Coach messages + 40 photo scans per month.',
     profile_ai_google_manage_btn:'Manage subscription in Google Play →', profile_ai_google_disclosure:'Payment is charged to your Google Play account at confirmation of purchase. The subscription renews automatically every month until you cancel it. You can manage or cancel it at any time in Google Play.',
     profile_ai_upgrade_btn_ios:'Upgrade to Pro', profile_ai_upgrade_btn_ios_price:'Upgrade to Pro — {price}/month', profile_ai_restore_btn:'Restore purchases', profile_ai_apple_manage_btn:'Manage subscription in the App Store →', profile_ai_ios_disclosure:'Payment is charged to your Apple ID account at confirmation of purchase. The subscription renews automatically at the end of each period (month or year) unless it is cancelled at least 24 hours before the end of the current period. You can manage or cancel it in your Apple ID settings.', profile_ai_ios_terms_link:'Terms of Use & Privacy Policy', profile_ai_ios_error:'The purchase could not be completed. Please try again in a moment.', profile_ai_ios_restored:'Purchases restored.', profile_ai_ios_nothing:'No active subscription was found to restore.', profile_ai_ios_unavailable:'Purchasing is not available right now.',
@@ -3781,7 +3781,7 @@ let onboardMessages = [];
 function onboardingSystemPrompt(firstName){
   if(lang === 'en'){
     const nameInstructionEn = firstName
-      ? `The user's name is ${firstName} — use their name to address them in conversation. Also put this name in the final JSON as "name".`
+      ? `The user's name is ${firstName} — use their name to address them in conversation. Also put this name in the final JSON as "name". Do NOT ask for their name — you already know it.`
       : `We don't know the user's name yet (e.g. they signed up with email instead of Google). Ask their name in your FIRST message, and use it to address them afterward.`;
     return `You are the onboarding coach for the AI Coach app. You speak English, friendly, natural, and brief. Write plain text only — never markdown formatting like **bold** (the chat shows raw text, so asterisks would appear literally); if you need a list, use a dash (-) per line.
 ${nameInstructionEn} Your goal: learn what you need to build a personalized training and nutrition program — WITHOUT tiring the user with many separate questions. Ask AT MOST 3 messages, grouped as follows (don't split into more):
@@ -3814,7 +3814,7 @@ Do not add either of these blocks for run-of-the-mill answers ("no injuries", "n
 Do not output the json block before you actually have all the answers AND explicit confirmation from the user after the summary. Do not write anything after these blocks.`;
   }
   const nameInstruction = firstName
-    ? `Ο χρήστης λέγεται ${firstName} — χρησιμοποίησε το όνομά του/της για να τον/την προσφωνείς στη συνομιλία. Βάλε αυτό το όνομα και στο τελικό JSON ως "name".`
+    ? `Ο χρήστης λέγεται ${firstName} — χρησιμοποίησε το όνομά του/της για να τον/την προσφωνείς στη συνομιλία. Βάλε αυτό το όνομα και στο τελικό JSON ως "name". ΜΗΝ ρωτήσεις το όνομά του/της — το ξέρεις ήδη.`
     : `Δεν ξέρουμε ακόμα πώς λέγεται ο χρήστης (π.χ. έκανε εγγραφή με email αντί για Google). Ρώτα το όνομά του/της στο ΠΡΩΤΟ σου μήνυμα, και χρησιμοποίησε το για να τον/την προσφωνείς στη συνέχεια.`;
   return `Είσαι ο onboarding coach της εφαρμογής AI Coach. Μιλάς Ελληνικά, φιλικά, φυσικά και σύντομα. Γράφε απλό κείμενο — ποτέ markdown μορφοποίηση όπως **έντονα** (το chat δείχνει το κείμενο αυτούσιο, οπότε οι αστερίσκοι θα εμφανίζονταν κυριολεκτικά)· αν χρειαστεί λίστα, χρησιμοποίησε παύλα (-) σε κάθε γραμμή.
 ${nameInstruction} Σκοπός σου: να μάθεις όσα χρειάζεσαι για να φτιάξεις εξατομικευμένο πρόγραμμα προπόνησης και διατροφής — ΧΩΡΙΣ να κουράσεις τον χρήστη με πολλές ξεχωριστές ερωτήσεις. Ρώτα σε το ΠΟΛΥ 3 μηνύματα, ομαδοποιημένα ως εξής (μην τα σπάσεις σε περισσότερα):
