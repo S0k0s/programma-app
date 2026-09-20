@@ -61,8 +61,8 @@ is free. The AI Coach chat and meal photo scanning are part of AI Coach Pro,
 an auto-renewing monthly subscription.
 
 SUBSCRIPTION DETAILS
-• AI Coach Pro — monthly, auto-renewing, price shown in the app before you
-  subscribe (set in App Store Connect)
+• AI Coach Pro — monthly or annual, auto-renewing, price shown in the app
+  before you subscribe (set in App Store Connect)
 • Payment is charged to your Apple Account at confirmation of purchase
 • The subscription renews automatically unless cancelled at least 24 hours
   before the end of the current period
@@ -120,8 +120,9 @@ and capture ~5–6 screens, with a one-line caption each if you add overlays:
 Use a test account with realistic sample data; no real personal data.
 
 ## Subscription metadata (App Store Connect → Subscriptions)
-- Group: AI Coach Pro   ·   Product ID: `pro_monthly`   ·   Duration: 1 month
-- Display name: AI Coach Pro   ·   Description: Full AI Coach chat and meal photo scanning.
-- Price: choose in App Store Connect (the app reads the price from the store —
-  changing it later needs no code change).
+- Group: AI Coach Pro
+- `pro_monthly` — 1 month — €4.99   ·   `pro_annual` — 1 year (upfront) — €39.99
+- Display name: AI Coach Pro   ·   Description: AI Coach chat and meal photo scanning.
+- Prices are read from the store by the app — changing them later needs no code change.
+- Screenshot sizes App Store Connect asked for: iPhone 6.5" = 1284×2778 (files `*-6.5in.png`).
 - Review screenshot for the subscription: the in-app Pro/Upgrade section.

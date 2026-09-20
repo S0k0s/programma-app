@@ -22,6 +22,28 @@ everywhere.
 Until the steps below are finished, the iOS app behaves as before (no purchase
 button, existing Pro users still work).
 
+
+## Current setup (done in App Store Connect / code)
+- App: "AI Coach: Workout & Diet", bundle id `io.github.s0k0s.aicoach`, SKU `aicoach-ios-001`.
+- Subscription group **AI Coach Pro** with two auto-renewable subscriptions:
+  - `pro_monthly` — 1 month — €4.99 (base: Greece; other storefronts auto-priced)
+  - `pro_annual` — 1 year (upfront) — €39.99
+- The app shows both plans (RevenueCat packages `$rc_monthly` / `$rc_annual`), the annual one with its
+  saving vs 12 × monthly. Limits: 200 messages + 40 photo scans per month (Worker constants).
+- RevenueCat project "AI Coach" exists; the App Store app configuration is **not saved yet** — it needs the
+  In-App Purchase key (below).
+
+### Finish RevenueCat (needs your Apple credentials — do this yourself)
+1. App Store Connect → Users and Access → Integrations → **In-App Purchase** → generate a key; download
+   `SubscriptionKey_XXXX.p8` (downloadable once!), note the **Key ID** and **Issuer ID**.
+2. RevenueCat → Apps → New app → App Store: bundle id `io.github.s0k0s.aicoach`, upload the .p8, enter Key ID
+   and Issuer ID, (optionally) Apple Small Business Program = yes once approved, Save.
+3. Product catalog → Products: add `pro_monthly` and `pro_annual` (App Store). Entitlements: create identifier
+   **`pro`** and attach both. Offerings: **default** (current) with two packages — Monthly → `pro_monthly`,
+   Annual → `pro_annual`.
+4. Copy the iOS public SDK key (`appl_…`) → `REVENUECAT_IOS_PUBLIC_KEY` in `index.html`; copy the secret key
+   (`sk_…`) → Cloudflare secret `REVENUECAT_SECRET_KEY`; set `REVENUECAT_WEBHOOK_AUTH`; add the webhook.
+
 ## Do these last (they need the paid Apple account)
 
 1. **Apple Developer Program** — enrol ($99/year) at developer.apple.com.
