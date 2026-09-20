@@ -365,8 +365,12 @@
   .signin-divider{display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:11.5px;margin:20px 0 16px;}
   .signin-divider::before,.signin-divider::after{content:'';flex:1;height:1px;background:var(--line);}
   .email-auth-form{display:flex;flex-direction:column;gap:8px;text-align:left;}
-  .email-auth-form input,#registerFullName{background:var(--surface);border:1px solid var(--line);color:var(--text);
+  .email-auth-form input[type=text],.email-auth-form input[type=email],.email-auth-form input[type=password]{background:var(--surface);border:1px solid var(--line);color:var(--text);
     border-radius:var(--radius-sm);padding:11px 13px;font-size:16px;width:100%;box-sizing:border-box;}
+  .auth-welcome{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+  .auth-welcome button{width:100%;padding:14px;}
+  #signin-gate[data-mode="signin"] .register-only,#signin-gate[data-mode="register"] .signin-only{display:none;}
+  #registerFullName{background:var(--surface);border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:11px 13px;font-size:16px;width:100%;box-sizing:border-box;}
   .email-auth-btns{display:flex;gap:8px;margin-top:2px;}
   .email-auth-btns button{flex:1;}
   .linklike{background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-size:inherit;font-family:inherit;text-decoration:underline;}
@@ -466,30 +470,34 @@
 
     <div class="signin-divider hidden"><span data-i18n="signin_or_email">ή με email</span></div>
 
-    <form id="emailAuthForm" class="email-auth-form">
+    <div id="authWelcome" class="auth-welcome">
+      <button class="primary" type="button" id="welcomeSignInBtn" data-i18n="signin_submit">Σύνδεση</button>
+      <button class="ghost" type="button" id="welcomeRegisterBtn" data-i18n="signin_register">Εγγραφή</button>
+    </div>
+
+    <form id="emailAuthForm" class="email-auth-form hidden">
+      <input type="text" id="registerFullName" class="register-only" data-i18n-placeholder="signin_fullname_placeholder" placeholder="Ονοματεπώνυμο" autocomplete="name">
       <input type="email" id="emailAuthEmail" placeholder="Email" autocomplete="email" required>
       <input type="password" id="emailAuthPassword" data-i18n-placeholder="signin_password_placeholder" placeholder="Κωδικός (8+ χαρακτήρες, κεφαλαίο, πεζό, αριθμό, σύμβολο)" autocomplete="current-password" required>
-      <div class="email-auth-btns">
-        <button class="primary" type="submit" id="emailSignInBtn" data-i18n="signin_submit">Σύνδεση</button>
-        <button class="ghost" type="button" id="emailRegisterBtn" data-i18n="signin_register">Εγγραφή</button>
+      <div id="registerConsents" class="register-only" style="margin-bottom:6px;">
+        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:4px;color:var(--muted,#9aa0a6);">
+          <input type="checkbox" id="ageConfirmCheckbox" style="margin-top:3px;flex-shrink:0;width:auto;">
+          <span data-i18n="signin_age_confirm">I confirm I am at least 18 years old.</span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:10px;color:var(--muted,#9aa0a6);">
+          <input type="checkbox" id="healthConsentCheckbox" style="margin-top:3px;flex-shrink:0;width:auto;">
+          <span data-i18n="signin_health_consent">I explicitly consent to the processing of my health-related data.</span>
+        </label>
       </div>
-      <button class="dash-link" type="button" id="forgotPasswordBtn" style="margin:6px auto 0;" data-i18n="signin_forgot">Ξέχασες τον κωδικό;</button>
+      <div class="email-auth-btns">
+        <button class="primary signin-only" type="submit" id="emailSignInBtn" data-i18n="signin_submit">Σύνδεση</button>
+        <button class="primary register-only" type="button" id="emailRegisterBtn" data-i18n="signin_create_account">Δημιουργία λογαριασμού</button>
+      </div>
+      <button class="dash-link signin-only" type="button" id="forgotPasswordBtn" style="margin:6px auto 0;" data-i18n="signin_forgot">Ξέχασες τον κωδικό;</button>
+      <button class="dash-link" type="button" id="authBackBtn" style="margin:2px auto 0;" data-i18n="signin_back">← Πίσω</button>
     </form>
 
     <div class="signin-error" id="signinError" style="display:none;"></div>
-
-    <div id="registerConsents" class="hidden">
-    <input type="text" id="registerFullName" data-i18n-placeholder="signin_fullname_placeholder" placeholder="Ονοματεπώνυμο" autocomplete="name" style="margin-top:10px;">
-    <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:10px;color:var(--muted,#9aa0a6);">
-      <input type="checkbox" id="ageConfirmCheckbox" style="margin-top:3px;flex-shrink:0;">
-      <span data-i18n="signin_age_confirm">I confirm I am at least 18 years old.</span>
-    </label>
-
-    <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:10px;margin-bottom:14px;color:var(--muted,#9aa0a6);">
-      <input type="checkbox" id="healthConsentCheckbox" style="margin-top:3px;flex-shrink:0;">
-      <span data-i18n="signin_health_consent">I explicitly consent to the processing of my health-related data.</span>
-    </label>
-    </div>
 
     <p class="legal-disclaimer" data-i18n-html="signin_legal">Συνδεόμενος/η ή εγγραφόμενος/η αποδέχεσαι τους
       <button type="button" class="linklike" id="showTermsBtn">Όρους Χρήσης &amp; Πολιτική Απορρήτου</button>.</p>
@@ -1055,7 +1063,7 @@ const I18N = {
     signin_health_consent:'Συναινώ ρητά στην επεξεργασία των δεδομένων υγείας μου (βάρος, ύψος, ηλικία, τραυματισμοί, διατροφικές σημειώσεις, ιστορικό προπόνησης και φαγητού) από το AI Coach, συμπεριλαμβανομένης της αποστολής τους στον πάροχο τεχνητής νοημοσύνης για την παραγωγή απαντήσεων. Μπορώ να ανακαλέσω τη συγκατάθεση διαγράφοντας τον λογαριασμό μου.', signin_health_required:'Για να δημιουργήσεις λογαριασμό πρέπει να δώσεις τη ρητή συγκατάθεσή σου για την επεξεργασία των δεδομένων υγείας.',
     consent_modal_message:'Το AI Coach επεξεργάζεται δεδομένα που αφορούν την υγεία σου (βάρος, ύψος, ηλικία, τραυματισμούς, διατροφικές σημειώσεις, ιστορικό προπόνησης και φαγητού), συμπεριλαμβανομένης της αποστολής των σχετικών στοιχείων στον πάροχο τεχνητής νοημοσύνης για τις απαντήσεις του Coach. Συναινείς ρητά; Μπορείς να ανακαλέσεις τη συγκατάθεση διαγράφοντας τον λογαριασμό σου. Χωρίς συγκατάθεση δεν μπορούμε να παρέχουμε την υπηρεσία.', consent_modal_ok:'Συναινώ', consent_modal_decline:'Αποσύνδεση',
     profile_export_data:'Λήψη των δεδομένων μου →', export_done:'Τα δεδομένα σου ετοιμάστηκαν.', export_error:'Δεν ήταν δυνατή η λήψη των δεδομένων. Δοκίμασε ξανά.', export_copy_note:'Αντίγραψε το κείμενο παρακάτω και αποθήκευσέ το σε αρχείο (.json):',
-    signin_confirm_then_register:'Συμπλήρωσε το ονοματεπώνυμό σου, επιβεβαίωσε τα δύο πεδία παρακάτω και πάτησε ξανά «Εγγραφή».', signin_fullname_placeholder:'Ονοματεπώνυμο', signin_fullname_required:'Γράψε το ονοματεπώνυμό σου (όνομα και επώνυμο).', profile_consents_title:'Συγκαταθέσεις', profile_consent_health:'Συγκατάθεση για την επεξεργασία δεδομένων υγείας', profile_consent_age:'Επιβεβαίωση ότι είσαι τουλάχιστον 18 ετών', profile_consent_on:'δόθηκε στις {date}',
+    signin_confirm_then_register:'Συμπλήρωσε το ονοματεπώνυμό σου, επιβεβαίωσε τα δύο πεδία παρακάτω και πάτησε ξανά «Εγγραφή».', signin_fullname_placeholder:'Ονοματεπώνυμο', signin_create_account:'Δημιουργία λογαριασμού', signin_back:'← Πίσω', signin_welcome_title:'Καλώς ήρθες', signin_welcome_subtitle:'Ο προσωπικός σου προπονητής και διατροφολόγος με τεχνητή νοημοσύνη.', register_title:'Δημιουργία λογαριασμού', register_subtitle:'Φτιάξε λογαριασμό για να αποθηκεύεις το πρόγραμμα και το ιστορικό σου σε κάθε συσκευή.', signin_fullname_required:'Γράψε το ονοματεπώνυμό σου (όνομα και επώνυμο).', profile_consents_title:'Συγκαταθέσεις', profile_consent_health:'Συγκατάθεση για την επεξεργασία δεδομένων υγείας', profile_consent_age:'Επιβεβαίωση ότι είσαι τουλάχιστον 18 ετών', profile_consent_on:'δόθηκε στις {date}',
     profile_ai_plan_monthly_btn:'Μηνιαίο — {price}/μήνα', profile_ai_plan_annual_btn:'Ετήσιο — {price}/έτος', profile_ai_annual_save:'εξοικονόμηση {pct}%',
     extra_prefill_note:'Οι τιμές είναι εκτίμηση — προσάρμοσέ τις αν χρειάζεται, μετά πάτα «Προσθήκη».',
     nutri_today:'Σήμερα', nutri_of:'από',
@@ -1202,7 +1210,7 @@ const I18N = {
     signin_health_consent:'I explicitly consent to the processing of my health-related data (weight, height, age, injuries, dietary notes, workout and food logs) by AI Coach, including sending it to the AI provider to generate replies. I can withdraw my consent by deleting my account.', signin_health_required:'To create an account you must give your explicit consent to the processing of health data.',
     consent_modal_message:'AI Coach processes data about your health (weight, height, age, injuries, dietary notes, workout and food logs), including sending the relevant parts to the AI provider to generate the Coach\'s replies. Do you explicitly consent? You can withdraw your consent by deleting your account. Without consent we cannot provide the service.', consent_modal_ok:'I consent', consent_modal_decline:'Sign out',
     profile_export_data:'Download my data →', export_done:'Your data is ready.', export_error:'Could not download your data. Please try again.', export_copy_note:'Copy the text below and save it as a .json file:',
-    signin_confirm_then_register:'Enter your full name, confirm the two boxes below, then tap Register again.', signin_fullname_placeholder:'Full name', signin_fullname_required:'Please enter your full name (first and last name).', profile_consents_title:'Consents', profile_consent_health:'Consent to the processing of health data', profile_consent_age:'Confirmation that you are at least 18 years old', profile_consent_on:'given on {date}',
+    signin_confirm_then_register:'Enter your full name, confirm the two boxes below, then tap Register again.', signin_fullname_placeholder:'Full name', signin_create_account:'Create account', signin_back:'← Back', signin_welcome_title:'Welcome', signin_welcome_subtitle:'Your personal AI trainer and nutrition coach.', register_title:'Create account', register_subtitle:'Create an account to keep your program and history on every device.', signin_fullname_required:'Please enter your full name (first and last name).', profile_consents_title:'Consents', profile_consent_health:'Consent to the processing of health data', profile_consent_age:'Confirmation that you are at least 18 years old', profile_consent_on:'given on {date}',
     profile_ai_plan_monthly_btn:'Monthly — {price}/month', profile_ai_plan_annual_btn:'Annual — {price}/year', profile_ai_annual_save:'save {pct}%',
     extra_prefill_note:'These values are an estimate — adjust if needed, then press "Add".',
     nutri_today:'Today', nutri_of:'of',
@@ -1469,8 +1477,34 @@ function showSigninSuccess(msg){
   errEl.className = 'signin-success';
 }
 
+// The sign-in screen has three states: a welcome screen with two buttons,
+// and the sign-in / register forms (same form, register-only fields shown
+// or hidden through data-mode on the gate).
+function setAuthMode(mode){
+  const gate = document.getElementById('signin-gate');
+  gate.dataset.mode = mode;
+  document.getElementById('authWelcome').classList.toggle('hidden', mode !== 'welcome');
+  document.getElementById('emailAuthForm').classList.toggle('hidden', mode === 'welcome');
+  const title = gate.querySelector('h1');
+  const sub = gate.querySelector('h1 + p');
+  const keys = { welcome:['signin_welcome_title','signin_welcome_subtitle'], signin:['signin_title','signin_subtitle'], register:['register_title','register_subtitle'] }[mode];
+  title.dataset.i18n = keys[0]; title.textContent = t(keys[0]);
+  sub.dataset.i18n = keys[1]; sub.textContent = t(keys[1]);
+  document.getElementById('emailAuthPassword').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
+  document.getElementById('signinError').style.display = 'none';
+}
+document.getElementById('welcomeSignInBtn').addEventListener('click', ()=>setAuthMode('signin'));
+document.getElementById('welcomeRegisterBtn').addEventListener('click', ()=>setAuthMode('register'));
+document.getElementById('authBackBtn').addEventListener('click', ()=>setAuthMode('welcome'));
+setAuthMode('welcome');
+
 document.getElementById('emailAuthForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
+  // Enter inside the register form creates the account instead of signing in.
+  if(document.getElementById('signin-gate').dataset.mode === 'register'){
+    document.getElementById('emailRegisterBtn').click();
+    return;
+  }
   const email = document.getElementById('emailAuthEmail').value.trim();
   const password = document.getElementById('emailAuthPassword').value;
   document.getElementById('signinError').style.display = 'none';
@@ -1501,12 +1535,6 @@ document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>
   // The two confirmations only appear when someone actually registers —
   // signing in to an existing account doesn't ask for them again (they're
   // recorded once and shown in the Profile tab).
-  const consentsBox = document.getElementById('registerConsents');
-  if(consentsBox.classList.contains('hidden')){
-    consentsBox.classList.remove('hidden');
-    showSigninError(t('signin_confirm_then_register'));
-    return;
-  }
   const fullName = document.getElementById('registerFullName').value.trim().replace(/\s+/g, ' ');
   if(fullName.length < 3 || !fullName.includes(' ')){
     showSigninError(t('signin_fullname_required'));
@@ -1568,6 +1596,7 @@ document.getElementById('forgotPasswordBtn').addEventListener('click', async ()=
 });
 
 function signOutCleanup(){
+  setAuthMode('welcome');
   if(accessUnsub){ accessUnsub(); accessUnsub = null; }
   appInitialized = false;
   currentProfile = null;
