@@ -365,8 +365,8 @@
   .signin-divider{display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:11.5px;margin:20px 0 16px;}
   .signin-divider::before,.signin-divider::after{content:'';flex:1;height:1px;background:var(--line);}
   .email-auth-form{display:flex;flex-direction:column;gap:8px;text-align:left;}
-  .email-auth-form input{background:var(--surface);border:1px solid var(--line);color:var(--text);
-    border-radius:var(--radius-sm);padding:11px 13px;font-size:16px;width:100%;}
+  .email-auth-form input,#registerFullName{background:var(--surface);border:1px solid var(--line);color:var(--text);
+    border-radius:var(--radius-sm);padding:11px 13px;font-size:16px;width:100%;box-sizing:border-box;}
   .email-auth-btns{display:flex;gap:8px;margin-top:2px;}
   .email-auth-btns button{flex:1;}
   .linklike{background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-size:inherit;font-family:inherit;text-decoration:underline;}
@@ -479,6 +479,7 @@
     <div class="signin-error" id="signinError" style="display:none;"></div>
 
     <div id="registerConsents" class="hidden">
+    <input type="text" id="registerFullName" data-i18n-placeholder="signin_fullname_placeholder" placeholder="Ονοματεπώνυμο" autocomplete="name" style="margin-top:10px;">
     <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:10px;color:var(--muted,#9aa0a6);">
       <input type="checkbox" id="ageConfirmCheckbox" style="margin-top:3px;flex-shrink:0;">
       <span data-i18n="signin_age_confirm">I confirm I am at least 18 years old.</span>
@@ -1054,7 +1055,7 @@ const I18N = {
     signin_health_consent:'Συναινώ ρητά στην επεξεργασία των δεδομένων υγείας μου (βάρος, ύψος, ηλικία, τραυματισμοί, διατροφικές σημειώσεις, ιστορικό προπόνησης και φαγητού) από το AI Coach, συμπεριλαμβανομένης της αποστολής τους στον πάροχο τεχνητής νοημοσύνης για την παραγωγή απαντήσεων. Μπορώ να ανακαλέσω τη συγκατάθεση διαγράφοντας τον λογαριασμό μου.', signin_health_required:'Για να δημιουργήσεις λογαριασμό πρέπει να δώσεις τη ρητή συγκατάθεσή σου για την επεξεργασία των δεδομένων υγείας.',
     consent_modal_message:'Το AI Coach επεξεργάζεται δεδομένα που αφορούν την υγεία σου (βάρος, ύψος, ηλικία, τραυματισμούς, διατροφικές σημειώσεις, ιστορικό προπόνησης και φαγητού), συμπεριλαμβανομένης της αποστολής των σχετικών στοιχείων στον πάροχο τεχνητής νοημοσύνης για τις απαντήσεις του Coach. Συναινείς ρητά; Μπορείς να ανακαλέσεις τη συγκατάθεση διαγράφοντας τον λογαριασμό σου. Χωρίς συγκατάθεση δεν μπορούμε να παρέχουμε την υπηρεσία.', consent_modal_ok:'Συναινώ', consent_modal_decline:'Αποσύνδεση',
     profile_export_data:'Λήψη των δεδομένων μου →', export_done:'Τα δεδομένα σου ετοιμάστηκαν.', export_error:'Δεν ήταν δυνατή η λήψη των δεδομένων. Δοκίμασε ξανά.', export_copy_note:'Αντίγραψε το κείμενο παρακάτω και αποθήκευσέ το σε αρχείο (.json):',
-    signin_confirm_then_register:'Επιβεβαίωσε τα δύο πεδία παρακάτω και πάτησε ξανά «Εγγραφή».', profile_consents_title:'Συγκαταθέσεις', profile_consent_health:'Συγκατάθεση για την επεξεργασία δεδομένων υγείας', profile_consent_age:'Επιβεβαίωση ότι είσαι τουλάχιστον 18 ετών', profile_consent_on:'δόθηκε στις {date}',
+    signin_confirm_then_register:'Συμπλήρωσε το ονοματεπώνυμό σου, επιβεβαίωσε τα δύο πεδία παρακάτω και πάτησε ξανά «Εγγραφή».', signin_fullname_placeholder:'Ονοματεπώνυμο', signin_fullname_required:'Γράψε το ονοματεπώνυμό σου (όνομα και επώνυμο).', profile_consents_title:'Συγκαταθέσεις', profile_consent_health:'Συγκατάθεση για την επεξεργασία δεδομένων υγείας', profile_consent_age:'Επιβεβαίωση ότι είσαι τουλάχιστον 18 ετών', profile_consent_on:'δόθηκε στις {date}',
     profile_ai_plan_monthly_btn:'Μηνιαίο — {price}/μήνα', profile_ai_plan_annual_btn:'Ετήσιο — {price}/έτος', profile_ai_annual_save:'εξοικονόμηση {pct}%',
     extra_prefill_note:'Οι τιμές είναι εκτίμηση — προσάρμοσέ τις αν χρειάζεται, μετά πάτα «Προσθήκη».',
     nutri_today:'Σήμερα', nutri_of:'από',
@@ -1201,7 +1202,7 @@ const I18N = {
     signin_health_consent:'I explicitly consent to the processing of my health-related data (weight, height, age, injuries, dietary notes, workout and food logs) by AI Coach, including sending it to the AI provider to generate replies. I can withdraw my consent by deleting my account.', signin_health_required:'To create an account you must give your explicit consent to the processing of health data.',
     consent_modal_message:'AI Coach processes data about your health (weight, height, age, injuries, dietary notes, workout and food logs), including sending the relevant parts to the AI provider to generate the Coach\'s replies. Do you explicitly consent? You can withdraw your consent by deleting your account. Without consent we cannot provide the service.', consent_modal_ok:'I consent', consent_modal_decline:'Sign out',
     profile_export_data:'Download my data →', export_done:'Your data is ready.', export_error:'Could not download your data. Please try again.', export_copy_note:'Copy the text below and save it as a .json file:',
-    signin_confirm_then_register:'Please confirm the two boxes below, then tap Register again.', profile_consents_title:'Consents', profile_consent_health:'Consent to the processing of health data', profile_consent_age:'Confirmation that you are at least 18 years old', profile_consent_on:'given on {date}',
+    signin_confirm_then_register:'Enter your full name, confirm the two boxes below, then tap Register again.', signin_fullname_placeholder:'Full name', signin_fullname_required:'Please enter your full name (first and last name).', profile_consents_title:'Consents', profile_consent_health:'Consent to the processing of health data', profile_consent_age:'Confirmation that you are at least 18 years old', profile_consent_on:'given on {date}',
     profile_ai_plan_monthly_btn:'Monthly — {price}/month', profile_ai_plan_annual_btn:'Annual — {price}/year', profile_ai_annual_save:'save {pct}%',
     extra_prefill_note:'These values are an estimate — adjust if needed, then press "Add".',
     nutri_today:'Today', nutri_of:'of',
@@ -1506,6 +1507,11 @@ document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>
     showSigninError(t('signin_confirm_then_register'));
     return;
   }
+  const fullName = document.getElementById('registerFullName').value.trim().replace(/\s+/g, ' ');
+  if(fullName.length < 3 || !fullName.includes(' ')){
+    showSigninError(t('signin_fullname_required'));
+    return;
+  }
   if(!document.getElementById('ageConfirmCheckbox').checked){
     showSigninError(t('signin_age_required'));
     return;
@@ -1533,6 +1539,8 @@ document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>
   }catch(e){ /* lookup unavailable — createUserWithEmailAndPassword below still catches a same-provider duplicate */ }
   try{
     const cred = await auth.createUserWithEmailAndPassword(email, password);
+    // The name is what the app greets the user with (getFirstName()).
+    try{ await cred.user.updateProfile({ displayName: fullName }); }catch(e){ console.error('updateProfile failed', e); }
     try{ await cred.user.sendEmailVerification(); }catch(e){ console.error('verification email failed', e); }
   }catch(err){
     showSigninError(authErrorMessage(err));
