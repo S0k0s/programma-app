@@ -30,8 +30,10 @@ button, existing Pro users still work).
   - `pro_annual` — 1 year (upfront) — €39.99
 - The app shows both plans (RevenueCat packages `$rc_monthly` / `$rc_annual`), the annual one with its
   saving vs 12 × monthly. Limits: 200 messages + 40 photo scans per month (Worker constants).
-- RevenueCat project "AI Coach" exists; the App Store app configuration is **not saved yet** — it needs the
-  In-App Purchase key (below).
+- RevenueCat project "AI Coach" is configured: App Store app (bundle id above, In-App Purchase key uploaded),
+  products `pro_monthly` + `pro_annual`, entitlement **`pro`** with both attached, offering **`default`** with
+  packages `$rc_monthly` / `$rc_annual`. The iOS public SDK key is already in `index.html`.
+- Still to do: secret API key + webhook (below), Cloudflare secrets + Worker deploy, Xcode build.
 
 ### Finish RevenueCat (needs your Apple credentials — do this yourself)
 1. App Store Connect → Users and Access → Integrations → **In-App Purchase** → generate a key; download

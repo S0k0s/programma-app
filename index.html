@@ -4299,7 +4299,7 @@ async function startStripeAction(btn, action){
 // anthropic-proxy.js, ios-sync-purchase + /revenuecat-webhook), so isPro
 // works identically for both. Until the RevenueCat public key below is set
 // the iOS app simply doesn't offer a purchase (same as before this existed).
-const REVENUECAT_IOS_PUBLIC_KEY = 'appl_REPLACE_WITH_REVENUECAT_PUBLIC_KEY';
+const REVENUECAT_IOS_PUBLIC_KEY = 'appl_xBIrMsbkEVuxnVZHYtdNPbpFwPd'; // public SDK key (safe to ship in the app)
 function isIosApp(){
   return typeof Capacitor !== 'undefined' && !!Capacitor.getPlatform && Capacitor.getPlatform() === 'ios';
 }
