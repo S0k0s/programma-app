@@ -4545,7 +4545,7 @@ async function renderAiProSection(){
       <button class="ghost" type="button" id="aiAndroidRestoreBtn" style="margin-top:8px;">${t('profile_ai_restore_btn')}</button>
       <div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.4;">${t('profile_ai_google_disclosure')}</div>
       <button class="dash-link" type="button" id="aiIapTermsBtn">${t('profile_ai_ios_terms_link')}</button>` : ''}
-    ${!isPro && iosIap ? (iosButtons || `<button class="ghost" type="button" id="aiIapBtn" style="margin-top:10px;">${t('profile_ai_upgrade_btn_ios')}</button>`) + `
+    ${!isPro && iosIap ? (iosButtons || `<div style="font-size:12px;color:var(--text-dim);margin-top:10px;">${t('profile_ai_ios_unavailable')}</div>`) + `
       <button class="ghost" type="button" id="aiIapRestoreBtn" style="margin-top:8px;">${t('profile_ai_restore_btn')}</button>
       <div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.4;">${t('profile_ai_ios_disclosure')}</div>
       <button class="dash-link" type="button" id="aiIapTermsBtn">${t('profile_ai_ios_terms_link')}</button>` : ''}
