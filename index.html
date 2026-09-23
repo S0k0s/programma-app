@@ -396,6 +396,7 @@
   .msg.assistant{align-self:flex-start;background:var(--surface2);border:1px solid var(--line);border-bottom-left-radius:4px;}
   .msg.assistant.error{border-color:var(--danger);color:var(--danger-text);}
   .msg.assistant.loading{color:var(--text-dim);font-style:italic;}
+  .msg-sources{display:block;margin-top:8px;font-size:11px;line-height:1.4;font-weight:400;font-style:normal;color:var(--text-dim);white-space:normal;}
   .msg.user{align-self:flex-end;background:var(--lime);color:#101214;font-weight:600;border-bottom-right-radius:4px;}
   .onboard-inputrow{display:flex;gap:8px;margin-top:12px;}
   .onboard-inputrow input{flex:1;background:var(--surface);border:1px solid var(--line);color:var(--text);
@@ -1288,6 +1289,8 @@ const I18N = {
     src_note_ai:'AI suggestions are general information, not medical advice.',
     src_note_targets:'Targets are estimates from standard formulas, not medical advice.',
     src_link:'See sources →',
+    src_reply_note:'General information, not medical advice.',
+    src_link_short:'Sources →',
     profile_sources_link:'Sources & health information →',
     profile_title:'Profile', profile_redo:'Ask the AI Coach again for a new program →',
     profile_ai_plan_title:'AI Coach', profile_ai_plan_free:'Free plan', profile_ai_plan_pro:'Pro plan',
@@ -3742,13 +3745,20 @@ function aiStripUpdateBlocks(text){
     .trim();
 }
 
-function appendAiBubble(cls, text){
+// Small footer under each substantive AI reply (not status bubbles) tying the
+// suggestion to the Sources page — App Review 1.4.1 wants the citations easy
+// to find right where the health/nutrition advice appears.
+function aiSourcesFooterHtml(){
+  return `<span class="msg-sources">${t('src_reply_note')} <button type="button" class="linklike" data-open-sources>${t('src_link_short')}</button></span>`;
+}
+
+function appendAiBubble(cls, text, withSources){
   const wrap = document.getElementById('aiChatThread');
   const empty = wrap.querySelector('.empty');
   if(empty) empty.remove();
   const div = document.createElement('div');
   div.className = 'msg ' + cls;
-  div.innerHTML = escapeHtml(stripMarkdown(text)).replace(/\n/g,'<br>');
+  div.innerHTML = escapeHtml(stripMarkdown(text)).replace(/\n/g,'<br>') + (withSources ? aiSourcesFooterHtml() : '');
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
   return div;
@@ -3764,7 +3774,7 @@ function renderAiChat(){
   aiMessages.forEach(m=>{
     const text = m.role === 'assistant' ? aiStripUpdateBlocks(m.content) : m.content;
     if(!text) return;
-    appendAiBubble(m.role === 'user' ? 'user' : 'assistant', text);
+    appendAiBubble(m.role === 'user' ? 'user' : 'assistant', text, m.role !== 'user');
   });
 }
 
@@ -3830,7 +3840,7 @@ async function askAI(question){
     loadingEl.remove();
     aiMessages.push({role:'assistant', content:text});
     await saveAiChatHistory();
-    appendAiBubble('assistant', aiStripUpdateBlocks(text));
+    appendAiBubble('assistant', aiStripUpdateBlocks(text), true);
 
     const profileMatch = text.match(/```profile-update\s*([\s\S]*?)```/);
     const exerciseMatch = text.match(/```exercise-update\s*([\s\S]*?)```/);
@@ -3954,11 +3964,11 @@ function startOnboardingChat(){
   sendOnboardingTurn(null);
 }
 
-function appendChatBubble(cls, text){
+function appendChatBubble(cls, text, withSources){
   const wrap = document.getElementById('onboardChat');
   const div = document.createElement('div');
   div.className = 'msg ' + cls;
-  div.innerHTML = escapeHtml(stripMarkdown(text)).replace(/\n/g,'<br>');
+  div.innerHTML = escapeHtml(stripMarkdown(text)).replace(/\n/g,'<br>') + (withSources ? aiSourcesFooterHtml() : '');
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
   return div;
@@ -4000,7 +4010,7 @@ async function sendOnboardingTurn(userText){
     loadingEl.remove();
     const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
     const displayText = (jsonMatch ? text.slice(0, jsonMatch.index) : text).trim();
-    if(displayText) appendChatBubble('assistant', displayText);
+    if(displayText) appendChatBubble('assistant', displayText, true);
     onboardMessages.push({role:'assistant', content:text});
     if(jsonMatch){
       // Injury/diet-aware setup: the model may follow the profile json with
