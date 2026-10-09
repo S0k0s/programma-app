@@ -8,7 +8,10 @@ browser tool, logged in as the user) — nothing is guessed. Where something is
 genuinely unknown, it's marked as such rather than assumed.
 
 **Headline as of 2026-10-09: Android is live on Google Play. iOS is not —
-build 7 is queued for Apple review.** See §5 for the full detail.
+build 7 is queued for Apple review.** Also as of 2026-10-09: a Play Store
+listing update (app name → "AI Coach: Workout & Diet", matching Apple; plus a
+corrected AI-content declaration) was submitted for Google review same day.
+See §5 for the full detail.
 
 **Do not treat anything in this file as more authoritative than the repo
 itself** — if code and this file disagree, the code is current; re-read the
@@ -136,6 +139,20 @@ Full timeline, confirmed by reading Google Play Console and Gmail directly:
   that was already uploaded to Play's library before this session — not a
   fresh upload from this `.aab` file, so don't assume the local file is what's
   live without checking Play Console's "Πακέτα εφαρμογών" library.
+- **2026-10-09 (same day, later): Play Store listing update submitted for
+  review** — the user asked for the Play Store app name to match Apple's
+  ("AI Coach: Workout & Diet" instead of the old "AI Coach", confirmed
+  24/30 chars in the Play Console editor). While in the Main Store Listing
+  editor, also found and fixed a wrong **AI-generated-content declaration**:
+  the app icon, feature graphic, and one phone screenshot were incorrectly
+  flagged as AI-created/edited (via Play's per-asset tagging popup under
+  "Δήλωση στοιχείου AI"); corrected to unflagged on all 7 assets (icon,
+  feature graphic, 5 screenshots) since none of them actually are
+  AI-generated. Both changes (name + declaration) were bundled as a single
+  pending change and submitted together via "Επισκόπηση δημοσίευσης" →
+  "Υποβολή 1 αλλαγής για έλεγχο" → confirmed. Page now shows "Αλλαγές που
+  υποβάλλονται σε έλεγχο" (under review) — **not yet approved/live**, check
+  Play Console's publishing-overview page for the outcome.
 
 ### iOS — ⏳ build 7 queued for review, not yet decided
 Full review history, read directly from App Store Connect → the app
