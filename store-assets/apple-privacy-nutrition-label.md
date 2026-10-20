@@ -11,6 +11,7 @@ for advertising. No ad SDKs, no analytics-for-ads.
 ## Data Linked to You
 (Collected data tied to the user's identity — their Firebase account)
 
+- **Contact Info** → Name — used for App Functionality (account and greeting).
 - **Contact Info** → Email Address — used for App Functionality, Account
   creation/sign-in.
 - **Health & Fitness** → Health (weight, height, age, sex, activity level,

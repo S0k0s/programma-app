@@ -2,7 +2,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'sokratispoun@gmail.com';
+      return request.auth != null && request.auth.token.email == 'sokratispoun@gmail.com' &&
+             request.auth.token.email_verified == true;
     }
     function isApproved(uid) {
       return exists(/databases/$(database)/documents/access/$(uid)) &&
@@ -19,41 +20,37 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == uid &&
                     request.resource.data.status == 'approved';
       allow update: if isAdmin();
-      // A user can delete their own record (part of self-service account
-      // deletion); the admin can delete anyone's (moderation cleanup).
-      allow delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      // Account deletion is performed by the Worker. A client must not be
+      // able to delete a denied record and recreate it as approved.
+      allow delete: if isAdmin();
     }
 
     // 'subscription', 'credits', 'onboarding-usage' and the daily
-    // 'ai-usage:*' counters are written only by the Cloudflare Worker, via a
+    // 'ai-usage:*', 'ai-usage-month:*' and 'ai-photo-usage:*' counters are written only by the Cloudflare Worker, via a
     // Firebase service-account credential that bypasses these rules
     // entirely — never by the client. Otherwise a user could just set their
     // own subscription to 'active', top up their own AI Coach credit
     // balance, reset/inflate their own daily quota, or reset their bounded
     // free-onboarding-message counter back to zero, straight from devtools.
     function isServerOnlyDoc(docId) {
-      return docId == 'subscription' || docId == 'credits' || docId == 'onboarding-usage' || docId.matches('ai-usage:.*');
+      return docId == 'subscription' || docId == 'credits' || docId == 'onboarding-usage' ||
+             docId.matches('ai-usage:.*') || docId.matches('ai-usage-month:.*') ||
+             docId.matches('ai-photo-usage:.*');
     }
 
     // Per-user app data: locked to the owning uid AND requires an approved
     // access request — except the admin, who can also read/write/delete any
-    // user's data directly (needed for the admin panel's "delete account"
-    // moderation action, which wipes a target user's data via this same
-    // client-side deleteAllUserData() the self-delete flow already uses).
+    // user's ordinary data directly. Account deletion, including protected
+    // usage/subscription docs, is performed by the Worker.
     match /users/{userId}/data/{docId} {
       allow read: if request.auth != null &&
                   ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
-      // Server-only docs can never be *created or updated* by the client —
-      // that's the whole point of isServerOnlyDoc (see above). But deletion
-      // is different: it can only remove a doc, never fabricate a fake
-      // active/approved value, so it's safe to allow as part of the normal
-      // self-delete / admin-delete account cleanup below. Without this
-      // split, deleteAllUserData()'s batch delete fails outright (a single
-      // rejected op fails the whole batch) for any account that has ever
-      // used the AI Coach or subscribed — i.e. almost every real account.
+      // Deleting a usage counter resets its allowance, so server-only
+      // documents are also protected from client deletion. The Worker
+      // removes all documents during account deletion using its service account.
       allow create, update: if request.auth != null && !isServerOnlyDoc(docId) &&
                    ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
-      allow delete: if request.auth != null &&
+      allow delete: if request.auth != null && !isServerOnlyDoc(docId) &&
                    ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
     }
     // The (mostly unused) parent user doc — same admin-or-self rule, so the

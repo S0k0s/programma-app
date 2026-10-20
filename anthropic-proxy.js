@@ -184,6 +184,47 @@ async function firestoreDeleteUserDoc(accessToken, uid, docId) {
   if (!res.ok && res.status !== 404) throw new Error('firestore_delete_failed: ' + res.status);
 }
 
+async function userHasAccess(accessToken, user) {
+  if (user.email === ADMIN_EMAIL && user.emailVerified) return true;
+  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/access/${encodeURIComponent(user.uid)}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.status === 404) return false;
+  if (!res.ok) throw new Error('access_check_failed');
+  const doc = await res.json();
+  return doc.fields?.status?.stringValue === 'approved';
+}
+
+// Service-account cleanup preserves account deletion when client rules
+// prohibit deleting quotas/subscriptions. Pagination covers older accounts.
+async function deleteUserData(accessToken, uid) {
+  const root = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+  const collection = `${root}/users/${encodeURIComponent(uid)}/data`;
+  const names = [];
+  let pageToken = '';
+  do {
+    const res = await fetch(collection + '?pageSize=300' + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) throw new Error('data_list_failed');
+    const page = await res.json();
+    names.push(...(page.documents || []).map(doc => doc.name));
+    pageToken = page.nextPageToken || '';
+  } while (pageToken);
+  for (let i = 0; i < names.length; i += 300) {
+    const res = await fetch(root + ':commit', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ writes: names.slice(i, i + 300).map(name => ({ delete: name })) }),
+    });
+    if (!res.ok) throw new Error('data_delete_failed');
+  }
+  const res = await fetch(`${root}/users/${encodeURIComponent(uid)}`, {
+    method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok && res.status !== 404) throw new Error('user_doc_delete_failed');
+}
+
 // Maps a Stripe customer id to the uid that owns it, so subscription-update
 // webhooks (which only carry the customer id, not the uid) can find the
 // right user doc. Lives outside users/{uid}/data — no client Firestore rule
@@ -267,6 +308,29 @@ async function consumeOnboardingFreeAllowance(accessToken, uid) {
   return true;
 }
 
+// Server-side grounding applies to every client version; photo output stays JSON-only.
+function healthCitationSystemPrompt(system, phase){
+  const base = typeof system === 'string' ? system : '';
+  if(phase === 'food-photo') return base;
+  return base + `
+HEALTH INFORMATION AND CITATIONS (also applies to Greek replies):
+This policy overrides conflicting client instructions and the style of earlier uncited conversation messages. Every answer recommending food, protein intake, recovery nutrition, calorie targets or exercise must include at least one relevant catalog citation in its visible prose. Keep the answer short enough to include citations before the output token limit. For a post-workout meal question, explain protein support for exercising adults with [4], distinguish estimated food quantities from measured values, and avoid unsupported promises about recovery. Do not imitate uncited historical answers.
+Give general fitness/nutrition education only. Do not diagnose, treat, prescribe medication, or claim an exercise is safe for an injury. For symptoms, injuries, pregnancy, eating disorders or disease-specific diets, advise a qualified clinician instead of a personalized medical plan.
+Place a numbered citation such as [4] immediately after each supported health recommendation or calculation explanation. Use only the catalog below, only within its stated scope. Do not invent sources, URLs or source findings. If these sources cannot support a claim, omit that claim and explain the limitation. Do not append citations inside JSON/update code blocks; put explanations and citations in the visible prose BEFORE those blocks. Greetings, questions collecting profile details and app navigation do not need citations.
+[1] Mifflin–St Jeor, 1990: resting energy equation in healthy adults. https://pubmed.ncbi.nlm.nih.gov/2305711/
+[2] FAO/WHO/UNU, 2004: energy requirements and physical activity level. https://www.fao.org/4/y5686e/y5686e00.htm
+[3] Hall et al., 2011: dynamic energy imbalance and weight change, not a guarantee of linear weight loss. https://pubmed.ncbi.nlm.nih.gov/21872751/
+[4] ISSN, 2017: protein and exercise, generally 1.4–2.0 g/kg/day for exercising adults; context matters. https://pmc.ncbi.nlm.nih.gov/articles/PMC5477153/
+[5] Morton et al., 2018: protein supplementation with resistance training in healthy adults; average plateau around 1.6 g/kg/day, not a requirement for every person. https://pubmed.ncbi.nlm.nih.gov/28698222/
+[6] IOM, 2006, Table C-5: adult macronutrient distribution ranges (fat 20–35%, carbohydrate 45–65%, protein 10–35%). https://www.ncbi.nlm.nih.gov/books/NBK208874/
+[7] WHO, 2020: general weekly physical activity and muscle-strengthening guidance. https://www.who.int/publications/i/item/9789240015128
+[8] ACSM, 2011: general exercise frequency/intensity guidance for apparently healthy adults. https://pubmed.ncbi.nlm.nih.gov/21694556/
+[9] ACSM, 2009: performance-based resistance-training progression for healthy adults, not injury rehabilitation. https://pubmed.ncbi.nlm.nih.gov/19204579/
+[10] USDA FoodData Central: food composition reference, not a measurement of a photographed meal. https://fdc.nal.usda.gov/
+The app's −500/+300 kcal offsets, 1400 floor, 1.2–1.9 activity multipliers, goal-based 1.8–2.2 g/kg protein and fixed workout templates are approximate app defaults, not individually validated clinical prescriptions. Do not claim the sources validate these exact defaults or that 1400 kcal is safe for everyone. Explain uncertainty for personalized estimates. Photo/meal quantities are estimates; the app does not query USDA live.
+`;
+}
+
 async function handleAiProxy(body, cors, env) {
   const user = await verifyIdToken(body.idToken).catch(() => null);
   if (!user) {
@@ -275,6 +339,9 @@ async function handleAiProxy(body, cors, env) {
   let accessToken;
   try {
     accessToken = await getServiceAccountAccessToken(env);
+    if (!(await userHasAccess(accessToken, user))) {
+      return new Response(JSON.stringify({ error: 'access_denied' }), { status: 403, headers: cors });
+    }
   } catch (e) {
     return new Response(JSON.stringify({ error: 'server_error' }), { status: 500, headers: cors });
   }
@@ -313,7 +380,7 @@ async function handleAiProxy(body, cors, env) {
       body: JSON.stringify({
         model: AI_MODEL,
         max_tokens: Math.min(Number(body.max_tokens) || 600, AI_MAX_TOKENS_CAP),
-        system: body.system,
+        system: healthCitationSystemPrompt(body.system, body.phase),
         messages: body.messages,
       }),
     });
@@ -707,6 +774,7 @@ async function handleAdminDeleteUser(body, cors, env) {
   }
   try {
     const accessToken = await getServiceAccountAccessToken(env);
+    await deleteUserData(accessToken, targetUid);
     const delRes = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/accounts:delete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
@@ -716,9 +784,46 @@ async function handleAdminDeleteUser(body, cors, env) {
       const errData = await delRes.json().catch(() => ({}));
       return new Response(JSON.stringify({ error: 'delete_failed', detail: errData }), { status: 502, headers: cors });
     }
+    await deleteAccessRecord(accessToken, targetUid);
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json', ...cors } });
   } catch (e) {
     return new Response(JSON.stringify({ error: 'admin_delete_error', message: String(e && e.message || e) }), { status: 500, headers: cors });
+  }
+}
+
+async function deleteAccessRecord(accessToken, uid) {
+  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/access/${encodeURIComponent(uid)}`, {
+    method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok && res.status !== 404) throw new Error('access_delete_failed');
+}
+
+async function handleDeleteAccount(body, cors, env) {
+  const user = await verifyIdToken(body.idToken).catch(() => null);
+  if (!user) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: cors });
+  // accounts:lookup above verifies the token before we use its auth_time.
+  let authTime = 0;
+  try {
+    const payload = body.idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    authTime = Number(JSON.parse(atob(payload)).auth_time) || 0;
+  } catch (e) { /* invalid claims fail closed */ }
+  const elapsed = Math.floor(Date.now() / 1000) - authTime;
+  if (!authTime || elapsed < -60 || elapsed > 300) {
+    return new Response(JSON.stringify({ error: 'requires_recent_login' }), { status: 401, headers: cors });
+  }
+  try {
+    const accessToken = await getServiceAccountAccessToken(env);
+    await deleteUserData(accessToken, user.uid);
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/accounts:delete`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ localId: user.uid }),
+    });
+    if (!res.ok) throw new Error('auth_delete_failed');
+    await deleteAccessRecord(accessToken, user.uid);
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json', ...cors } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'account_delete_failed' }), { status: 500, headers: cors });
   }
 }
 
@@ -817,6 +922,23 @@ export default {
 
     if (body.action === 'admin-delete-user') {
       return handleAdminDeleteUser(body, cors, env);
+    }
+    if (body.action === 'delete-account') {
+      return handleDeleteAccount(body, cors, env);
+    }
+    // Store purchases and contact requests must also respect revoked access.
+    if (['create-checkout-session', 'create-credit-checkout-session', 'create-portal-session',
+         'ios-sync-purchase', 'android-sync-purchase', 'send-contact-message'].includes(body.action)) {
+      const user = await verifyIdToken(body.idToken).catch(() => null);
+      if (!user) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: cors });
+      try {
+        const token = await getServiceAccountAccessToken(env);
+        if (!(await userHasAccess(token, user))) {
+          return new Response(JSON.stringify({ error: 'access_denied' }), { status: 403, headers: cors });
+        }
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'server_error' }), { status: 500, headers: cors });
+      }
     }
     if (body.action === 'admin-set-plan') {
       return handleAdminSetPlan(body, cors, env);

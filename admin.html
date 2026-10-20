@@ -133,22 +133,6 @@ auth.onAuthStateChanged(user=>{
 
 document.getElementById('refreshBtn').addEventListener('click', ()=>renderTable(latestAccessDocs));
 
-// Same users/{uid}/data cleanup the self-service delete flow uses —
-// Firestore rules let the admin act on any uid, not just their own.
-async function deleteAllUserData(uid){
-  const dataCol = db.collection('users').doc(uid).collection('data');
-  const dataSnap = await dataCol.get();
-  const docs = dataSnap.docs;
-  const chunkSize = 400; // stay well under Firestore's 500-write batch limit
-  for(let i=0; i<docs.length; i+=chunkSize){
-    const batch = db.batch();
-    docs.slice(i, i+chunkSize).forEach(d=>batch.delete(d.ref));
-    await batch.commit();
-  }
-  try{ await db.collection('users').doc(uid).delete(); }catch(e){ /* implicit doc, fine if missing */ }
-  await db.collection('access').doc(uid).delete();
-}
-
 // Deletes the Firebase Auth sign-in record itself, which no client SDK can
 // do for anyone but the signed-in user — goes through the Cloudflare Worker
 // (service account), which independently re-verifies this really is the
@@ -156,14 +140,6 @@ async function deleteAllUserData(uid){
 async function adminDeleteUser(uid, btn){
   if(!confirm('This will PERMANENTLY delete this user\'s account and all their data. This cannot be undone.')) return;
   btn.disabled = true;
-  try{
-    await deleteAllUserData(uid);
-  }catch(e){
-    console.error('admin delete: user data cleanup failed', e);
-    alert('Something went wrong deleting the user\'s data. Please try again.');
-    btn.disabled = false;
-    return;
-  }
   try{
     const idToken = await currentUser.getIdToken();
     const res = await fetch(WORKER_URL, {
@@ -174,14 +150,13 @@ async function adminDeleteUser(uid, btn){
     const data = await res.json().catch(()=>({}));
     if(!res.ok || !data.ok){
       console.error('admin delete: auth record cleanup failed', data);
-      alert('The data was deleted, but the sign-in account itself was not (a server-side problem). Try again or check the Worker setup.');
+      alert('Account deletion did not finish. Try again or check the Worker setup.');
     }
   }catch(e){
     console.error('admin delete: worker call failed', e);
-    alert('The data was deleted, but the sign-in account itself was not (a server-side problem). Try again or check the Worker setup.');
+    alert('Account deletion did not finish. Try again or check the Worker setup.');
   }
-  // The onSnapshot below already drops this row once its doc is gone
-  // (deleted as part of deleteAllUserData) — nothing else to refresh here.
+  btn.disabled = false;
 }
 
 // Every users/{uid}/data/{docId} document — written by the client's own
