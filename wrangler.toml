@@ -1,6 +1,7 @@
 name = "programma-ai"
 main = "anthropic-proxy.js"
 compatibility_date = "2026-10-20"
+keep_vars = true
 
 # Deploy from this repo. Do not paste the file into the dashboard editor.
 #   npx wrangler login
