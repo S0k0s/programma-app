@@ -5,9 +5,8 @@
 # before every iOS/Android store build; then build/archive in Xcode.
 set -e
 cd "$(dirname "$0")"
-rm -rf www && mkdir -p www/lib www/design/icon-proposals
+rm -rf www && mkdir -p www/lib
 cp ../index.html ../firebase-config.js ../favicon.svg ../manifest.json ../sw.js www/
 cp ../lib/app-core.js www/lib/
-cp ../design/icon-proposals/sets.js www/design/icon-proposals/
 cp -R ../icons www/icons
 npx cap sync ios
