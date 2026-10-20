@@ -1,0 +1,46 @@
+{
+  "packageId": "io.github.s0k0s.aicoach",
+  "host": "s0k0s.github.io",
+  "name": "AI Coach",
+  "launcherName": "AI Coach",
+  "display": "standalone",
+  "themeColor": "#101214",
+  "themeColorDark": "#101214",
+  "navigationColor": "#101214",
+  "navigationColorDark": "#101214",
+  "navigationDividerColor": "#101214",
+  "navigationDividerColorDark": "#101214",
+  "backgroundColor": "#101214",
+  "enableNotifications": true,
+  "startUrl": "/programma-app/",
+  "iconUrl": "https://s0k0s.github.io/programma-app/icons/icon-512.png",
+  "maskableIconUrl": "https://s0k0s.github.io/programma-app/icons/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "aicoach"
+  },
+  "appVersionCode": 3,
+  "appVersion": "1.1.0",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://s0k0s.github.io/programma-app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://s0k0s.github.io/programma-app/",
+  "minSdkVersion": 21,
+  "orientation": "default",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}

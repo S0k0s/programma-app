@@ -15,6 +15,13 @@ Not legal or tax advice — have a lawyer/accountant confirm the open items.
 - 18+ gate, medical disclaimer, AI-content notice (already existed).
 - Store paperwork drafts in `store-assets/` (privacy label, listing, review notes).
 
+## Analytics and crashes (1.1, off until configured)
+Firebase Analytics loads only if `firebase-config.js` has `measurementId`.
+Sentry loads only if `SENTRY_DSN` in `index.html` is non-empty. Neither is set
+in this branch. When you enable one, add that processor to the privacy policy
+and to the store forms (`store-assets/google-play-data-safety.md`,
+`store-assets/apple-privacy-nutrition-label.md`). Events are not given a user id.
+
 ## Still needs YOU
 1. **Controller identity:** the name (Sokratis Pouneridis) is now in the policy; consider adding a contact address (postal or business) in `LEGAL_BODY_EN/EL` ("Data controller"). Apple also shows the seller name publicly.
 2. **Business registration & tax (Greece):** register the activity (e.g. sole proprietorship),

@@ -1,36 +1,28 @@
 # Android payments (Google Play Billing via RevenueCat)
 
-The Android app is a Trusted Web Activity, so the Pro plan is bought with Play
-Billing through the browser's Digital Goods API. The web keeps using Stripe and
-the iOS app uses Apple IAP; all three write the same
-`users/{uid}/data/subscription` doc (`source: "google"` for Play).
+The Android app is a Trusted Web Activity. Pro is bought with Play Billing
+through the Digital Goods API. iOS uses Apple IAP. New card checkout is hidden
+in the apps and on the public site. All store purchases still write
+`users/{uid}/data/subscription` (`source: "google"` for Play).
 
-## Already done in code
+The live Play build is still version code 1 and was uploaded before this
+billing setup. This repo is ready for versionCode **3** / 1.1.0. It has not
+been built or uploaded.
 
-- `android-twa/twa-manifest.json`: `playBilling` enabled (needs
-  `enableNotifications: true`), version 1.0.1 / code 2. Project regenerated.
-- `index.html`: in the Android app, once Play returns the product `pro_monthly`,
-  Profile → Pro shows "Upgrade to Pro — <price>", "Restore purchases", the
-  renewal disclosure and a "Manage subscription in Google Play" button.
-  If the product isn't set up yet, nothing changes.
-- `anthropic-proxy.js`: action `android-sync-purchase` posts the purchase token to
-  RevenueCat (validated + acknowledged there), then mirrors the entitlement. The
-  existing `/revenuecat-webhook` also handles Play renewals/cancellations.
+## Already done in the repo
 
-## Steps for you
+- `twa-manifest.json` and `app/build.gradle`: versionName 1.1.0, versionCode 3, `playBilling` enabled.
+- `AndroidManifest.xml`: `com.android.vending.BILLING` plus the existing PaymentActivity.
+- Client product ids: `pro_monthly` and `pro_annual`. Profile shows one button per product Play returns, plus Restore. A store free-trial period is shown when Play sends `freeTrialPeriod`. The app does not invent a trial.
+- The Worker posts each allowlisted token with its own `product_id`. Legacy `purchaseTokens` are still treated as `pro_monthly`. Unknown product ids are dropped.
+- The native shell is remembered in `localStorage` (`aicoach-native-shell`) so a later navigation does not reveal card checkout.
+- Manual script: `docs/PAYMENTS-TEST-PLAN.md`. Asset links: `docs/ANDROID-ASSETLINKS.md`.
 
-1. **Build the new AAB** (asks for your keystore password):
-   `cd android-twa && bubblewrap build` → upload `app-release-bundle.aab` to the
-   closed testing track. (Play needs a build with the billing permission before
-   you can create subscriptions.)
-2. **Play Console** → Monetize with Play: complete the payments profile, then
-   Subscriptions → create `pro_monthly` (base plan monthly, €4.99). Activate it.
-   Add yourself under Setup → License testing.
-3. **RevenueCat** (same project as iOS): add an Android app (package
-   `io.github.s0k0s.aicoach`), upload a Google Play service-account JSON (Play
-   Console → Setup → API access, grant it financial + app-info permissions).
-   Add product `pro_monthly` and attach it to the existing `pro` entitlement.
-4. **Cloudflare Worker**: redeploy the current `anthropic-proxy.js`
-   (`REVENUECAT_SECRET_KEY` / `REVENUECAT_WEBHOOK_AUTH` already exist from iOS).
-5. **Test** on a phone installed from the closed-test link with a license tester
-   account: buy, restore, cancel; check `source: "google"` in Firestore.
+## Steps only you can do
+
+1. Back up `android-twa/android.keystore` (alias `aicoach`) somewhere offline. It is not in git.
+2. `cd android-twa && bubblewrap build`. Upload `app-release-bundle.aab` to a test track as versionCode 3. Play will reject it if code 2 or 3 was already used; bump again if so.
+3. Play Console → Monetize: payments profile, then subscriptions `pro_monthly` (€4.99 / month) and `pro_annual` (€39.99 / year). Activate both. Optional introductory trial (for example 7 days) is configured here, not in the app. Add license testers.
+4. RevenueCat, same project as iOS: Android app `io.github.s0k0s.aicoach`, Play service account with financial access, both products on entitlement `pro`, offering `default`. No Android public SDK key is required for the Digital Goods path.
+5. Deploy the Worker with wrangler. Webhook: `https://programma-ai.sokratispoun.workers.dev/revenuecat-webhook`.
+6. Run the Android section of `docs/PAYMENTS-TEST-PLAN.md` on the versionCode 3 build. The version-code-1 production build cannot complete this test.

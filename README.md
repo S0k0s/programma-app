@@ -95,6 +95,17 @@ The Profile tab has a "Report a problem" box that emails you directly — the de
 4. Re-paste `anthropic-proxy.js` into the Worker's **Edit code** view → **Deploy**.
 5. That's it — messages send from Resend's shared address (`onboarding@resend.dev`), which works immediately with no domain setup. If you'd rather send from your own domain (e.g. `noreply@yourdomain.com`), verify a domain under **Domains** in Resend and change the `from` address in `handleContactMessage` in `anthropic-proxy.js` to match.
 
-## English only
+## Languages
 
-The app UI is English-only (no language switcher) — it used to also ship Greek, but for a broad, non-Greek-specific audience the language is fixed. `lang` in `index.html` is a hardcoded constant now rather than something the user can switch; the old Greek strings are still present in the file as unused data (harmless, just not shown to anyone) rather than hand-deleted from every call site.
+The app defaults to English and supports Greek through the EN/EL selector.
+Changing language reloads the app. Sign-in is kept on this device
+(`Persistence.LOCAL`), so a language change does not sign the user out.
+
+## Security maintenance (2026-10-06)
+
+See `DEPLOYMENT-CHECKLIST.md` for the required rollout order. Account deletion
+now runs through the Worker, because client Firestore rules prohibit deleting
+subscription and usage counters. The Worker also checks approved access before
+AI, billing and contact requests. The current Pro allowance is 200 text messages
+and 40 photo scans per UTC calendar month; free onboarding is capped at 25
+lifetime messages. Older setup descriptions of daily limits are historical.

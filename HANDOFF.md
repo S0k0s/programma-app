@@ -7,11 +7,22 @@ this machine, Gmail, Google Play Console and App Store Connect (live, in a
 browser tool, logged in as the user) — nothing is guessed. Where something is
 genuinely unknown, it's marked as such rather than assumed.
 
-**Headline as of 2026-10-09: Android is live on Google Play. iOS is not —
-build 7 is queued for Apple review.** Also as of 2026-10-09: a Play Store
-listing update (app name → "AI Coach: Workout & Diet", matching Apple; plus a
-corrected AI-content declaration) was submitted for Google review same day.
-See §5 for the full detail.
+**Headline as of 2026-10-20 (this branch, not merged, not deployed):** one
+major-update PR into `main`. Users stay signed in. Store billing only inside
+the apps (web card checkout UI is off). Android repo is versionCode **3** /
+1.1.0 with an explicit Play Billing permission and both `pro_monthly` and
+`pro_annual`. iOS marketing version **1.1**, build **8**. Free coach text
+after onboarding is `FREE_MONTHLY_MESSAGE_ALLOWANCE = 8` per UTC month
+(photos stay Pro-only). A store introductory trial is not faked in code.
+
+**Still true from 2026-10-09 until the owner ships:** the live Android app is
+version code 1. iOS build 7 was Waiting for Review. Do not assume either
+status changed. Worker drift versus the Cloudflare dashboard is still
+unverified. The `android-twa/android.keystore` (alias `aicoach`) is gitignored
+and has **no backup**. Losing it means the Android app cannot be updated.
+
+**Do not deploy from this PR.** No Worker deploy, no Firestore rules publish,
+no store upload. Safe order is in `DEPLOYMENT-CHECKLIST.md`.
 
 **Do not treat anything in this file as more authoritative than the repo
 itself** — if code and this file disagree, the code is current; re-read the
@@ -47,7 +58,7 @@ decision and hasn't been removed yet) — see §7 "Known loose ends."
 | Web app (also the source the apps bundle) | Single-file app: auth, workout/nutrition logging, AI Coach chat, Pro paywall UI | `index.html` (347 KB, one big file) |
 | Firebase config | Public identifiers (not secret) | `firebase-config.js` |
 | Firestore security rules | Per-user data isolation, admin override, Worker-only docs (subscription/credits/quota) | `firestore.rules` |
-| Backend (AI proxy + payments + admin) | Cloudflare Worker — proxies Anthropic, handles Stripe + RevenueCat webhooks, admin user-delete, contact form | `anthropic-proxy.js` — **deploy by pasting into the Cloudflare dashboard editor**, no CLI/CI deploy exists |
+| Backend (AI proxy + payments + admin) | Cloudflare Worker — proxies Anthropic, handles Stripe + RevenueCat webhooks, admin user-delete, contact form | `anthropic-proxy.js` — deploy with `npx wrangler deploy` (`wrangler.toml`). Do not paste into the dashboard; that editor has corrupted the split Firebase API key before. |
 | Admin panel | Standalone page, no link from the app, `noindex` | `admin.html` |
 | iOS app | Capacitor wrapper that **bundles** `index.html` etc. locally (not a remote URL — required for App Store review, see commit `7860e8f`) | `ios-capacitor/` — run `ios-capacitor/sync-web.sh` before every build to refresh the bundled copy from the repo root files |
 | Android app | Trusted Web Activity (Bubblewrap) wrapping the **live site** `https://s0k0s.github.io/programma-app/` (not bundled like iOS) | `android-twa/` — **not in git** (see §6) |
@@ -57,7 +68,7 @@ decision and hasn't been removed yet) — see §7 "Known loose ends."
 **Deploy model — important, easy to get wrong:**
 - Push to `main` → GitHub Pages updates in ~1–2 min → **Android (TWA) and the web page pick it up immediately**, no rebuild.
 - **iOS does NOT** — it bundles a snapshot. A code change only reaches the iOS app after: `./ios-capacitor/sync-web.sh` → open in Xcode → bump build number → Archive → upload. Already-installed iOS users (TestFlight/App Store) never get a web-only fix.
-- The **Cloudflare Worker has no auto-deploy at all** — every change to `anthropic-proxy.js` requires manually pasting the file into the Cloudflare dashboard's editor and clicking Deploy. **This has bitten us before**: the dashboard editor's syntax highlighting once silently corrupted a literal (the Firebase API key) on paste — see the comment at `anthropic-proxy.js:23` (`'AIzaSyDMXY7bYlH7' + 'Nm2SCi0CFJj-7qAWPW4hTzI'`, split in two on purpose so the editor can't mangle it again). When pasting Worker code, replace the whole file with `Cmd+A`/`Delete` first, not a partial edit.
+- The **Cloudflare Worker** deploys from the repo: `npx wrangler login` then `npx wrangler deploy` (`wrangler.toml`, script name `programma-ai`). Secrets stay in the dashboard. Dashboard paste has corrupted the split Firebase API key (`anthropic-proxy.js` still splits `'AIzaSyDMXY7bYlH7' + 'Nm2SCi0CFJj-7qAWPW4hTzI'`). If wrangler is unavailable, replace the whole file with Cmd+A / Delete before pasting. Do not partial-edit.
 - **Unverified right now:** whether the Worker currently deployed on Cloudflare matches the `anthropic-proxy.js` in this repo at HEAD. It matched as of commit `c1d0dde` (confirmed in a past session by reading the Cloudflare editor + logs), but several commits have touched it since (RevenueCat/Android support, pricing). **Check the Cloudflare dashboard before assuming any recent Worker-side change is live.**
 
 ---
@@ -74,7 +85,7 @@ These are not secrets — they're already in the repo or are meant to be public:
 - Android package id: `io.github.s0k0s.aicoach` · App Store Connect-equivalent: Play Console app id `4973693056515804123`, developer account id `6487696998666308799` · live release: version code 1 (1.0.0)
 - RevenueCat iOS public SDK key (safe to ship client-side): `appl_xBIrMsbkEVuxnVZHYtdNPbpFwPd` (already in `index.html` as `REVENUECAT_IOS_PUBLIC_KEY`)
 - RevenueCat entitlement id: `pro` · products: `pro_monthly` (€4.99/mo), `pro_annual` (€39.99/yr, base price set for the Greek storefront, other storefronts auto-converted — e.g. Apple shows ≈$3.99/mo, ≈$34.99/yr on the US storefront, that's expected, not a bug)
-- Pro limits (server-enforced, `anthropic-proxy.js`): 200 AI messages/month + 40 photo scans/month; free tier gets 0 ongoing daily messages, only `ONBOARDING_FREE_MESSAGE_LIMIT = 25` lifetime onboarding messages
+- Pro limits (server-enforced, `anthropic-proxy.js`): 200 AI messages/month + 40 photo scans/month. After onboarding, free accounts get `FREE_MONTHLY_MESSAGE_ALLOWANCE` (8) text messages per UTC month (`ai-usage-free-month:YYYY-MM`). Photos stay Pro-only. Onboarding still has a separate lifetime cap of 25.
 - AI model used: `claude-haiku-4-5-20251001`
 - Worker's allowed origins (CORS): `https://s0k0s.github.io`, `capacitor://localhost` (iOS), `https://localhost` (Android TWA)
 

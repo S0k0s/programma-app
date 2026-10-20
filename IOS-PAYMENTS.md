@@ -1,9 +1,12 @@
 # iOS payments (Apple In-App Purchase via RevenueCat)
 
 The iOS app sells the Pro plan with Apple's In-App Purchase (App Store
-Guideline 3.1.1). The web keeps using Stripe. Both write the same
-`users/{uid}/data/subscription` Firestore doc, so `isPro` works the same
-everywhere.
+Guideline 3.1.1). New card checkout is hidden in the app and on the public
+site. Store purchases write the same `users/{uid}/data/subscription` doc.
+The Xcode project on this branch is marketing version **1.1**, build **8**.
+Greek (`el`) is declared in Info.plist and `knownRegions`. Run
+`./ios-capacitor/sync-web.sh` before you archive so `lib/app-core.js` is in
+the bundle. Manual purchase checks are in `docs/PAYMENTS-TEST-PLAN.md`.
 
 ## What is already done in code
 
