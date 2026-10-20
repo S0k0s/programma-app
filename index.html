@@ -404,6 +404,8 @@
   .pw-hint{font-size:12px;text-align:center;color:rgba(16,18,20,.7);min-height:1em;margin-top:-4px;}
   .auth-foot{padding:22px 22px calc(18px + env(safe-area-inset-bottom));background:var(--bg);color:var(--text);}
   .auth-social{display:flex;justify-content:center;gap:18px;margin-bottom:16px;}
+  .auth-social[hidden]{display:none;}
+  .auth-foot:has(.auth-social[hidden]){padding-top:28px;}
   .auth-social button{width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);
     color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .auth-social svg{width:22px;height:22px;}
@@ -536,7 +538,7 @@
       </form>
     </div>
     <div class="auth-foot">
-      <div class="auth-social">
+      <div class="auth-social" id="authSocial" hidden>
         <button type="button" id="appleSignInBtn" data-i18n-aria="signin_apple" aria-label="Sign in with Apple">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8s-1.7-.8-2.9-.7c-1.5.1-2.8.9-3.6 2.2-1.5 2.7-.4 6.6 1.1 8.8.7 1.1 1.6 2.3 2.7 2.2 1.1 0 1.5-.7 2.8-.7s1.7.7 2.9.7 1.9-1.1 2.6-2.2c.8-1.2 1.1-2.3 1.2-2.4-.1 0-2.2-.8-2.2-3.6zM14.7 6.3c.6-.7 1-1.7.9-2.7-1 .1-2.1.6-2.8 1.4-.6.7-1.1 1.7-.9 2.6 1 .1 2.1-.5 2.8-1.3z"/></svg>
         </button>
@@ -964,6 +966,13 @@
 // ---------- config: fill in after deploying the Cloudflare Worker ----------
 // Replace with your deployed Worker URL, e.g. https://programma-ai.YOUR-SUBDOMAIN.workers.dev
 const WORKER_URL = 'https://programma-ai.sokratispoun.workers.dev';
+// Apple and Google stay in the page. Turn this on only after both providers
+// are enabled in Firebase Auth and Sign in with Apple is on the App ID.
+const SOCIAL_AUTH_ENABLED = false;
+if(SOCIAL_AUTH_ENABLED){
+  const social = document.getElementById('authSocial');
+  if(social) social.hidden = false;
+}
 // The AI model, per-message token cap, and daily quota are all decided
 // server-side by the Worker (not sent from here) — see anthropic-proxy.js.
 
@@ -1595,6 +1604,7 @@ document.addEventListener('click', (e)=>{
 applyTranslations();
 
 async function signInWithSocial(providerId){
+  if(!SOCIAL_AUTH_ENABLED) return;
   const errEl = document.getElementById('signinError');
   errEl.style.display = 'none';
   const registering = document.getElementById('signin-gate').dataset.mode === 'register';
@@ -1651,7 +1661,9 @@ async function finishSocialResult(result){
 }
 document.getElementById('googleSignInBtn').addEventListener('click', ()=>signInWithSocial('google.com'));
 document.getElementById('appleSignInBtn').addEventListener('click', ()=>signInWithSocial('apple.com'));
-auth.getRedirectResult().then(result=>{ if(result && result.user) return finishSocialResult(result); }).catch(()=>{});
+if(SOCIAL_AUTH_ENABLED){
+  auth.getRedirectResult().then(result=>{ if(result && result.user) return finishSocialResult(result); }).catch(()=>{});
+}
 
 function authErrorMessage(e){
   const map = {

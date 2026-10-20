@@ -456,3 +456,12 @@ test('revenuecat webhook rejects a missing secret and ignores anonymous ids', as
   assert.equal(res.status, 200);
   assert.equal(await res.text(), 'ignored');
 });
+
+test('Apple and Google stay hidden until SOCIAL_AUTH_ENABLED is turned on', () => {
+  assert.match(app, /const SOCIAL_AUTH_ENABLED = false/);
+  assert.match(app, /id="authSocial" hidden/);
+  assert.match(app, /id="appleSignInBtn"/);
+  assert.match(app, /id="googleSignInBtn"/);
+  assert.match(app, /class="auth-or"/);
+  assert.match(app, /id="authSwitchToRegister"/);
+});
