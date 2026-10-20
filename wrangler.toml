@@ -1,0 +1,18 @@
+name = "programma-ai"
+main = "anthropic-proxy.js"
+compatibility_date = "2026-10-20"
+
+# Deploy from this repo. Do not paste the file into the dashboard editor.
+#   npx wrangler login
+#   npx wrangler deploy
+# Secrets stay in the Cloudflare dashboard (they are not in this file):
+#   ANTHROPIC_API_KEY
+#   FIREBASE_SERVICE_ACCOUNT_KEY
+#   STRIPE_SECRET_KEY
+#   STRIPE_WEBHOOK_SECRET
+#   STRIPE_PRICE_ID
+#   STRIPE_CREDIT_PRICE_ID
+#   RESEND_API_KEY
+#   CONTACT_DESTINATION_EMAIL
+#   REVENUECAT_SECRET_KEY
+#   REVENUECAT_WEBHOOK_AUTH

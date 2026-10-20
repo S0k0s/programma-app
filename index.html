@@ -10,9 +10,9 @@
 <meta name="theme-color" content="#101214">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <style>
   :root{
@@ -360,6 +360,8 @@
   .signin-btn svg{width:18px;height:18px;}
   .signin-error{color:var(--danger);font-size:12.5px;margin-top:14px;}
   .signin-success{color:var(--success);font-size:12.5px;margin-top:14px;}
+  .home-progress{font-size:13px;font-weight:700;margin-top:6px;color:var(--text);}
+  .home-progress span{color:var(--text-dim);font-weight:600;}
   .signout-link{font-size:11.5px;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:2px 0;margin-top:4px;}
   .signout-link:hover{color:var(--danger);}
   .signin-divider{display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:11.5px;margin:20px 0 16px;}
@@ -373,6 +375,55 @@
   #registerFullName{background:var(--surface);border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:11px 13px;font-size:16px;width:100%;box-sizing:border-box;}
   .email-auth-btns{display:flex;gap:8px;margin-top:2px;}
   .email-auth-btns button{flex:1;}
+
+  /* Login / sign-up. Lime stands in for the reference accent; the app
+     background stands in for the reference black. The hero's curved bottom
+     and the pill controls are the layout; colors stay on the app palette. */
+  #signin-gate.auth-gate{padding:0;align-items:stretch;justify-content:stretch;background:var(--bg);}
+  .auth-screen{width:100%;max-width:480px;min-height:100%;margin:0 auto;display:flex;flex-direction:column;}
+  .auth-hero{flex:1;background:var(--lime);color:#101214;border-bottom-left-radius:56px;border-bottom-right-radius:56px;
+    padding:calc(14px + env(safe-area-inset-top)) 22px 28px;display:flex;flex-direction:column;}
+  .auth-tools{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:8px;}
+  .auth-hero .theme-switch{margin:0;border-color:rgba(16,18,20,.25);background:rgba(16,18,20,.06);}
+  .auth-hero .theme-switch button{color:#101214;}
+  .auth-hero .theme-switch button.active{background:#101214;color:var(--lime);}
+  .auth-hero .lang-select{margin:0;background:rgba(16,18,20,.08);border-color:transparent;color:#101214;}
+  .auth-hero h1{font-family:'Manrope',sans-serif;font-size:42px;font-weight:800;letter-spacing:-.6px;text-align:center;margin:18px 0 6px;line-height:1;}
+  .auth-hero .auth-sub{text-align:center;font-size:15px;font-weight:600;color:rgba(16,18,20,.72);margin:0 0 22px;}
+  .auth-hero .email-auth-form{gap:12px;}
+  .auth-hero input[type=text],.auth-hero input[type=email],.auth-hero input[type=password]{
+    background:rgba(255,255,255,.55);border:none;color:#101214;border-radius:999px;padding:15px 18px;font-size:16px;}
+  .auth-hero input::placeholder{color:rgba(16,18,20,.45);}
+  .auth-hero .auth-primary{width:100%;border:none;border-radius:999px;background:#101214;color:var(--lime);
+    font-weight:800;font-size:15px;letter-spacing:.08em;padding:15px 18px;cursor:pointer;margin-top:4px;}
+  .auth-hero .auth-primary:active{transform:scale(.98);}
+  .auth-forgot{background:none;border:none;color:#101214;font-weight:800;font-size:12px;letter-spacing:.06em;
+    text-align:center;cursor:pointer;padding:8px 0 0;text-transform:uppercase;}
+  .auth-consent{font-size:12.5px;color:rgba(16,18,20,.78);line-height:1.4;}
+  .auth-consent input{width:auto;margin-top:2px;}
+  .pw-hint{font-size:12px;text-align:center;color:rgba(16,18,20,.7);min-height:1em;margin-top:-4px;}
+  .auth-foot{padding:22px 22px calc(18px + env(safe-area-inset-bottom));background:var(--bg);color:var(--text);}
+  .auth-social{display:flex;justify-content:center;gap:18px;margin-bottom:16px;}
+  .auth-social button{width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);
+    color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .auth-social svg{width:22px;height:22px;}
+  .auth-or{display:flex;align-items:center;gap:12px;color:var(--text-dim);font-size:12px;font-weight:800;letter-spacing:.14em;margin:4px 0 16px;}
+  .auth-or::before,.auth-or::after{content:'';flex:1;height:1px;background:var(--line);}
+  .auth-switch{width:100%;border:none;border-radius:999px;background:var(--lime);color:#101214;font-weight:800;
+    font-size:15px;letter-spacing:.08em;padding:15px 18px;cursor:pointer;}
+  .auth-switch:active{transform:scale(.98);}
+  .auth-foot .legal-disclaimer{text-align:center;}
+  #signin-gate[data-mode="signin"] .register-only,#signin-gate[data-mode="register"] .signin-only{display:none;}
+  @media (max-width:360px){
+    .auth-hero{padding-left:16px;padding-right:16px;border-bottom-left-radius:40px;border-bottom-right-radius:40px;}
+    .auth-hero h1{font-size:34px;margin-top:10px;}
+    .auth-foot{padding-left:16px;padding-right:16px;}
+  }
+  @media (max-height:700px){
+    .auth-hero h1{font-size:32px;margin-top:6px;}
+    .auth-hero .auth-sub{margin-bottom:12px;}
+    .auth-hero{border-bottom-left-radius:36px;border-bottom-right-radius:36px;}
+  }
   .linklike{background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-size:inherit;font-family:inherit;text-decoration:underline;}
   .legal-disclaimer{font-size:11px;color:var(--text-dim);margin-top:16px;line-height:1.5;}
   .legal-content{max-width:520px;width:100%;margin:0 auto;text-align:left;padding:0 4px 40px;}
@@ -448,65 +499,56 @@
 </head>
 <body>
 
-<div id="signin-gate" class="gate">
-  <div class="signin-card">
-    <div class="switch-row" style="margin-bottom:18px;justify-content:center;">
-      <div class="theme-switch" id="themeSwitchSignin" style="margin-bottom:0;">
-        <button type="button" data-theme="dark">🌙</button>
-        <button type="button" data-theme="light">☀️</button>
+<div id="signin-gate" class="gate auth-gate" data-mode="signin">
+  <div class="auth-screen">
+    <div class="auth-hero">
+      <div class="auth-tools">
+        <div class="theme-switch" id="themeSwitchSignin">
+          <button type="button" data-theme="dark">🌙</button>
+          <button type="button" data-theme="light">☀️</button>
+        </div>
+        <select class="lang-select" aria-label="Language">
+          <option value="en">EN</option>
+          <option value="el">EL</option>
+        </select>
       </div>
-      <select class="lang-select" aria-label="Language">
-        <option value="en">EN</option>
-        <option value="el">EL</option>
-      </select>
+      <h1 id="authTitle">AI Coach</h1>
+      <p class="auth-sub" id="authSubtitle" data-i18n="auth_login_subtitle">Please login to continue</p>
+      <form id="emailAuthForm" class="email-auth-form">
+        <input type="text" id="registerFullName" class="register-only" data-i18n-placeholder="signin_fullname_placeholder" placeholder="Full name" autocomplete="name">
+        <input type="email" id="emailAuthEmail" placeholder="Email" autocomplete="email" required>
+        <input type="password" id="emailAuthPassword" data-i18n-placeholder="signin_password_placeholder" placeholder="Password (at least 8 characters)" autocomplete="current-password" required>
+        <div id="pwHint" class="pw-hint register-only"></div>
+        <div id="registerConsents" class="register-only auth-consent">
+          <label style="display:flex;align-items:flex-start;gap:8px;">
+            <input type="checkbox" id="ageConfirmCheckbox">
+            <span data-i18n="signin_age_confirm">I confirm I am at least 18 years old.</span>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;">
+            <input type="checkbox" id="healthConsentCheckbox">
+            <span data-i18n="signin_health_consent">I explicitly consent to the processing of my health-related data.</span>
+          </label>
+        </div>
+        <button class="auth-primary signin-only" type="submit" id="emailSignInBtn" data-i18n="auth_login_btn">LOGIN</button>
+        <button class="auth-primary register-only" type="button" id="emailRegisterBtn" data-i18n="auth_signup_btn">SIGN UP</button>
+        <button class="auth-forgot signin-only" type="button" id="forgotPasswordBtn" data-i18n="auth_forgot">Forgot password?</button>
+        <div class="signin-error" id="signinError" style="display:none;"></div>
+      </form>
     </div>
-    <div class="brandmark">AI Coach</div>
-    <h1 data-i18n="signin_title">Σύνδεση</h1>
-    <p data-i18n="signin_subtitle">Συνδέσου για να βλέπεις το ίδιο ιστορικό προπόνησης και διατροφής σε κάθε συσκευή.</p>
-    <!-- Google sign-in is hidden for now (not removed — the OAuth consent
-         screen shows the raw gym-app-f99d6.firebaseapp.com Firebase domain
-         until a custom auth domain is set up, which the account owner
-         doesn't want end users seeing; it's also unreliable on mobile
-         Safari's popup-based flow). Email/password is the only sign-in
-         method until that's revisited. -->
-    <button class="signin-btn hidden" id="googleSignInBtn" type="button">
-      <svg viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.27-1.6 3.73-5.5 3.73-3.31 0-6.02-2.74-6.02-6.13S8.19 5.57 11.5 5.57c1.89 0 3.16.8 3.88 1.5l2.64-2.55C16.36 2.83 14.1 1.8 11.5 1.8 6.3 1.8 2.06 6.03 2.06 11.23S6.3 20.66 11.5 20.66c6.62 0 8.83-4.63 8.83-8.02 0-.54-.06-.95-.13-1.36H12z"/></svg>
-      <span data-i18n="signin_google">Σύνδεση με Google</span>
-    </button>
-
-    <div class="signin-divider hidden"><span data-i18n="signin_or_email">ή με email</span></div>
-
-    <div id="authWelcome" class="auth-welcome">
-      <button class="primary" type="button" id="welcomeSignInBtn" data-i18n="signin_submit">Σύνδεση</button>
-      <button class="ghost" type="button" id="welcomeRegisterBtn" data-i18n="signin_register">Εγγραφή</button>
+    <div class="auth-foot">
+      <div class="auth-social">
+        <button type="button" id="appleSignInBtn" data-i18n-aria="signin_apple" aria-label="Sign in with Apple">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8s-1.7-.8-2.9-.7c-1.5.1-2.8.9-3.6 2.2-1.5 2.7-.4 6.6 1.1 8.8.7 1.1 1.6 2.3 2.7 2.2 1.1 0 1.5-.7 2.8-.7s1.7.7 2.9.7 1.9-1.1 2.6-2.2c.8-1.2 1.1-2.3 1.2-2.4-.1 0-2.2-.8-2.2-3.6zM14.7 6.3c.6-.7 1-1.7.9-2.7-1 .1-2.1.6-2.8 1.4-.6.7-1.1 1.7-.9 2.6 1 .1 2.1-.5 2.8-1.3z"/></svg>
+        </button>
+        <button type="button" id="googleSignInBtn" data-i18n-aria="signin_google" aria-label="Sign in with Google">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.27-1.6 3.73-5.5 3.73-3.31 0-6.02-2.74-6.02-6.13S8.19 5.57 11.5 5.57c1.89 0 3.16.8 3.88 1.5l2.64-2.55C16.36 2.83 14.1 1.8 11.5 1.8 6.3 1.8 2.06 6.03 2.06 11.23S6.3 20.66 11.5 20.66c6.62 0 8.83-4.63 8.83-8.02 0-.54-.06-.95-.13-1.36H12z"/></svg>
+        </button>
+      </div>
+      <div class="auth-or" data-i18n="auth_or">OR</div>
+      <button class="auth-switch signin-only" type="button" id="authSwitchToRegister" data-i18n="auth_signup_btn">SIGN UP</button>
+      <button class="auth-switch register-only" type="button" id="authSwitchToSignin" data-i18n="auth_login_btn">LOGIN</button>
+      <p class="legal-disclaimer" data-i18n-html="signin_legal">By continuing you accept the <button type="button" class="linklike" id="showTermsBtn">Terms &amp; Privacy</button>.</p>
     </div>
-
-    <form id="emailAuthForm" class="email-auth-form hidden">
-      <input type="text" id="registerFullName" class="register-only" data-i18n-placeholder="signin_fullname_placeholder" placeholder="Ονοματεπώνυμο" autocomplete="name">
-      <input type="email" id="emailAuthEmail" placeholder="Email" autocomplete="email" required>
-      <input type="password" id="emailAuthPassword" data-i18n-placeholder="signin_password_placeholder" placeholder="Κωδικός (8+ χαρακτήρες, κεφαλαίο, πεζό, αριθμό, σύμβολο)" autocomplete="current-password" required>
-      <div id="registerConsents" class="register-only" style="margin-bottom:6px;">
-        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:4px;color:var(--muted,#9aa0a6);">
-          <input type="checkbox" id="ageConfirmCheckbox" style="margin-top:3px;flex-shrink:0;width:auto;">
-          <span data-i18n="signin_age_confirm">I confirm I am at least 18 years old.</span>
-        </label>
-        <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:10px;color:var(--muted,#9aa0a6);">
-          <input type="checkbox" id="healthConsentCheckbox" style="margin-top:3px;flex-shrink:0;width:auto;">
-          <span data-i18n="signin_health_consent">I explicitly consent to the processing of my health-related data.</span>
-        </label>
-      </div>
-      <div class="email-auth-btns">
-        <button class="primary signin-only" type="submit" id="emailSignInBtn" data-i18n="signin_submit">Σύνδεση</button>
-        <button class="primary register-only" type="button" id="emailRegisterBtn" data-i18n="signin_create_account">Δημιουργία λογαριασμού</button>
-      </div>
-      <button class="dash-link signin-only" type="button" id="forgotPasswordBtn" style="margin:6px auto 0;" data-i18n="signin_forgot">Ξέχασες τον κωδικό;</button>
-      <button class="dash-link" type="button" id="authBackBtn" style="margin:2px auto 0;" data-i18n="signin_back">← Πίσω</button>
-    </form>
-
-    <div class="signin-error" id="signinError" style="display:none;"></div>
-
-    <p class="legal-disclaimer" data-i18n-html="signin_legal">Συνδεόμενος/η ή εγγραφόμενος/η αποδέχεσαι τους
-      <button type="button" class="linklike" id="showTermsBtn">Όρους Χρήσης &amp; Πολιτική Απορρήτου</button>.</p>
   </div>
 </div>
 
@@ -516,7 +558,7 @@
     <h1 data-i18n="reset_title">Νέος κωδικός</h1>
     <p id="resetPasswordEmailLine" data-i18n="reset_subtitle">Επιβεβαίωση συνδέσμου…</p>
     <form id="resetPasswordForm" class="email-auth-form hidden">
-      <input type="password" id="resetPasswordNew" data-i18n-placeholder="signin_password_placeholder" placeholder="Κωδικός (8+ χαρακτήρες, κεφαλαίο, πεζό, αριθμό, σύμβολο)" autocomplete="new-password" required>
+      <input type="password" id="resetPasswordNew" data-i18n-placeholder="signin_password_placeholder" placeholder="Κωδικός (τουλάχιστον 8 χαρακτήρες)" autocomplete="new-password" required>
       <div class="email-auth-btns">
         <button class="primary" type="submit" id="resetPasswordSubmitBtn" data-i18n="reset_submit">Ορισμός νέου κωδικού</button>
       </div>
@@ -543,8 +585,8 @@
     <div class="legal-text">
       <div id="sourcesGreekSummary"><h2>Ελληνική σύνοψη</h2>
       <p>Οι αριθμημένοι σύνδεσμοι [1]–[10] δίπλα στις προτάσεις ανοίγουν τη συγκεκριμένη πηγή. Οι παραπομπές δεν αποδεικνύουν ότι μια εξατομικευμένη πρόταση είναι σωστή. Οι παλιές απαντήσεις χωρίς πηγή επισημαίνονται. Η εφαρμογή δεν κάνει διάγνωση ή θεραπεία· για παθήσεις, τραυματισμούς, εγκυμοσύνη ή διατροφικές διαταραχές χρειάζεται γιατρός ή διαιτολόγος.</p>
-      <p>Ο βασικός μεταβολισμός εκτιμάται με τον τύπο Mifflin–St Jeor [1]. Οι συντελεστές δραστηριότητας 1,2–1,9 και οι αλλαγές −500/+300 kcal είναι προσεγγιστικές προεπιλογές. Το κατώφλι 1.400 kcal δεν είναι ασφαλές για όλους. Η μελέτη [3] εξηγεί ότι η μεταβολή βάρους δεν είναι γραμμική και δεν πιστοποιεί αυτές τις τιμές.</p>
-      <p>Οι στόχοι πρωτεΐνης 1,8–2,2 g/kg είναι προεπιλογές της εφαρμογής. Η ISSN [4] συζητά συνήθως 1,4–2,0 g/kg για ασκούμενους, ενώ η [5] βρίσκει μέσο όρο κορεσμού οφέλους περίπου στα 1,6 g/kg. Ο πίνακας C-5 [6] δίνει εύρη ενηλίκων: λίπος 20–35%, υδατάνθρακες 45–65%, πρωτεΐνη 10–35%. Δεν είναι εγγυημένο ότι όλοι οι υπολογισμένοι στόχοι βρίσκονται σε όλα αυτά τα εύρη.</p>
+      <p>Ο βασικός μεταβολισμός εκτιμάται με τον τύπο Mifflin–St Jeor [1]. Οι συντελεστές δραστηριότητας 1,2–1,9 είναι προσεγγίσεις. Η μείωση για απώλεια λίπους είναι το πολύ 500 kcal ή 20% του εκτιμώμενου, και η αύξηση για μυϊκή μάζα το πολύ 300 kcal ή 10%. Το κατώφλι είναι 1.400 kcal για γυναίκες και 1.600 kcal για άντρες και δεν είναι ασφαλές για όλους. Η μελέτη [3] εξηγεί ότι η μεταβολή βάρους δεν είναι γραμμική και δεν πιστοποιεί αυτές τις τιμές.</p>
+      <p>Οι στόχοι πρωτεΐνης είναι περίπου 1,6–2,2 g/kg ανά στόχο (πιο ψηλά στην απώλεια λίπους). Η ISSN [4] συζητά συνήθως 1,4–2,0 g/kg για ασκούμενους, ενώ η [5] βρίσκει μέσο όρο κορεσμού οφέλους περίπου στα 1,6 g/kg. Ο πίνακας C-5 [6] δίνει εύρη ενηλίκων: λίπος 20–35%, υδατάνθρακες 45–65%, πρωτεΐνη 10–35%. Δεν είναι εγγυημένο ότι όλοι οι υπολογισμένοι στόχοι βρίσκονται σε όλα αυτά τα εύρη.</p>
       <p>Τα προγράμματα είναι γενικά πρότυπα με αναφορές WHO/ACSM [7]–[9], όχι θεραπεία τραυματισμού. Η αύξηση φορτίου χρειάζεται καλή τεχνική και αποκατάσταση. Τα γεύματα και οι φωτογραφίες δίνουν εκτιμήσεις· η εφαρμογή δεν αναζητά ζωντανά στοιχεία USDA. Έλεγξε τις ποσότητες και τις ετικέτες· η βάση [10] βοηθά ως εξωτερική αναφορά.</p>
       </div><h2>Important</h2>
       <p>AI Coach gives general fitness and nutrition information. It is not medical advice and does not diagnose, treat or prevent any condition. Talk to a doctor or registered dietitian before changing your diet or exercise routine — especially if you are pregnant, have a medical condition or an injury, take medication, or have (or have had) an eating disorder. Stop exercising and seek medical help if you feel pain, dizziness or unwell.</p>
@@ -552,8 +594,8 @@
       <h2>Your calorie and macro targets</h2>
       <ul>
         <li><b>Energy needs.</b> Resting energy is estimated with the Mifflin–St Jeor equation (10 × weight in kg + 6.25 × height in cm − 5 × age, then + 5 for men or − 161 for women), multiplied by an activity factor (1.2 for sedentary up to 1.9 for very active). Source [1] supports the resting-energy equation in healthy adults. Source [2] explains activity-related energy needs; the exact 1.2–1.9 multipliers are app approximations, not individual measurements.</li>
-        <li><b>Calorie adjustment.</b> Fat loss uses about 500 kcal/day below your estimate and muscle gain about 300 kcal/day above it; a target is never set below 1,400 kcal. The −500/+300 adjustments and 1,400 floor are app defaults, not a clinically validated prescription or a safe minimum for everyone. Source [3] explains why weight change is dynamic; it does not validate these exact defaults.</li>
-        <li><b>Protein.</b> The app defaults to 1.8–2.2 g/kg/day by goal. Source [4] discusses 1.4–2.0 g/kg/day for most exercising adults and higher intake in some energy-restricted settings. Source [5] reports an average benefit plateau around 1.6 g/kg/day for resistance training. These do not establish one optimal target for every user.</li>
+        <li><b>Calorie adjustment.</b> Fat loss subtracts the smaller of 500 kcal or 20% of estimated needs. Recomp subtracts the smaller of 250 kcal or 10%. Muscle gain adds the smaller of 300 kcal or 10%. A target is never set below 1,400 kcal for women or 1,600 kcal for men. These offsets and floors are app defaults, not a clinically validated prescription or a safe minimum for everyone. Source [3] explains why weight change is dynamic; it does not validate these exact defaults.</li>
+        <li><b>Protein.</b> The app defaults to about 1.6–2.2 g/kg/day by goal (higher during fat loss). Source [4] discusses 1.4–2.0 g/kg/day for most exercising adults and higher intake in some energy-restricted settings. Source [5] reports an average benefit plateau around 1.6 g/kg/day for resistance training. These do not establish one optimal target for every user.</li>
         <li><b>Fat and carbohydrate.</b> Fat defaults to about 25% of calories and carbohydrate fills the remainder. Source [6], Table C-5, lists adult ranges of 20–35% fat, 45–65% carbohydrate and 10–35% protein. The app does not guarantee that every computed target falls within all these ranges; review individual targets with a dietitian.</li>
       </ul>
 
@@ -659,7 +701,8 @@
         <div class="brandmark">AI Coach</div>
         <div class="greet" id="greetLabel"></div>
         <div class="date" id="todayLabel"></div>
-        <button class="signout-link" id="signOutBtn" type="button" data-i18n="signout">Αποσύνδεση</button>
+        <div class="home-progress" id="homeProgress"></div>
+        <button class="dash-link" type="button" id="shareProgressBtn" data-i18n="share_progress">Share progress</button>
       </div>
       <button type="button" id="profileBtn" class="profile-shortcut-btn" data-i18n-aria="profile_title" aria-label="Προφίλ">
         <svg class="header-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
@@ -846,6 +889,20 @@
     <div id="profileSummary"></div>
     <div id="consentInfo" class="profile-block"></div>
     <div id="aiProSection" class="profile-block"></div>
+    <div class="profile-block" id="reminderBlock">
+      <div class="stat-label" data-i18n="reminders_title">Reminders</div>
+      <p style="font-size:12.5px;color:var(--text-dim);margin:6px 0 10px;" data-i18n="reminders_desc">Optional local reminders on this device. Nothing is sent to a server.</p>
+      <label class="auth-consent" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <input type="checkbox" id="reminderWorkoutOn">
+        <span data-i18n="reminders_workout">Workout reminder</span>
+        <input type="time" id="reminderWorkoutTime" value="18:00" style="margin-left:auto;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px;">
+      </label>
+      <label class="auth-consent" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="reminderMealOn">
+        <span data-i18n="reminders_meal">Meal log reminder</span>
+        <input type="time" id="reminderMealTime" value="13:00" style="margin-left:auto;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px;">
+      </label>
+    </div>
     <button class="dash-link" type="button" id="redoOnboardingBtn" data-i18n="profile_redo">Ξαναρώτησε το AI Coach για νέο πρόγραμμα →</button>
     <div class="profile-block" style="margin-top:24px;">
       <h3 style="font-size:14px;font-weight:800;margin:0 0 8px;" data-i18n="contact_title">Report a problem</h3>
@@ -902,6 +959,8 @@
     <button type="button" class="ghost" id="camClose" data-i18n="cam_close">Κλείσιμο</button>
   </div>
 </div>
+<script src="lib/app-core.js"></script>
+<script src="design/icon-proposals/sets.js"></script>
 <script>
 // ---------- config: fill in after deploying the Cloudflare Worker ----------
 // Replace with your deployed Worker URL, e.g. https://programma-ai.YOUR-SUBDOMAIN.workers.dev
@@ -914,18 +973,9 @@ const WORKER_URL = 'https://programma-ai.sokratispoun.workers.dev';
 // rest of the app's code below did not need to change.
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
-// Firebase's default (LOCAL) persistence keeps a session signed in
-// indefinitely and restores it silently on every future visit with no
-// prompt. SESSION persistence (tied to sessionStorage) turned out not to be
-// strict enough either — e.g. closing and reopening a mobile "app" (a tab
-// kept alive in the background rather than truly torn down) can still carry
-// sessionStorage forward. NONE stores the session only in memory: nothing is
-// written to any browser storage at all, so there is genuininely nothing
-// left to restore once the page is gone — every fresh load always starts at
-// the sign-in screen and requires an explicit, deliberate choice of account.
-// The cost: even reloading the same open tab signs you out too, but that's
-// the trade-off for "never reconnect automatically, under any circumstance."
-auth.setPersistence(firebase.auth.Auth.Persistence.NONE).catch(e=>console.error('setPersistence failed', e));
+// Stay signed in across reloads and app restarts. The owner asked for this
+// explicitly: people should not have to sign in every time they open the app.
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e=>console.error('setPersistence failed', e));
 const db = firebase.firestore();
 let currentUser = null;
 let currentProfile = null;
@@ -1012,7 +1062,11 @@ function customPrompt(message, opts={}){ return showModal({message, mode:'prompt
 // The choice is stored in localStorage and applied by reloading, so every
 // dynamically-rendered screen picks the new language up consistently.
 let lang = 'en';
-try{ if(localStorage.getItem('lang') === 'el') lang = 'el'; }catch(e){}
+try{
+  const requested = new URLSearchParams(location.search).get('lang');
+  if(requested === 'el' || requested === 'en'){ localStorage.setItem('lang', requested); lang = requested; }
+  else if(localStorage.getItem('lang') === 'el') lang = 'el';
+}catch(e){}
 let legalGateReturnTo = 'signin-gate';
 
 const LEGAL_BODY_EL = `
@@ -1099,7 +1153,7 @@ const I18N = {
     profile_sources_link:'Πηγές & πληροφορίες υγείας →',
     signin_title:'Σύνδεση', signin_subtitle:'Συνδέσου για να βλέπεις το ίδιο ιστορικό προπόνησης και διατροφής σε κάθε συσκευή.',
     signin_google:'Σύνδεση με Google', signin_or_email:'ή με email',
-    signin_password_placeholder:'Κωδικός (8+ χαρακτήρες, κεφαλαίο, πεζό, αριθμό, σύμβολο)',
+    signin_password_placeholder:'Κωδικός (τουλάχιστον 8 χαρακτήρες)',
     signin_submit:'Σύνδεση', signin_register:'Εγγραφή', signin_forgot:'Ξέχασες τον κωδικό;',
     signin_legal:'Συνδεόμενος/η ή εγγραφόμενος/η αποδέχεσαι τους <button type="button" class="linklike" id="showTermsBtn">Όρους Χρήσης &amp; Πολιτική Απορρήτου</button>.',
     signin_age_confirm:'Επιβεβαιώνω ότι είμαι τουλάχιστον 18 ετών.',
@@ -1159,9 +1213,9 @@ const I18N = {
     ai_new_chat:'Νέα συνομιλία →',
     profile_title:'Προφίλ', profile_redo:'Ξαναρώτησε το AI Coach για νέο πρόγραμμα →',
     profile_ai_plan_title:'AI Coach', profile_ai_plan_free:'Δωρεάν πλάνο', profile_ai_plan_pro:'Pro πλάνο',
-    profile_ai_plan_free_desc:'Δωρεάν αρχική συνομιλία για τη δημιουργία προγράμματος. Για συνεχή συνομιλία με τον AI Coach χρειάζεται Pro.',
+    profile_ai_plan_free_desc:'Η αρχική συνομιλία είναι δωρεάν. Μετά έχεις λίγα δωρεάν μηνύματα τον μήνα. Το Pro ξεκλειδώνει το πλήρες όριο.',
     profile_ai_plan_pro_desc:'200 μηνύματα AI Coach + 40 σαρώσεις φωτογραφίας τον μήνα.',
-    profile_ai_google_manage_btn:'Διαχείριση συνδρομής στο Google Play →', profile_ai_google_disclosure:'Η χρέωση γίνεται στον λογαριασμό σου στο Google Play κατά την επιβεβαίωση της αγοράς. Η συνδρομή ανανεώνεται αυτόματα κάθε μήνα μέχρι να την ακυρώσεις. Μπορείς να τη διαχειριστείς ή να την ακυρώσεις οποιαδήποτε στιγμή στο Google Play.',
+    profile_ai_google_manage_btn:'Διαχείριση συνδρομής στο Google Play →', profile_ai_google_disclosure:'Η χρέωση γίνεται στον λογαριασμό σου στο Google Play κατά την επιβεβαίωση της αγοράς. Η συνδρομή ανανεώνεται αυτόματα στο τέλος κάθε περιόδου (μήνα ή έτους) μέχρι να την ακυρώσεις. Μπορείς να τη διαχειριστείς ή να την ακυρώσεις οποιαδήποτε στιγμή στο Google Play.',
     profile_ai_upgrade_btn_ios:'Αναβάθμιση σε Pro', profile_ai_upgrade_btn_ios_price:'Αναβάθμιση σε Pro — {price}/μήνα', profile_ai_restore_btn:'Επαναφορά αγορών', profile_ai_apple_manage_btn:'Διαχείριση συνδρομής στο App Store →', profile_ai_ios_disclosure:'Η πληρωμή χρεώνεται στον λογαριασμό Apple ID σου κατά την επιβεβαίωση της αγοράς. Η συνδρομή ανανεώνεται αυτόματα στο τέλος κάθε περιόδου (μήνα ή έτους), εκτός αν την ακυρώσεις τουλάχιστον 24 ώρες πριν από το τέλος της τρέχουσας περιόδου. Μπορείς να τη διαχειριστείς ή να την ακυρώσεις από τις ρυθμίσεις του Apple ID σου.', profile_ai_ios_terms_link:'Όροι Χρήσης & Πολιτική Απορρήτου', profile_ai_ios_error:'Η αγορά δεν ολοκληρώθηκε. Δοκίμασε ξανά σε λίγο.', profile_ai_ios_restored:'Οι αγορές επαναφέρθηκαν.', profile_ai_ios_nothing:'Δεν βρέθηκε ενεργή συνδρομή για επαναφορά.', profile_ai_ios_unavailable:'Η αγορά δεν είναι διαθέσιμη αυτή τη στιγμή.',
     profile_ai_upgrade_btn:'Αναβάθμιση σε Pro — €4.99/μήνα',
     profile_ai_manage_btn:'Διαχείριση συνδρομής →',
@@ -1240,7 +1294,7 @@ const I18N = {
   en: {
     signin_title:'Sign in', signin_subtitle:'Sign in to see the same workout and nutrition history on every device.',
     signin_google:'Sign in with Google', signin_or_email:'or with email',
-    signin_password_placeholder:'Password (8+ chars, upper, lower, digit, symbol)',
+    signin_password_placeholder:'Password (at least 8 characters)',
     signin_submit:'Sign in', signin_register:'Register', signin_forgot:'Forgot your password?',
     signin_legal:'By signing in or registering you accept the <button type="button" class="linklike" id="showTermsBtn">Terms of Use &amp; Privacy Policy</button>.',
     signin_age_confirm:'I confirm I am at least 18 years old.',
@@ -1314,9 +1368,9 @@ const I18N = {
     profile_sources_link:'Sources & health information →',
     profile_title:'Profile', profile_redo:'Ask the AI Coach again for a new program →',
     profile_ai_plan_title:'AI Coach', profile_ai_plan_free:'Free plan', profile_ai_plan_pro:'Pro plan',
-    profile_ai_plan_free_desc:'Free for your initial setup conversation. Upgrade to Pro to keep chatting with the AI Coach.',
+    profile_ai_plan_free_desc:'The setup conversation is free. After that you get a few free messages each month. Pro unlocks the full allowance.',
     profile_ai_plan_pro_desc:'200 AI Coach messages + 40 photo scans per month.',
-    profile_ai_google_manage_btn:'Manage subscription in Google Play →', profile_ai_google_disclosure:'Payment is charged to your Google Play account at confirmation of purchase. The subscription renews automatically every month until you cancel it. You can manage or cancel it at any time in Google Play.',
+    profile_ai_google_manage_btn:'Manage subscription in Google Play →', profile_ai_google_disclosure:'Payment is charged to your Google Play account at confirmation of purchase. The subscription renews automatically at the end of each period (month or year) until you cancel it. You can manage or cancel it at any time in Google Play.',
     profile_ai_upgrade_btn_ios:'Upgrade to Pro', profile_ai_upgrade_btn_ios_price:'Upgrade to Pro — {price}/month', profile_ai_restore_btn:'Restore purchases', profile_ai_apple_manage_btn:'Manage subscription in the App Store →', profile_ai_ios_disclosure:'Payment is charged to your Apple ID account at confirmation of purchase. The subscription renews automatically at the end of each period (month or year) unless it is cancelled at least 24 hours before the end of the current period. You can manage or cancel it in your Apple ID settings.', profile_ai_ios_terms_link:'Terms of Use & Privacy Policy', profile_ai_ios_error:'The purchase could not be completed. Please try again in a moment.', profile_ai_ios_restored:'Purchases restored.', profile_ai_ios_nothing:'No active subscription was found to restore.', profile_ai_ios_unavailable:'Purchasing is not available right now.',
     profile_ai_upgrade_btn:'Upgrade to Pro — €4.99/month',
     profile_ai_manage_btn:'Manage subscription →',
@@ -1349,7 +1403,7 @@ const I18N = {
     profile_verify_resend:'Resend email', profile_verify_sending:'Sending…', profile_verify_sent:'Sent ✓', profile_verify_failed:'Failed — try again',
     profile_verify_rate_limited:'Too many requests — wait a few minutes and try again',
     profile_add_password_title:'Add a password', profile_add_password_desc:'You signed in with Google. Add a password so you can still sign in — Google sign-in is currently hidden.',
-    profile_add_password_placeholder:'New password (8+ chars, upper, lower, digit, symbol)',
+    profile_add_password_placeholder:'New password (at least 8 characters)',
     profile_add_password_btn:'Set password', profile_add_password_success:'Password set — you can now sign in with your email and this password.',
     profile_add_password_error:'Something went wrong setting your password. Try again.',
     history_loading:'Loading…', history_no_workouts:'No workouts logged yet.',
@@ -1409,8 +1463,82 @@ const I18N = {
 
 // Looks up a UI string for the current language, with optional {placeholder}
 // substitution (e.g. t('ai_program_updated', {split: '...'})).
+const I18N_EXTRA = {
+  el: {
+    auth_login_subtitle:'Συνδέσου για να συνεχίσεις',
+    auth_signup_subtitle:'Φτιάξε λογαριασμό για να συνεχίσεις',
+    auth_login_btn:'ΣΥΝΔΕΣΗ',
+    auth_signup_btn:'ΕΓΓΡΑΦΗ',
+    auth_forgot:'Ξέχασες τον κωδικό;',
+    auth_or:'Ή',
+    pw_too_common:'Αυτός ο κωδικός είναι πολύ συνηθισμένος. Διάλεξε άλλον.',
+    pw_too_long:'Ο κωδικός είναι υπερβολικά μεγάλος.',
+    pw_hint_empty:'Τουλάχιστον 8 χαρακτήρες. Ένας πιο μεγάλος κωδικός είναι πιο δυνατός.',
+    pw_hint_weak:'Αδύναμος — πρόσθεσε μήκος ή ένα μείγμα γραμμάτων και αριθμών.',
+    pw_hint_ok:'Εντάξει. Περισσότεροι χαρακτήρες τον κάνουν πιο δυνατό.',
+    pw_hint_strong:'Δυνατός κωδικός.',
+    share_progress:'Κοινοποίηση προόδου',
+    share_unavailable:'Η κοινοποίηση δεν είναι διαθέσιμη σε αυτή τη συσκευή. Το κείμενο αντιγράφηκε.',
+    reminders_title:'Υπενθυμίσεις',
+    reminders_desc:'Προαιρετικές τοπικές υπενθυμίσεις σε αυτή τη συσκευή. Δεν στέλνονται σε διακομιστή.',
+    reminders_workout:'Υπενθύμιση προπόνησης',
+    reminders_meal:'Υπενθύμιση καταγραφής γεύματος',
+    reminder_workout_title:'Ώρα για προπόνηση',
+    reminder_workout_body:'Το πρόγραμμά σου σε περιμένει στο AI Coach.',
+    reminder_meal_title:'Κατέγραψες το γεύμα σου;',
+    reminder_meal_body:'Μια σύντομη καταγραφή κρατά τους στόχους σου σε τροχιά.',
+    review_title:'Σου αρέσει το AI Coach;',
+    review_body:'Αν σε βοηθάει, μια σύντομη κριτική στο κατάστημα βοηθάει άλλους να το βρουν.',
+    review_ok:'Αξιολόγηση',
+    review_later:'Όχι τώρα',
+    streak_chip:'Σειρά {n} ημερών',
+    week_chip:'{done}/{target} αυτή την εβδομάδα',
+    profile_ai_store_only:'Το Pro αγοράζεται μέσα από το App Store ή το Google Play. Δεν υπάρχει πληρωμή με κάρτα μέσα στην εφαρμογή.',
+    profile_ai_web_store_only:'Το Pro είναι διαθέσιμο στις εφαρμογές iOS και Android.',
+    profile_ai_trial:'Δωρεάν δοκιμή: {trial}',
+    signin_apple:'Σύνδεση με Apple',
+    social_use_register:'Για νέο λογαριασμό, άνοιξε την Εγγραφή, τσέκαρε τις συγκαταθέσεις και μετά διάλεξε Apple ή Google.',
+    social_unavailable:'Αυτή η σύνδεση δεν είναι έτοιμη ακόμα. Χρησιμοποίησε email και κωδικό. (Ο ιδιοκτήτης πρέπει να ενεργοποιήσει τον πάροχο στο Firebase.)'
+  },
+  en: {
+    auth_login_subtitle:'Please login to continue',
+    auth_signup_subtitle:'Create an account to continue',
+    auth_login_btn:'LOGIN',
+    auth_signup_btn:'SIGN UP',
+    auth_forgot:'Forgot password?',
+    auth_or:'OR',
+    pw_too_common:'That password is too common. Choose another.',
+    pw_too_long:'That password is too long.',
+    pw_hint_empty:'At least 8 characters. A longer password is stronger.',
+    pw_hint_weak:'Weak — add length or a mix of letters and numbers.',
+    pw_hint_ok:'Okay. More characters make it stronger.',
+    pw_hint_strong:'Strong password.',
+    share_progress:'Share progress',
+    share_unavailable:'Sharing is not available on this device. The text was copied.',
+    reminders_title:'Reminders',
+    reminders_desc:'Optional local reminders on this device. Nothing is sent to a server.',
+    reminders_workout:'Workout reminder',
+    reminders_meal:'Meal log reminder',
+    reminder_workout_title:'Time to train',
+    reminder_workout_body:'Your plan is waiting in AI Coach.',
+    reminder_meal_title:'Did you log your meal?',
+    reminder_meal_body:'A quick log keeps your targets on track.',
+    review_title:'Enjoying AI Coach?',
+    review_body:'If it is helping, a short store review helps other people find it.',
+    review_ok:'Rate',
+    review_later:'Not now',
+    streak_chip:'{n}-day streak',
+    week_chip:'{done}/{target} this week',
+    profile_ai_store_only:'Pro is bought in the App Store or Google Play. Card checkout is not offered inside the app.',
+    profile_ai_web_store_only:'Pro is available in the iOS and Android apps.',
+    profile_ai_trial:'Free trial: {trial}',
+    signin_apple:'Sign in with Apple',
+    social_use_register:'For a new account, open Sign up, accept the consents, then choose Apple or Google.',
+    social_unavailable:'That sign-in is not ready yet. Use email and password. (The owner still needs to enable the provider in Firebase.)'
+  }
+};
 function t(key, vars){
-  let s = (I18N[lang] && I18N[lang][key]) || I18N.el[key] || I18N.en[key] || key;
+  let s = (I18N_EXTRA[lang] && I18N_EXTRA[lang][key]) || (I18N[lang] && I18N[lang][key]) || (I18N_EXTRA.el && I18N_EXTRA.el[key]) || I18N.el[key] || (I18N_EXTRA.en && I18N_EXTRA.en[key]) || I18N.en[key] || key;
   if(vars) Object.keys(vars).forEach(k=>{ s = s.replace(new RegExp('\\{'+k+'\\}','g'), vars[k]); });
   return s;
 }
@@ -1467,70 +1595,64 @@ document.addEventListener('click', (e)=>{
 });
 applyTranslations();
 
-document.getElementById('googleSignInBtn').addEventListener('click', async ()=>{
+async function signInWithSocial(providerId){
   const errEl = document.getElementById('signinError');
   errEl.style.display = 'none';
+  const registering = document.getElementById('signin-gate').dataset.mode === 'register';
+  if(registering){
+    if(!document.getElementById('ageConfirmCheckbox').checked){ showSigninError(t('signin_age_required')); return; }
+    if(!document.getElementById('healthConsentCheckbox').checked){ showSigninError(t('signin_health_required')); return; }
+    try{ sessionStorage.setItem('aicoach-social-consent', '1'); }catch(e){}
+  }
+  const provider = providerId === 'apple.com' ? new firebase.auth.OAuthProvider('apple.com') : new firebase.auth.GoogleAuthProvider();
+  if(providerId === 'apple.com'){ provider.addScope('email'); provider.addScope('name'); }
+  else provider.setCustomParameters({ prompt: 'select_account' });
+  const useRedirect = isIosApp() || isAndroidTwa();
   try{
-    const provider = new firebase.auth.GoogleAuthProvider();
-    // Force the account chooser every time, so a browser that already has a
-    // Google session cached (e.g. from testing the admin account) never
-    // gets silently reused instead of the account the user actually wants.
-    provider.setCustomParameters({ prompt: 'select_account' });
+    if(useRedirect){ await auth.signInWithRedirect(provider); return; }
     const result = await auth.signInWithPopup(provider);
-    // If this Firebase project allows "multiple accounts per identity
-    // provider" (a project-level setting), Firebase itself won't refuse to
-    // create a second account for an email that already has an
-    // email/password account — it just silently does it, which is exactly
-    // how duplicate accounts happen. Catch that here: right after a brand
-    // new Google account is created, check whether that same email already
-    // has another sign-in method, and if so, undo the accidental duplicate
-    // immediately and point the user at the account they already have.
-    if(result.additionalUserInfo && result.additionalUserInfo.isNewUser){
-      // A brand new account — same as the email/password path, this requires
-      // the age checkbox to have been ticked before we allow it to stand.
-      // Google's popup has no way to ask for this mid-flow, so instead we
-      // create the account, check the box's state, and undo the signup if it
-      // wasn't checked (same delete-and-reject pattern as the duplicate
-      // account cleanup right below).
-      if(!document.getElementById('ageConfirmCheckbox').checked){
-        const uid = result.user.uid;
-        await db.collection('access').doc(uid).delete().catch(()=>{});
-        await result.user.delete().catch(()=>{});
-        signOutCleanup();
-        showSigninError(t('signin_age_required'));
-        return;
-      }
-      if(!document.getElementById('healthConsentCheckbox').checked){
-        const uid = result.user.uid;
-        await db.collection('access').doc(uid).delete().catch(()=>{});
-        await result.user.delete().catch(()=>{});
-        signOutCleanup();
-        showSigninError(t('signin_health_required'));
-        return;
-      }
-      healthConsentFromSignup = true;
-      if(result.user.email){
-        let methods = [];
-        try{ methods = await auth.fetchSignInMethodsForEmail(result.user.email); }catch(e){}
-        if(methods.length > 1){
-          const uid = result.user.uid;
-          await db.collection('access').doc(uid).delete().catch(()=>{});
-          await result.user.delete().catch(()=>{});
-          signOutCleanup();
-          showSigninError(t('signin_account_exists_password'));
-          return;
-        }
-      }
-    }
+    await finishSocialResult(result);
   }catch(e){
-    if(e && e.code === 'auth/account-exists-with-different-credential'){
+    if(e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')){
+      try{ await auth.signInWithRedirect(provider); return; }catch(err){ showSigninError(t('social_unavailable')); return; }
+    }
+    if(e && e.code === 'auth/account-exists-with-different-credential') showSigninError(t('signin_account_exists_password'));
+    else if(e && (e.code === 'auth/operation-not-allowed' || e.code === 'auth/unauthorized-domain')) showSigninError(t('social_unavailable'));
+    else { errEl.textContent = t('signin_error_generic'); errEl.style.display = 'block'; }
+  }
+}
+async function finishSocialResult(result){
+  if(!result || !result.user) return;
+  if(!(result.additionalUserInfo && result.additionalUserInfo.isNewUser)) return;
+  let consented = false;
+  try{ consented = sessionStorage.getItem('aicoach-social-consent') === '1'; }catch(e){}
+  const ageOk = document.getElementById('ageConfirmCheckbox').checked || consented;
+  const healthOk = document.getElementById('healthConsentCheckbox').checked || consented;
+  if(!ageOk || !healthOk){
+    const uid = result.user.uid;
+    await db.collection('access').doc(uid).delete().catch(()=>{});
+    await result.user.delete().catch(()=>{});
+    signOutCleanup();
+    showSigninError(t('social_use_register'));
+    return;
+  }
+  healthConsentFromSignup = true;
+  try{ track('sign_up', { method: result.additionalUserInfo.providerId || 'social' }); }catch(e){}
+  if(result.user.email){
+    let methods = [];
+    try{ methods = await auth.fetchSignInMethodsForEmail(result.user.email); }catch(e){}
+    if(methods.length > 1){
+      const uid = result.user.uid;
+      await db.collection('access').doc(uid).delete().catch(()=>{});
+      await result.user.delete().catch(()=>{});
+      signOutCleanup();
       showSigninError(t('signin_account_exists_password'));
-    } else {
-      errEl.textContent = t('signin_error_generic');
-      errEl.style.display = 'block';
     }
   }
-});
+}
+document.getElementById('googleSignInBtn').addEventListener('click', ()=>signInWithSocial('google.com'));
+document.getElementById('appleSignInBtn').addEventListener('click', ()=>signInWithSocial('apple.com'));
+auth.getRedirectResult().then(result=>{ if(result && result.user) return finishSocialResult(result); }).catch(()=>{});
 
 function authErrorMessage(e){
   const map = {
@@ -1564,21 +1686,20 @@ function showSigninSuccess(msg){
 // or hidden through data-mode on the gate).
 function setAuthMode(mode){
   const gate = document.getElementById('signin-gate');
-  gate.dataset.mode = mode;
-  document.getElementById('authWelcome').classList.toggle('hidden', mode !== 'welcome');
-  document.getElementById('emailAuthForm').classList.toggle('hidden', mode === 'welcome');
-  const title = gate.querySelector('h1');
-  const sub = gate.querySelector('h1 + p');
-  const keys = { welcome:['signin_welcome_title','signin_welcome_subtitle'], signin:['signin_title','signin_subtitle'], register:['register_title','register_subtitle'] }[mode];
-  title.dataset.i18n = keys[0]; title.textContent = t(keys[0]);
-  sub.dataset.i18n = keys[1]; sub.textContent = t(keys[1]);
-  document.getElementById('emailAuthPassword').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
+  const next = mode === 'register' ? 'register' : 'signin';
+  gate.dataset.mode = next;
+  const sub = document.getElementById('authSubtitle');
+  const key = next === 'register' ? 'auth_signup_subtitle' : 'auth_login_subtitle';
+  sub.dataset.i18n = key;
+  sub.textContent = t(key);
+  document.getElementById('emailAuthPassword').autocomplete = next === 'register' ? 'new-password' : 'current-password';
   document.getElementById('signinError').style.display = 'none';
+  updatePasswordHint();
 }
-document.getElementById('welcomeSignInBtn').addEventListener('click', ()=>setAuthMode('signin'));
-document.getElementById('welcomeRegisterBtn').addEventListener('click', ()=>setAuthMode('register'));
-document.getElementById('authBackBtn').addEventListener('click', ()=>setAuthMode('welcome'));
-setAuthMode('welcome');
+document.getElementById('authSwitchToRegister').addEventListener('click', ()=>setAuthMode('register'));
+document.getElementById('authSwitchToSignin').addEventListener('click', ()=>setAuthMode('signin'));
+if(new URLSearchParams(location.search).get('auth') === 'register') setAuthMode('register');
+else setAuthMode('signin');
 
 document.getElementById('emailAuthForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
@@ -1599,13 +1720,21 @@ document.getElementById('emailAuthForm').addEventListener('submit', async (e)=>{
 // Firebase itself only requires 6 characters — enforce a real strength bar
 // ourselves before ever calling createUserWithEmailAndPassword.
 function passwordStrengthError(password){
-  if(password.length < 8) return t('pw_too_short');
-  if(!/[a-z]/.test(password)) return t('pw_needs_lower');
-  if(!/[A-Z]/.test(password)) return t('pw_needs_upper');
-  if(!/[0-9]/.test(password)) return t('pw_needs_digit');
-  if(!/[^A-Za-z0-9]/.test(password)) return t('pw_needs_symbol');
+  const code = AppCore.passwordStrengthError(password);
+  if(code === 'too_short') return t('pw_too_short');
+  if(code === 'too_common') return t('pw_too_common');
+  if(code === 'too_long') return t('pw_too_long');
   return null;
 }
+function updatePasswordHint(){
+  const el = document.getElementById('pwHint');
+  const pw = document.getElementById('emailAuthPassword');
+  if(!el || !pw) return;
+  const registering = document.getElementById('signin-gate').dataset.mode === 'register';
+  if(!registering || !pw.value){ el.textContent = registering ? t('pw_hint_empty') : ''; return; }
+  el.textContent = t('pw_hint_' + AppCore.passwordAssessment(pw.value).level);
+}
+document.getElementById('emailAuthPassword').addEventListener('input', updatePasswordHint);
 document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>{
   const email = document.getElementById('emailAuthEmail').value.trim();
   const password = document.getElementById('emailAuthPassword').value;
@@ -1649,6 +1778,7 @@ document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>
   }catch(e){ /* lookup unavailable — createUserWithEmailAndPassword below still catches a same-provider duplicate */ }
   try{
     const cred = await auth.createUserWithEmailAndPassword(email, password);
+    try{ track('sign_up', { method: 'password' }); }catch(e){}
     // The name is what the app greets the user with (getFirstName()).
     try{ await cred.user.updateProfile({ displayName: fullName }); }catch(e){ console.error('updateProfile failed', e); }
     try{ await cred.user.sendEmailVerification(); }catch(e){ console.error('verification email failed', e); }
@@ -1678,7 +1808,8 @@ document.getElementById('forgotPasswordBtn').addEventListener('click', async ()=
 });
 
 function signOutCleanup(){
-  setAuthMode('welcome');
+  const keepRegister = new URLSearchParams(location.search).get('auth') === 'register';
+  setAuthMode(keepRegister ? 'register' : 'signin');
   if(accessUnsub){ accessUnsub(); accessUnsub = null; }
   appInitialized = false;
   currentProfile = null;
@@ -1700,7 +1831,8 @@ function signOutCleanup(){
   const thread = document.getElementById('aiChatThread');
   if(thread) thread.innerHTML = `<div class="empty">${t('ai_empty')}</div>`;
 }
-document.getElementById('signOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
+const homeSignOutBtn = document.getElementById('signOutBtn');
+if(homeSignOutBtn) homeSignOutBtn.addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
 document.getElementById('accessSignOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
 document.getElementById('profileSignOutBtn').addEventListener('click', ()=>{ signOutCleanup(); auth.signOut(); });
 
@@ -2059,6 +2191,9 @@ function svg(inner){ return `<svg viewBox="0 0 40 40" fill="none" stroke="curren
 // Generic dumbbell-figure icon for AI-added custom exercises that aren't in
 // either hand-drawn catalog below.
 const FALLBACK_ICON = svg(`<circle cx="20" cy="9" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="12" x2="20" y2="26"/><line x1="20" y1="16" x2="10" y2="16"/><rect x="6.14" y="13.4" width="3.64" height="5.2" rx="1.4" fill="currentColor" stroke="none"/><line x1="20" y1="16" x2="30" y2="16"/><rect x="30.14" y="13.4" width="3.64" height="5.2" rx="1.4" fill="currentColor" stroke="none"/><line x1="20" y1="26" x2="15" y2="35"/><line x1="20" y1="26" x2="25" y2="35"/>`);
+// Icon swap is one constant. 'current' keeps the shipped drawings.
+// 'line', 'duotone', or 'glyph' uses design/icon-proposals/sets.js.
+const ACTIVE_ICON_SET = 'current';
 
 // One hand-drawn pose per exercise (keyed by exercise id) so the icon shows how the movement is actually performed.
 const ICONS = {
@@ -2118,6 +2253,11 @@ const ICONS = {
   hlb5: svg(`<circle cx="20" cy="7" r="3" fill="currentColor" stroke="none"/><line x1="20" y1="10" x2="20" y2="24"/><line x1="20" y1="24" x2="20" y2="32"/><line x1="20" y1="28" x2="26" y2="24"/><line x1="14" y1="34" x2="26" y2="34"/>`),
   hlb6: svg(`<circle cx="10" cy="24" r="3" fill="currentColor" stroke="none"/><line x1="13" y1="24" x2="26" y2="24"/><line x1="26" y1="24" x2="32" y2="16"/><line x1="16" y1="24" x2="16" y2="14"/><line x1="16" y1="14" x2="10" y2="10"/>`),
 };
+if(ACTIVE_ICON_SET !== 'current' && window.ICON_PROPOSALS && window.ICON_PROPOSALS[ACTIVE_ICON_SET]){
+  Object.keys(window.ICON_PROPOSALS[ACTIVE_ICON_SET]).forEach(function(id){
+    if(ICONS[id]) ICONS[id] = window.ICON_PROPOSALS[ACTIVE_ICON_SET][id];
+  });
+}
 
 // Flat catalog of every exercise (icon key = catalog key). Training templates
 // below just reference these by id, so the same 24-exercise pool can be
@@ -2299,12 +2439,14 @@ function personalizeExercise(ex, profile){
 // Beginners also get a trimmed exercise count on longer days (drop the last
 // exercise — by convention in this catalog the more peripheral isolation
 // move) so their first program isn't as overwhelming as an advanced lifter's.
-function personalizeDay(day, profile){
+function personalizeDay(day, profile, dayKey){
   let exercises = day.exercises.map(ex=>personalizeExercise(ex, profile));
-  if(profile.experience === 'beginner' && exercises.length > 4){
-    exercises = exercises.slice(0, -1);
-  }
-  return { label: day.label, sub: day.sub, exercises };
+  const repaired = AppCore.repairSession(exercises, {
+    dayKey: dayKey,
+    experience: profile.experience,
+    trainingLocation: profile.trainingLocation
+  });
+  return { label: day.label, sub: day.sub, exercises: repaired.exercises };
 }
 
 // Protein per kg of bodyweight, by goal — higher in a calorie deficit
@@ -2314,18 +2456,8 @@ function personalizeDay(day, profile){
 // maintenance uses a more modest general-health baseline.
 const PROTEIN_PER_KG = { fat_loss: 2.2, recomp: 2.2, muscle_gain: 2.0, maintenance: 1.8 };
 function computeTargets(p){
-  const bmr = p.sex === 'female'
-    ? (10*p.weightKg + 6.25*p.heightCm - 5*p.age - 161)
-    : (10*p.weightKg + 6.25*p.heightCm - 5*p.age + 5);
-  const activityMul = {sedentary:1.2, light:1.375, moderate:1.55, active:1.725, very_active:1.9}[p.activityLevel] || 1.375;
-  let kcal = bmr * activityMul;
-  if(p.goal === 'fat_loss') kcal -= 500;
-  else if(p.goal === 'muscle_gain') kcal += 300;
-  kcal = Math.max(1400, Math.round(kcal/10)*10);
-  const protein = Math.round((PROTEIN_PER_KG[p.goal] || 2.0) * p.weightKg);
-  const fat = Math.round((kcal*0.25)/9);
-  const carbs = Math.max(0, Math.round((kcal - protein*4 - fat*9)/4));
-  return {kcal, protein, fat, carbs};
+  const targets = AppCore.computeNutritionTargets(p);
+  return {kcal: targets.kcal, protein: targets.protein, fat: targets.fat, carbs: targets.carbs};
 }
 
 // Resolves dict[key] (an {el,en} pair) to the current language's string.
@@ -2403,7 +2535,8 @@ function applyProfile(profile){
   DAYS = {};
   Object.keys(base).forEach(key=>{
     const custom = profile.customDays && profile.customDays[key];
-    DAYS[key] = custom ? { label: base[key].label, sub: base[key].sub, exercises: custom } : personalizeDay(base[key], profile);
+    const customRepaired = custom ? AppCore.repairSession(custom, { dayKey: key, experience: profile.experience, trainingLocation: profile.trainingLocation }).exercises : null;
+    DAYS[key] = customRepaired ? { label: base[key].label, sub: base[key].sub, exercises: customRepaired } : personalizeDay(base[key], profile, key);
   });
   currentDay = Object.keys(DAYS)[0];
   buildDayPicker();
@@ -2919,6 +3052,14 @@ document.getElementById('finishBtn').addEventListener('click', async ()=>{
     tipEl._fadeTimer = setTimeout(()=>{ tipEl.classList.add('hidden'); }, 7000);
   }
   renderDashboard();
+  if(allDone){
+    try{
+      const logged = await storage.get('workout-history-index');
+      const dates = JSON.parse(logged.value) || [];
+      if(dates.length === 1) track('first_workout_logged');
+      maybeAskForReview(dates.length);
+    }catch(e){}
+  }
 });
 
 // ---------- nutrition ----------
@@ -3480,19 +3621,22 @@ async function renderDashboard(){
   const spark = buildSparkline(last7);
 
   if(authEpoch !== epoch) return;
-  // ---- stat card B: workouts in last 7 days vs weekly target ----
+  // Calendar week (Monday–Sunday) so the home chip and the gauge show the same X/Y.
   const WEEKLY_TARGET = (currentProfile && currentProfile.daysPerWeek) || 4;
   let weekCount = 0;
+  let streak = 0;
   try{
+    const todayIso = typeof todayKey === 'function' ? todayKey() : '';
     const r = await storage.get('workout-history-index');
-    const idx = JSON.parse(r.value);
-    const now = Date.now();
-    weekCount = idx.filter(d=>{
-      const t = new Date(d+'T00:00:00').getTime();
-      return (now - t) <= 7*24*60*60*1000 && t <= now;
-    }).length;
-  }catch(e){ weekCount = 0; }
+    const idx = JSON.parse(r.value) || [];
+    weekCount = AppCore.weeklyWorkoutCount(idx, todayIso);
+    streak = AppCore.workoutStreak(idx, todayIso);
+  }catch(e){ weekCount = 0; streak = 0; }
   const gaugePct = Math.min(100, Math.round((weekCount/WEEKLY_TARGET)*100));
+  const homeProgress = document.getElementById('homeProgress');
+  if(homeProgress){
+    homeProgress.innerHTML = `<b>${escapeHtml(t('streak_chip', {n: streak}))}</b> <span>· ${escapeHtml(t('week_chip', {done: weekCount, target: WEEKLY_TARGET}))}</span>`;
+  }
 
   if(authEpoch !== epoch) return;
   document.getElementById('statsGrid').innerHTML = `
@@ -3611,6 +3755,7 @@ async function buildContextSummary(){
 }
 
 function buildCoachSystemPrompt(){
+  const programming = AppCore.PROGRAMMING_RULES + ' Nutrition targets already follow Mifflin–St Jeor with a capped deficit or surplus, protein about 1.6–2.2 g/kg, and a floor of 1,400 kcal for women or 1,600 kcal for men. Prefer realistic Greek or Mediterranean meals with portions. Do not give medical advice. When replying in Greek, use natural Greek (πρόγραμμα, προπόνηση, θερμίδες, πρωτεΐνη), not a stiff translation.';
   const p = currentProfile || defaultProfile();
   const targets = p.targets || {};
   const name = getFirstName();
@@ -3645,11 +3790,11 @@ Valid fields and values: trainingLocation ("gym"|"home"), goal ("fat_loss"|"musc
 {"targets":{"carbs":300},"meals":{"lunch":{"options":["Option 1 with details","Option 2 with details"]}}}
 \`\`\`
 "targets" is an optional partial override on top of the targets (fields: kcal, protein, fat, carbs — numbers). "meals" is optional — key MUST be one of the meal keys above, and "options" is the FULL new list of options for that meal (replaces the old one entirely — so start from the CURRENT options listed below and change ONLY what the user asked for, keeping every other option and the same number of options; never return fewer than 3; each with an approximate quantity like "150-200g" or "1 cup" — not just the food name). Current options:\n${mealOptionsNow}\n Use this ONLY when they explicitly ask to change nutrition/targets/food options, not for a simple "what should I eat now" question.`;
-    return s;
+    return programming + '\n' + s;
   }
 
   const pronoun = p.sex === 'female' ? 'μια γυναίκα' : 'έναν άντρα';
-  let s = `Είσαι προσωπικός γυμναστής και διαιτολόγος για ${name ? name+',' : ''} ${pronoun} ${p.age} ετών, ${p.heightCm}cm, ${p.weightKg}kg, στόχος: ${L(GOAL_LABELS,p.goal).toLowerCase()}. Προπονείται στο${p.trainingLocation==='home' ? ' σπίτι/ύπαιθρο, χωρίς πρόσβαση σε γυμναστήριο (μόνο σωματικό βάρος, λάστιχο αντίστασης, σακίδιο, μπάρα πάρκου ή καρέκλα/πάγκο) — ΜΗΝ προτείνεις ασκήσεις με όργανα γυμναστηρίου ή ελεύθερα βάρη που δεν έχει.' : ' γυμναστήριο, με πρόσβαση σε όργανα και ελεύθερα βάρη.'} Στόχοι διατροφής: ${targets.kcal||'-'} kcal, ${targets.protein||'-'}g πρωτεΐνη, ${targets.fat||'-'}g λίπος, ${targets.carbs||'-'}g υδατάνθρακες. Πρόγραμμα: ${L(SPLIT_LABELS,p.splitKey)}.`;
+  let s = `Είσαι προπονητής φυσικής κατάστασης της εφαρμογής AI Coach και δίνεις γενικές πληροφορίες γυμναστικής και διατροφής. Δεν είσαι γιατρός ή διαιτολόγος και δεν δίνεις ιατρική συμβουλή. Μιλάς για ${name ? name+',' : ''} ${pronoun} ${p.age} ετών, ${p.heightCm}cm, ${p.weightKg}kg, στόχος: ${L(GOAL_LABELS,p.goal).toLowerCase()}. Προπονείται στο${p.trainingLocation==='home' ? ' σπίτι/ύπαιθρο, χωρίς πρόσβαση σε γυμναστήριο (μόνο σωματικό βάρος, λάστιχο αντίστασης, σακίδιο, μπάρα πάρκου ή καρέκλα/πάγκο) — ΜΗΝ προτείνεις ασκήσεις με όργανα γυμναστηρίου ή ελεύθερα βάρη που δεν έχει.' : ' γυμναστήριο, με πρόσβαση σε όργανα και ελεύθερα βάρη.'} Στόχοι διατροφής: ${targets.kcal||'-'} kcal, ${targets.protein||'-'}g πρωτεΐνη, ${targets.fat||'-'}g λίπος, ${targets.carbs||'-'}g υδατάνθρακες. Πρόγραμμα: ${L(SPLIT_LABELS,p.splitKey)}.`;
   if(p.dietaryNotes) s += ` Διατροφικές προτιμήσεις/περιορισμοί: ${p.dietaryNotes}.`;
   if(p.injuries) s += ` Τραυματισμοί/περιορισμοί κίνησης: ${p.injuries}.`;
   s += ' Απάντα πάντα στα Ελληνικά, σύντομα και πρακτικά. Γράφε απλό κείμενο — ποτέ markdown μορφοποίηση όπως **έντονα** ή __έντονα__ (το chat δείχνει το κείμενο αυτούσιο, οπότε οι αστερίσκοι θα εμφανίζονταν κυριολεκτικά). Αν χρειαστεί λίστα, βάλε κάθε στοιχείο σε ξεχωριστή γραμμή που ξεκινά με παύλα (-), όχι αστερίσκο. Όποτε αναφέρεις συγκεκριμένο φαγητό, δώσε και μια κατά προσέγγιση ποσότητα (π.χ. "150γρ κοτόπουλο", "1 φλιτζάνι ρύζι"), όχι μόνο το όνομα του φαγητού.';
@@ -3672,7 +3817,7 @@ Valid fields and values: trainingLocation ("gym"|"home"), goal ("fat_loss"|"musc
 {"targets":{"carbs":300},"meals":{"lunch":{"options":["Επιλογή 1 με λεπτομέρειες","Επιλογή 2 με λεπτομέρειες"]}}}
 \`\`\`
 Το "targets" είναι προαιρετικό partial override πάνω στους στόχους (πεδία: kcal, protein, fat, carbs — αριθμοί). Το "meals" είναι προαιρετικό — key ΠΡΕΠΕΙ να είναι ένα από τα παραπάνω meal keys, και "options" είναι η ΠΛΗΡΗΣ νέα λίστα επιλογών για αυτό το γεύμα (αντικαθιστά εξ ολοκλήρου την παλιά — άρα ξεκίνα από τις ΤΡΕΧΟΥΣΕΣ επιλογές που φαίνονται παρακάτω και άλλαξε ΜΟΝΟ ό,τι ζήτησε ο χρήστης, κρατώντας όλες τις άλλες επιλογές και τον ίδιο αριθμό επιλογών· ποτέ λιγότερες από 3· η κάθε μία με μια κατά προσέγγιση ποσότητα όπως "150-200γρ" ή "1 φλιτζάνι" — όχι μόνο το όνομα του φαγητού). Τρέχουσες επιλογές:\n${mealOptionsNow}\n Χρησιμοποίησε αυτό ΜΟΝΟ όταν ζητάει ρητά αλλαγή στη διατροφή/στόχους/επιλογές φαγητού, όχι για μια απλή ερώτηση τύπου "τι να φάω τώρα".`;
-  return s;
+  return programming + '\n' + s;
 }
 
 // Applies an AI-Coach-proposed change to a specific training day's exercise
@@ -3718,8 +3863,10 @@ async function applyExerciseUpdate(jsonText){
   const { list, changed } = sanitizeExerciseChanges(DAYS[obj.day].exercises, obj.changes);
   if(!changed) return false;
   if(!currentProfile) currentProfile = defaultProfile();
+  const repaired = AppCore.repairSession(list, { dayKey: obj.day, experience: currentProfile.experience, trainingLocation: currentProfile.trainingLocation });
+  if(!repaired.exercises.length) return false;
   if(!currentProfile.customDays) currentProfile.customDays = {};
-  currentProfile.customDays[obj.day] = list;
+  currentProfile.customDays[obj.day] = repaired.exercises;
   try{ await storage.set('profile', JSON.stringify(currentProfile)); }catch(e){ console.error(e); }
   if(authEpoch !== epoch) return false;
   applyProfile(currentProfile);
@@ -3770,7 +3917,7 @@ async function applyNutritionUpdate(jsonText){
   if(!currentProfile) currentProfile = defaultProfile();
   const { targets, customMeals, changed } = sanitizeNutritionUpdate(currentProfile.targets, currentProfile.customMeals||{}, obj);
   if(!changed) return false;
-  currentProfile.targets = targets;
+  currentProfile.targets = AppCore.clampNutritionTargets(targets, currentProfile);
   currentProfile.customMeals = customMeals;
   try{ await storage.set('profile', JSON.stringify(currentProfile)); }catch(e){ console.error(e); }
   if(authEpoch !== epoch) return false;
@@ -3977,7 +4124,7 @@ async function askAI(question){
     const response = await fetch(WORKER_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ idToken, phase:'coach', max_tokens:600, system: sys, messages: messagesToSend })
+      body: JSON.stringify({ idToken, phase:'coach', max_tokens:800, system: sys, messages: messagesToSend })
     });
     const data = await response.json();
     if(authEpoch !== epochAtStart) return; // signed-in account changed while waiting — don't save/show this reply against the wrong account
@@ -4052,6 +4199,7 @@ document.getElementById('newAiChatBtn').addEventListener('click', async ()=>{
 let onboardMessages = [];
 
 function onboardingSystemPrompt(firstName){
+  const programming = '\n' + AppCore.PROGRAMMING_RULES;
   if(lang === 'en'){
     const nameInstructionEn = firstName
       ? `The user's name is ${firstName} — use their name to address them in conversation. Also put this name in the final JSON as "name". Do NOT ask for their name — you already know it.`
@@ -4084,7 +4232,7 @@ If — and only if — the dietary preferences/restrictions they gave you mean t
 \`\`\`
 Do not add either of these blocks for run-of-the-mill answers ("no injuries", "no restrictions", or a mild preference that doesn't conflict with anything) — only when something they said would genuinely make a default choice wrong for them.
 
-Do not output the json block before you actually have all the answers AND explicit confirmation from the user after the summary. Do not write anything after these blocks.`;
+Do not output the json block before you actually have all the answers AND explicit confirmation from the user after the summary. Do not write anything after these blocks.` + programming;
   }
   const nameInstruction = firstName
     ? `Ο χρήστης λέγεται ${firstName} — χρησιμοποίησε το όνομά του/της για να τον/την προσφωνείς στη συνομιλία. Βάλε αυτό το όνομα και στο τελικό JSON ως "name". ΜΗΝ ρωτήσεις το όνομά του/της — το ξέρεις ήδη.`
@@ -4117,7 +4265,7 @@ ${nameInstruction} Σκοπός σου: να μάθεις όσα χρειάζε�
 \`\`\`
 Μην προσθέσεις κανένα από τα δύο blocks για συνηθισμένες απαντήσεις ("καμία", "χωρίς περιορισμούς", ή μια ήπια προτίμηση που δεν έρχεται σε σύγκρουση με τίποτα) — μόνο όταν κάτι που είπε κάνει πραγματικά μια προεπιλογή λανθασμένη γι' αυτόν/αυτήν.
 
-Μην βγάλεις το json block πριν έχεις πραγματικά όλες τις απαντήσεις ΚΑΙ ρητή επιβεβαίωση από τον χρήστη μετά τη σύνοψη. Μην γράψεις τίποτα άλλο μετά από αυτά τα blocks.`;
+Μην βγάλεις το json block πριν έχεις πραγματικά όλες τις απαντήσεις ΚΑΙ ρητή επιβεβαίωση από τον χρήστη μετά τη σύνοψη. Μην γράψεις τίποτα άλλο μετά από αυτά τα blocks.` + programming;
 }
 
 function startOnboardingChat(){
@@ -4157,7 +4305,7 @@ async function sendOnboardingTurn(userText){
     const response = await fetch(WORKER_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ idToken, phase:'onboarding', max_tokens:700, system: sys, messages: onboardMessages })
+      body: JSON.stringify({ idToken, phase:'onboarding', max_tokens:900, system: sys, messages: onboardMessages })
     });
     const data = await response.json();
     if(authEpoch !== epochAtStart) return; // signed-in account changed while waiting for the AI — drop this response, don't act on the wrong account
@@ -4232,8 +4380,11 @@ function tryFinalizeOnboarding(jsonText, exerciseUpdateJsons, nutritionUpdateJso
     if(!eObj || !eObj.day || !base[eObj.day] || !Array.isArray(eObj.changes) || !eObj.changes.length) return;
     const { list, changed } = sanitizeExerciseChanges(base[eObj.day].exercises, eObj.changes);
     if(changed){
-      if(!profile.customDays) profile.customDays = {};
-      profile.customDays[eObj.day] = list;
+      const repaired = AppCore.repairSession(list, { dayKey: eObj.day, experience: profile.experience, trainingLocation: profile.trainingLocation });
+      if(repaired.exercises.length){
+        if(!profile.customDays) profile.customDays = {};
+        profile.customDays[eObj.day] = repaired.exercises;
+      }
     }
   });
 
@@ -4243,7 +4394,7 @@ function tryFinalizeOnboarding(jsonText, exerciseUpdateJsons, nutritionUpdateJso
     if(nObj){
       const { targets, customMeals, changed } = sanitizeNutritionUpdate(profile.targets, {}, nObj);
       if(changed){
-        profile.targets = targets;
+        profile.targets = AppCore.clampNutritionTargets(targets, profile);
         profile.customMeals = customMeals;
       }
     }
@@ -4267,6 +4418,7 @@ async function finalizeProfile(profile){
   }
   if(authEpoch !== epochAtStart) return;
   try{ await storage.set('profile', JSON.stringify(profile)); }catch(e){ console.error(e); }
+  try{ track('onboarding_complete', { split: profile.splitKey }); }catch(e){}
   if(authEpoch !== epochAtStart) return; // don't save a "success" message or apply this profile to a now-different signed-in account
   appendChatBubble('assistant', t('onboard_program_ready', {kcal: profile.targets.kcal, split: L(SPLIT_LABELS, profile.splitKey)}));
   setTimeout(()=>{
@@ -4490,9 +4642,24 @@ async function loadAiCredits(){
 // store's app without that store's own billing (Play Billing policy /
 // App Store Guideline 3.1.1); existing-subscription management via the
 // Stripe portal isn't a new purchase, so it stays available either way.
+function readStoredShell(){
+  try{ return localStorage.getItem(AppCore.SHELL_STORAGE_KEY) || ''; }catch(e){ return ''; }
+}
+function currentShell(){
+  const cap = (typeof Capacitor !== 'undefined' && Capacitor.getPlatform) ? Capacitor.getPlatform() : '';
+  const shell = AppCore.detectShell({
+    storedShell: readStoredShell(),
+    capacitorPlatform: cap,
+    referrer: document.referrer || '',
+    hasDigitalGoods: typeof window.getDigitalGoodsService === 'function'
+  });
+  if(shell !== 'web'){
+    try{ localStorage.setItem(AppCore.SHELL_STORAGE_KEY, shell); }catch(e){}
+  }
+  return shell;
+}
 function isRunningInNativeApp(){
-  return document.referrer.startsWith('android-app://')
-    || (typeof Capacitor !== 'undefined' && !!Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+  return currentShell() !== 'web';
 }
 
 // Capacitor auto-registers any native-installed plugin onto
@@ -4636,6 +4803,7 @@ async function iapPurchase(btn, pkgId){
     if(authEpoch !== epoch) return;
     const P = await iapPlugin();
     if(authEpoch !== epoch) return;
+    try{ track('purchase_start', { platform:'ios', product_id: pkg.identifier }); }catch(err){}
     try{
       await P.purchasePackage({ aPackage: pkg });
     }catch(e){
@@ -4643,7 +4811,8 @@ async function iapPurchase(btn, pkgId){
       throw e;
     }
     if(authEpoch !== epoch) return;
-    await iapSyncWithServer();
+    const active = await iapSyncWithServer();
+    if(active){ try{ track('purchase_success', { platform:'ios', product_id: pkg.identifier }); }catch(err){} }
     if(authEpoch !== epoch) return;
     await renderAiProSection();
   }catch(e){
@@ -4657,6 +4826,7 @@ async function iapPurchase(btn, pkgId){
 async function iapRestore(btn){
   const epoch = authEpoch;
   btn.disabled = true;
+  try{ track('restore', { platform:'ios' }); }catch(err){}
   try{
     if(authEpoch !== epoch) return;
     const P = await iapPlugin();
@@ -4686,44 +4856,49 @@ async function iapRestore(btn){
 // `subscription` doc (anthropic-proxy.js, android-sync-purchase). The
 // purchase option only appears once Play returns the product's details, so
 // builds/accounts without the subscription set up behave exactly as before.
+const ANDROID_PRODUCT_IDS = AppCore.ANDROID_PRODUCT_IDS.slice();
 const ANDROID_PRODUCT_ID = 'pro_monthly';
 const ANDROID_PACKAGE_ID = 'io.github.s0k0s.aicoach';
 const PLAY_BILLING_METHOD = 'https://play.google.com/billing';
+const WEB_STRIPE_CHECKOUT_ENABLED = AppCore.WEB_STRIPE_CHECKOUT_ENABLED;
 function isAndroidTwa(){
-  return document.referrer.startsWith('android-app://') && typeof window.getDigitalGoodsService === 'function';
+  return currentShell() === 'android';
 }
 let androidBillingSvc = null;
 async function androidBillingService(){
-  if(!isAndroidTwa()) return null;
+  if(!isAndroidTwa() || typeof window.getDigitalGoodsService !== 'function') return null;
   if(androidBillingSvc) return androidBillingSvc;
   try{ androidBillingSvc = await window.getDigitalGoodsService(PLAY_BILLING_METHOD); }catch(e){ androidBillingSvc = null; }
   return androidBillingSvc;
 }
 async function androidProductDetails(){
   const svc = await androidBillingService();
-  if(!svc) return null;
-  try{ const d = await svc.getDetails([ANDROID_PRODUCT_ID]); return (d && d[0]) || null; }catch(e){ return null; }
+  if(!svc) return [];
+  try{ const d = await svc.getDetails(ANDROID_PRODUCT_IDS); return d || []; }catch(e){ return []; }
 }
 function androidPriceString(details){
   try{ return new Intl.NumberFormat(undefined, {style:'currency', currency: details.price.currency}).format(Number(details.price.value)); }
   catch(e){ return ''; }
 }
-async function androidSyncWithServer(tokens){
+async function androidSyncWithServer(purchases){
   const idToken = await currentUser.getIdToken();
+  const normalized = AppCore.normalizeAndroidPurchases({ purchases: purchases });
   const res = await fetch(WORKER_URL, {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ action:'android-sync-purchase', idToken, purchaseTokens: tokens })
+    body: JSON.stringify({ action:'android-sync-purchase', idToken, purchases: normalized })
   });
   const data = await res.json().catch(()=>({}));
   if(!res.ok) throw new Error('sync failed');
   return !!data.active;
 }
-async function androidPurchase(btn){
+async function androidPurchase(btn, sku){
   const epoch = authEpoch;
+  const productId = AppCore.androidProductAllowed(sku) ? sku : ANDROID_PRODUCT_ID;
   btn.disabled = true;
+  try{ track('purchase_start', { platform: 'android', product_id: productId }); }catch(e){}
   try{
     const request = new PaymentRequest(
-      [{ supportedMethods: PLAY_BILLING_METHOD, data: { sku: ANDROID_PRODUCT_ID } }],
+      [{ supportedMethods: PLAY_BILLING_METHOD, data: { sku: productId } }],
       { total: { label: 'Pro', amount: { currency: 'USD', value: '0' } } }
     );
     let response;
@@ -4732,7 +4907,8 @@ async function androidPurchase(btn){
     await response.complete(token ? 'success' : 'fail');
     if(!token) throw new Error('no purchase token');
     if(authEpoch !== epoch) return;
-    await androidSyncWithServer([token]);
+    const active = await androidSyncWithServer([{ token: token, productId: productId }]);
+    if(active){ try{ track('purchase_success', { platform: 'android', product_id: productId }); }catch(e){} }
     if(authEpoch !== epoch) return;
     await renderAiProSection();
   }catch(e){
@@ -4746,12 +4922,13 @@ async function androidPurchase(btn){
 async function androidRestore(btn){
   const epoch = authEpoch;
   btn.disabled = true;
+  try{ track('restore', { platform: 'android' }); }catch(e){}
   try{
     const svc = await androidBillingService();
     const purchases = svc ? await svc.listPurchases() : [];
     if(authEpoch !== epoch) return;
-    const tokens = purchases.filter(p=>p.itemId === ANDROID_PRODUCT_ID).map(p=>p.purchaseToken);
-    const active = tokens.length ? await androidSyncWithServer(tokens) : false;
+    const owned = purchases.filter(p=>AppCore.androidProductAllowed(p.itemId)).map(p=>({ token: p.purchaseToken, productId: p.itemId }));
+    const active = owned.length ? await androidSyncWithServer(owned) : false;
     if(authEpoch !== epoch) return;
     await customAlert(t(active ? 'profile_ai_ios_restored' : 'profile_ai_ios_nothing'));
     if(authEpoch !== epoch) return;
@@ -4786,9 +4963,8 @@ async function renderAiProSection(){
   const isApple = isPro && sub.source === 'apple';
   const isGoogle = isPro && sub.source === 'google';
   if(authEpoch !== epoch) return;
-  const androidDetails = (!isPro && isAndroidTwa()) ? await androidProductDetails() : null;
-  const androidIap = !!androidDetails;
-  const androidPrice = androidIap ? androidPriceString(androidDetails) : '';
+  const androidList = (!isPro && isAndroidTwa()) ? await androidProductDetails() : [];
+  const androidIap = Array.isArray(androidList) && androidList.length > 0;
   if(authEpoch !== epoch) return;
   let iosPkgs = [];
   if(iosIap && !isPro){
@@ -4798,28 +4974,43 @@ async function renderAiProSection(){
   if(authEpoch !== epoch) return;
   const pkgKind = p => /annual|year/i.test((p.packageType||'')+' '+(p.identifier||'')) ? 'annual' : 'monthly';
   const monthlyPkg = iosPkgs.find(p=>pkgKind(p)==='monthly');
+  const iosIntro = p => (p.product && p.product.introPrice && (p.product.introPrice.priceString || p.product.introPrice.period)) || '';
   const iosButtons = iosPkgs.map(p=>{
     const price = (p.product && p.product.priceString) || '';
+    const trial = iosIntro(p) ? ' · ' + t('profile_ai_trial', {trial: iosIntro(p)}) : '';
     if(pkgKind(p)==='annual'){
       let save = '';
       if(monthlyPkg && monthlyPkg.product && p.product && monthlyPkg.product.price > 0){
         const pct = Math.round(100 - (p.product.price / (monthlyPkg.product.price*12))*100);
         if(pct > 0) save = ' · ' + t('profile_ai_annual_save', {pct});
       }
-      return `<button class="ghost" type="button" data-iap-pkg="${escapeHtml(p.identifier)}" style="margin-top:10px;">${t('profile_ai_plan_annual_btn', {price})}${save}</button>`;
+      return `<button class="ghost" type="button" data-iap-pkg="${escapeHtml(p.identifier)}" style="margin-top:10px;">${t('profile_ai_plan_annual_btn', {price})}${save}${trial}</button>`;
     }
-    return `<button class="ghost" type="button" data-iap-pkg="${escapeHtml(p.identifier)}" style="margin-top:10px;">${t('profile_ai_plan_monthly_btn', {price})}</button>`;
+    return `<button class="ghost" type="button" data-iap-pkg="${escapeHtml(p.identifier)}" style="margin-top:10px;">${t('profile_ai_plan_monthly_btn', {price})}${trial}</button>`;
   }).join('');
+  const androidButtons = androidIap ? androidList.filter(function(d){ return AppCore.androidProductAllowed(d.itemId); }).map(function(d){
+    const price = androidPriceString(d);
+    const annual = d.itemId === 'pro_annual';
+    const label = annual ? t('profile_ai_plan_annual_btn', {price: price}) : t('profile_ai_plan_monthly_btn', {price: price});
+    const trialRaw = d.freeTrialPeriod || '';
+    const trial = trialRaw ? `<div style="font-size:11px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_trial', {trial: trialRaw})}</div>` : '';
+    return `<button class="ghost" type="button" data-android-sku="${escapeHtml(d.itemId)}" style="margin-top:10px;">${label}</button>${trial}`;
+  }).join('') : '';
+  // Card checkout is off unless WEB_STRIPE_CHECKOUT_ENABLED is turned on,
+  // and it is never shown inside the iOS or Android app.
+  const allowWebCheckout = typeof WEB_STRIPE_CHECKOUT_ENABLED !== 'undefined' && WEB_STRIPE_CHECKOUT_ENABLED && !inNativeApp;
+  if(!isPro){ try{ track('paywall_view', { shell: inNativeApp ? 'native' : 'web' }); }catch(err){} }
   el.innerHTML = `
     <div class="stat-label">${t('profile_ai_plan_title')}</div>
     <div style="font-weight:700;margin-top:4px;">${isPro ? t('profile_ai_plan_pro') : t('profile_ai_plan_free')}</div>
     <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${isPro ? t('profile_ai_plan_pro_desc') : t('profile_ai_plan_free_desc')}</div>
     ${isComp ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_comp_note')}</div>` : ''}
     ${!isPro && credits > 0 ? `<div style="font-size:12px;color:var(--text-dim);margin-top:4px;">${t('profile_ai_credits_balance', {n: credits})}</div>` : ''}
-    ${!isComp && !isApple && !isGoogle && (isPro || !inNativeApp) ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${isPro ? t('profile_ai_manage_btn') : t('profile_ai_upgrade_btn')}</button>` : ''}
+    ${!isComp && !isApple && !isGoogle && isPro && allowWebCheckout ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${t('profile_ai_manage_btn')}</button>` : ''}
+    ${!isPro && allowWebCheckout ? `<button class="ghost" type="button" id="aiProActionBtn" style="margin-top:10px;">${t('profile_ai_upgrade_btn')}</button>` : ''}
     ${isApple ? `<button class="ghost" type="button" id="aiAppleManageBtn" style="margin-top:10px;">${t('profile_ai_apple_manage_btn')}</button>` : ''}
     ${isGoogle ? `<button class="ghost" type="button" id="aiGoogleManageBtn" style="margin-top:10px;">${t('profile_ai_google_manage_btn')}</button>` : ''}
-    ${!isPro && androidIap ? `<button class="ghost" type="button" id="aiAndroidIapBtn" style="margin-top:10px;">${androidPrice ? t('profile_ai_upgrade_btn_ios_price', {price: androidPrice}) : t('profile_ai_upgrade_btn_ios')}</button>
+    ${!isPro && androidIap ? `${androidButtons}
       <button class="ghost" type="button" id="aiAndroidRestoreBtn" style="margin-top:8px;">${t('profile_ai_restore_btn')}</button>
       <div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.4;">${t('profile_ai_google_disclosure')}</div>
       <button class="dash-link" type="button" id="aiIapTermsBtn">${t('profile_ai_ios_terms_link')}</button>` : ''}
@@ -4827,8 +5018,9 @@ async function renderAiProSection(){
       <button class="ghost" type="button" id="aiIapRestoreBtn" style="margin-top:8px;">${t('profile_ai_restore_btn')}</button>
       <div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.4;">${t('profile_ai_ios_disclosure')}</div>
       <button class="dash-link" type="button" id="aiIapTermsBtn">${t('profile_ai_ios_terms_link')}</button>` : ''}
-    ${!isPro && !inNativeApp ? `<button class="ghost" type="button" id="aiCreditsActionBtn" style="margin-top:8px;">${t('profile_ai_buy_credits_btn')}</button>` : ''}
-    ${!isPro && inNativeApp && !iosIap && !androidIap ? `<div style="font-size:12px;color:var(--text-dim);margin-top:10px;">${t('profile_ai_twa_note')}</div>` : ''}
+    ${!isPro && allowWebCheckout ? `<button class="ghost" type="button" id="aiCreditsActionBtn" style="margin-top:8px;">${t('profile_ai_buy_credits_btn')}</button>` : ''}
+    ${!isPro && inNativeApp && !iosIap && !androidIap ? `<div style="font-size:12px;color:var(--text-dim);margin-top:10px;">${t('profile_ai_store_only')}</div>` : ''}
+    ${!isPro && !inNativeApp && !allowWebCheckout ? `<div style="font-size:12px;color:var(--text-dim);margin-top:10px;">${t('profile_ai_web_store_only')}</div>` : ''}
   `;
   const iapBtn = document.getElementById('aiIapBtn');
   if(iapBtn) iapBtn.addEventListener('click', ()=>iapPurchase(iapBtn));
@@ -4837,12 +5029,11 @@ async function renderAiProSection(){
   if(iapRestoreBtn) iapRestoreBtn.addEventListener('click', ()=>iapRestore(iapRestoreBtn));
   const iapTermsBtn = document.getElementById('aiIapTermsBtn');
   if(iapTermsBtn) iapTermsBtn.addEventListener('click', ()=>document.getElementById('showTermsFromProfileBtn').click());
-  const androidIapBtn = document.getElementById('aiAndroidIapBtn');
-  if(androidIapBtn) androidIapBtn.addEventListener('click', ()=>androidPurchase(androidIapBtn));
+  document.querySelectorAll('[data-android-sku]').forEach(b=>b.addEventListener('click', ()=>androidPurchase(b, b.dataset.androidSku)));
   const androidRestoreBtn = document.getElementById('aiAndroidRestoreBtn');
   if(androidRestoreBtn) androidRestoreBtn.addEventListener('click', ()=>androidRestore(androidRestoreBtn));
   const googleManageBtn = document.getElementById('aiGoogleManageBtn');
-  if(googleManageBtn) googleManageBtn.addEventListener('click', ()=>{ window.location.href = 'https://play.google.com/store/account/subscriptions?sku=' + ANDROID_PRODUCT_ID + '&package=' + ANDROID_PACKAGE_ID; });
+  if(googleManageBtn) googleManageBtn.addEventListener('click', ()=>{ window.location.href = 'https://play.google.com/store/account/subscriptions?package=' + ANDROID_PACKAGE_ID; });
   const appleManageBtn = document.getElementById('aiAppleManageBtn');
   if(appleManageBtn) appleManageBtn.addEventListener('click', ()=>{ window.location.href = 'https://apps.apple.com/account/subscriptions'; });
   const proBtn = document.getElementById('aiProActionBtn');
@@ -4854,12 +5045,10 @@ async function renderAiProSection(){
 }
 
 // Stripe redirects back here with ?upgrade=success|cancel or
-// ?credits=success|cancel after checkout. Auth uses Persistence.NONE (see
-// setPersistence above), so this full-page reload has already signed the
-// user out — they'll land on the sign-in screen regardless. The
-// subscription/credits docs are written asynchronously by the Stripe
-// webhook, so once they sign back in and open the Profile tab,
-// renderAiProSection reads whatever has landed by then.
+// ?credits=success|cancel after checkout. Auth uses Persistence.LOCAL, so a
+// returning subscriber stays signed in. New card checkout is hidden
+// (store-only billing). The subscription doc is still written by the Stripe
+// webhook for anyone who already subscribed on the web.
 (function handleStripeRedirect(){
   const params = new URLSearchParams(window.location.search);
   const upgrade = params.get('upgrade');
@@ -4877,10 +5066,158 @@ function refreshAppData(){
   renderFoodLog();
   Promise.all([loadExerciseWeights(), loadExerciseWeightHistory(), loadPersonalRecords(), loadExerciseProgress()]).then(()=>{ if(authEpoch === epoch && typeof renderExercises === 'function') renderExercises(); });
 }
+const SENTRY_DSN = '';
+function track(name, params){
+  try{
+    if(!name || !window.__aiAnalytics || typeof firebase === 'undefined' || !firebase.analytics) return;
+    firebase.analytics().logEvent(name, params || {});
+  }catch(e){}
+}
+function reportClientError(err){
+  try{
+    const message = String((err && err.message) || err || 'error').slice(0, 120);
+    if(window.__aiAnalytics && typeof firebase !== 'undefined' && firebase.analytics){
+      firebase.analytics().logEvent('app_exception', { message: message });
+    }
+  }catch(e){}
+  try{ if(window.Sentry && Sentry.captureException) Sentry.captureException(err); }catch(e){}
+}
+function initOptionalTelemetry(){
+  window.addEventListener('error', (e)=>reportClientError(e.error || e.message));
+  window.addEventListener('unhandledrejection', (e)=>reportClientError(e.reason));
+  try{
+    if(typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.measurementId){
+      const s = document.createElement('script');
+      s.src = 'https://www.gstatic.com/firebasejs/13.0.0/firebase-analytics-compat.js';
+      s.onload = function(){ try{ firebase.analytics(); window.__aiAnalytics = true; }catch(err){} };
+      document.head.appendChild(s);
+    }
+  }catch(e){}
+  if(!SENTRY_DSN) return;
+  const sentry = document.createElement('script');
+  sentry.src = 'https://browser.sentry-cdn.com/8.55.2/bundle.min.js';
+  sentry.crossOrigin = 'anonymous';
+  sentry.onload = function(){ try{ Sentry.init({ dsn: SENTRY_DSN, sendDefaultPii: false }); }catch(err){} };
+  document.head.appendChild(sentry);
+}
+async function maybeAskForReview(completedCount){
+  const today = new Date().toISOString().slice(0, 10);
+  let last = '';
+  try{ last = localStorage.getItem('aicoach-review-prompt') || ''; }catch(e){}
+  if(!AppCore.shouldPromptForReview(completedCount, last || null, today)) return;
+  try{ localStorage.setItem('aicoach-review-prompt', today); }catch(e){}
+  const review = nativePlugin('InAppReview');
+  if(review && review.requestReview){
+    try{ await review.requestReview(); return; }catch(e){}
+  }
+  if(currentShell() !== 'android') return;
+  const ok = await customConfirm(t('review_title') + '\n' + t('review_body'), { okLabel: t('review_ok'), cancelLabel: t('review_later') });
+  if(ok) window.open('https://play.google.com/store/apps/details?id=' + ANDROID_PACKAGE_ID, '_blank', 'noopener');
+}
+async function shareProgress(){
+  let streak = 0, done = 0;
+  const target = (currentProfile && currentProfile.daysPerWeek) || 4;
+  try{
+    const r = await storage.get('workout-history-index');
+    const idx = JSON.parse(r.value) || [];
+    const todayIso = todayKey();
+    streak = AppCore.workoutStreak(idx, todayIso);
+    done = AppCore.weeklyWorkoutCount(idx, todayIso);
+  }catch(e){}
+  const who = (currentProfile && (currentProfile.name || currentProfile.fullName)) || '';
+  const text = AppCore.progressShareText(lang, who, streak, done, target);
+  const Share = nativePlugin('Share');
+  if(Share && Share.share){
+    try{ await Share.share({ title:'AI Coach', text: text }); return; }catch(e){}
+  }
+  if(navigator.share){
+    try{ await navigator.share({ title:'AI Coach', text: text }); return; }catch(e){ return; }
+  }
+  try{ await navigator.clipboard.writeText(text); await customAlert(t('share_unavailable')); }
+  catch(e){ await customAlert(text); }
+}
+const REMINDER_PREFS_KEY = 'aicoach-reminders';
+function readReminderPrefs(){
+  try{
+    return Object.assign({ workoutOn:false, workoutTime:'18:00', mealOn:false, mealTime:'13:00' }, JSON.parse(localStorage.getItem(REMINDER_PREFS_KEY) || '{}'));
+  }catch(e){ return { workoutOn:false, workoutTime:'18:00', mealOn:false, mealTime:'13:00' }; }
+}
+function nextDailyTime(hhmm){
+  const parts = String(hhmm || '18:00').split(':');
+  const hour = Number(parts[0]) || 0;
+  const minute = Number(parts[1]) || 0;
+  const when = new Date();
+  when.setHours(hour, minute, 0, 0);
+  if(when.getTime() <= Date.now()) when.setDate(when.getDate() + 1);
+  return when;
+}
+async function scheduleReminders(){
+  const prefs = readReminderPrefs();
+  const LocalNotifications = nativePlugin('LocalNotifications');
+  if(LocalNotifications){
+    try{ await LocalNotifications.cancel({ notifications: [{id:9101},{id:9102}] }); }catch(e){}
+    if(!prefs.workoutOn && !prefs.mealOn) return;
+    const granted = await ensureRestTimerNotifPermission();
+    if(!granted) return;
+    const notes = [];
+    if(prefs.workoutOn){
+      const when = nextDailyTime(prefs.workoutTime);
+      notes.push({ id:9101, title:t('reminder_workout_title'), body:t('reminder_workout_body'), schedule:{ on:{ hour: when.getHours(), minute: when.getMinutes() }, repeats:true } });
+    }
+    if(prefs.mealOn){
+      const when = nextDailyTime(prefs.mealTime);
+      notes.push({ id:9102, title:t('reminder_meal_title'), body:t('reminder_meal_body'), schedule:{ on:{ hour: when.getHours(), minute: when.getMinutes() }, repeats:true } });
+    }
+    if(notes.length){ try{ await LocalNotifications.schedule({ notifications: notes }); }catch(e){} }
+    return;
+  }
+  if(!prefs.workoutOn && !prefs.mealOn) return;
+  if(!('serviceWorker' in navigator) || !('Notification' in window) || typeof TimestampTrigger !== 'function') return;
+  try{
+    if(Notification.permission === 'default') await Notification.requestPermission();
+    if(Notification.permission !== 'granted') return;
+    const reg = await navigator.serviceWorker.register('sw.js');
+    const jobs = [];
+    if(prefs.workoutOn) jobs.push({ tag:'workout', title:t('reminder_workout_title'), body:t('reminder_workout_body'), at: nextDailyTime(prefs.workoutTime) });
+    if(prefs.mealOn) jobs.push({ tag:'meal', title:t('reminder_meal_title'), body:t('reminder_meal_body'), at: nextDailyTime(prefs.mealTime) });
+    for(const job of jobs){
+      await reg.showNotification(job.title, { body: job.body, tag: job.tag, showTrigger: new TimestampTrigger(job.at.getTime()) });
+    }
+  }catch(e){}
+}
+function bindReminders(){
+  const workoutOn = document.getElementById('reminderWorkoutOn');
+  const workoutTime = document.getElementById('reminderWorkoutTime');
+  const mealOn = document.getElementById('reminderMealOn');
+  const mealTime = document.getElementById('reminderMealTime');
+  if(!workoutOn || !mealOn) return;
+  const prefs = readReminderPrefs();
+  workoutOn.checked = !!prefs.workoutOn;
+  mealOn.checked = !!prefs.mealOn;
+  if(workoutTime) workoutTime.value = prefs.workoutTime || '18:00';
+  if(mealTime) mealTime.value = prefs.mealTime || '13:00';
+  function save(){
+    const next = {
+      workoutOn: !!workoutOn.checked,
+      workoutTime: (workoutTime && workoutTime.value) || '18:00',
+      mealOn: !!mealOn.checked,
+      mealTime: (mealTime && mealTime.value) || '13:00'
+    };
+    try{ localStorage.setItem(REMINDER_PREFS_KEY, JSON.stringify(next)); }catch(e){}
+    scheduleReminders();
+  }
+  [workoutOn, workoutTime, mealOn, mealTime].forEach(el=>{ if(el) el.addEventListener('change', save); });
+  if(prefs.workoutOn || prefs.mealOn) scheduleReminders();
+}
+const shareProgressBtn = document.getElementById('shareProgressBtn');
+if(shareProgressBtn) shareProgressBtn.addEventListener('click', ()=>{ shareProgress(); });
+
 function initApp(){
   if(appInitialized) return;
   appInitialized = true;
   refreshAppData();
+  try{ initOptionalTelemetry(); }catch(e){}
+  try{ bindReminders(); }catch(e){}
 }
 </script>
 </body>

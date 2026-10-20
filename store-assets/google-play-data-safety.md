@@ -61,5 +61,7 @@ paid subscriptions.
 ## Data safety — additional notes for whoever fills this in
 - No location data collected.
 - No contacts access. Meal photo scanning uses the camera or a photo selected by the user; the image is sent to Anthropic for analysis and is not stored in Firestore.
-- No advertising ID / analytics SDK in the app (no third-party trackers).
+- No advertising ID. No data is sold or used for ads.
+- **Analytics (only after you add a Firebase `measurementId`).** The app can load Firebase Analytics and log product events: sign_up, onboarding_complete, first_workout_logged, paywall_view, purchase_start, purchase_success, restore, and app_exception. It does not set a user id on those events. Until `measurementId` is set, the analytics script is not loaded and nothing is sent. When you turn it on, declare App interactions / analytics, collected, not shared for advertising. Firebase is the processor.
+- **Crash reports (only after you set `SENTRY_DSN` in index.html).** Optional Sentry browser SDK. Leave the DSN empty and it does not load. If you set it, declare diagnostics / crash logs. Sentry is the processor. The app does not send a user id.
 - No financial info stored by the app itself (Google Play handles payment data directly; we store subscription status, not card numbers).

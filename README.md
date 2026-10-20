@@ -98,8 +98,8 @@ The Profile tab has a "Report a problem" box that emails you directly — the de
 ## Languages
 
 The app defaults to English and supports Greek through the EN/EL selector.
-Changing language reloads the app and therefore requires signing in again
-(the existing in-memory authentication policy remains unchanged).
+Changing language reloads the app. Sign-in is kept on this device
+(`Persistence.LOCAL`), so a language change does not sign the user out.
 
 ## Security maintenance (2026-10-06)
 

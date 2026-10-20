@@ -1,0 +1,52 @@
+// TRANSITION RULES — publish these only if rules must go out before every
+// installed iOS build uses Worker account deletion. They still block a
+// client from creating or editing subscription, credits, and quota docs.
+// They allow the owner to delete their own data, including those docs and
+// their access record, so older iOS builds can finish account deletion.
+// Replace this file with firestore.rules after the new iOS build is what
+// users have and Android has been on the new web client.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'sokratispoun@gmail.com' &&
+             request.auth.token.email_verified == true;
+    }
+    function isApproved(uid) {
+      return exists(/databases/$(database)/documents/access/$(uid)) &&
+             get(/databases/$(database)/documents/access/$(uid)).data.status == 'approved';
+    }
+
+    match /access/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if request.auth != null && request.auth.uid == uid &&
+                    request.resource.data.status == 'approved';
+      allow update: if isAdmin();
+      // Older clients delete this record themselves during account deletion.
+      allow delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+    }
+
+    function isServerOnlyDoc(docId) {
+      return docId == 'subscription' || docId == 'credits' || docId == 'onboarding-usage' ||
+             docId.matches('ai-usage:.*') || docId.matches('ai-usage-month:.*') ||
+             docId.matches('ai-usage-free-month:.*') ||
+             docId.matches('ai-photo-usage:.*');
+    }
+
+    match /users/{userId}/data/{docId} {
+      allow read: if request.auth != null &&
+                  ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
+      // Clients still cannot mint Pro, credits, or a fresh quota counter.
+      allow create, update: if request.auth != null && !isServerOnlyDoc(docId) &&
+                   ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
+      // Owners may delete their own docs, including server-only ones, so an
+      // older app can delete the account without the Worker.
+      allow delete: if request.auth != null &&
+                   ((request.auth.uid == userId && (isAdmin() || isApproved(userId))) || isAdmin());
+    }
+    match /users/{userId} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+  }
+}

@@ -227,7 +227,7 @@ test('quota rule covers every quota namespace currently written by the Worker', 
   const body = rules.match(/function isServerOnlyDoc\(docId\) \{([\s\S]*?)\n    \}/)[1];
   const exact = [...body.matchAll(/docId == '([^']+)'/g)].map(m => m[1]);
   const patterns = [...body.matchAll(/docId.matches\('([^']+)'\)/g)].map(m => new RegExp('^(?:' + m[1] + ')$'));
-  for (const id of ['subscription', 'credits', 'onboarding-usage', 'ai-usage:2026-10-06', 'ai-usage-month:2026-10', 'ai-photo-usage:2026-10']) assert.ok(exact.includes(id) || patterns.some(p => p.test(id)), id);
+  for (const id of ['subscription', 'credits', 'onboarding-usage', 'ai-usage:2026-10-06', 'ai-usage-month:2026-10', 'ai-usage-free-month:2026-10', 'ai-photo-usage:2026-10']) assert.ok(exact.includes(id) || patterns.some(p => p.test(id)), id);
   assert.match(rules, /allow delete: if request.auth != null && !isServerOnlyDoc\(docId\)/);
 });
 
@@ -285,5 +285,174 @@ test('onboarding request actually sends the server citation policy to Anthropic'
   const res=await c.handleAiProxy({idToken:'token',phase:'onboarding',system:'Collect profile then JSON.',messages:[{role:'user',content:'Hi'}]}, {}, {});
   assert.equal(res.status,200);
   assert.ok(sent.system.includes('HEALTH INFORMATION AND CITATIONS'));
+  assert.ok(sent.system.includes('Never put chest and legs'));
   assert.equal(sent.messages[0].content,'Hi');
+});
+
+const AppCore = require(path.join(root, 'lib', 'app-core.js'));
+
+test('auth stays local and the native shell is remembered', () => {
+  assert.match(app, /setPersistence\(firebase\.auth\.Auth\.Persistence\.LOCAL\)/);
+  assert.ok(!app.includes('Persistence.NONE'));
+  assert.equal(AppCore.SHELL_STORAGE_KEY, 'aicoach-native-shell');
+  assert.match(app, /SHELL_STORAGE_KEY/);
+});
+
+test('native shells never show external checkout, even after the referrer is gone', () => {
+  assert.equal(AppCore.detectShell({ referrer: 'android-app://io.github.s0k0s.aicoach' }), 'android');
+  assert.equal(AppCore.detectShell({ storedShell: 'android', referrer: '' }), 'android');
+  assert.equal(AppCore.detectShell({ capacitorPlatform: 'ios' }), 'ios');
+  assert.equal(AppCore.shouldShowExternalCheckout('android', true), false);
+  assert.equal(AppCore.shouldShowExternalCheckout('ios', true), false);
+  assert.equal(AppCore.shouldShowExternalCheckout('web', false), false);
+  assert.equal(AppCore.WEB_STRIPE_CHECKOUT_ENABLED, false);
+});
+
+test('web checkout stays hidden while store-only billing is on', async () => {
+  let html = '';
+  const c = front(['renderAiProSection'], {
+    authEpoch: 1,
+    WEB_STRIPE_CHECKOUT_ENABLED: false,
+    document: { getElementById: id => id === 'aiProSection' ? { set innerHTML(value) { html = value; } } : null, querySelectorAll: () => [] },
+    loadAiSubscription: async () => null,
+    loadAiCredits: async () => 0,
+    isRunningInNativeApp: () => false,
+    iapAvailable: () => false,
+    isAndroidTwa: () => false,
+    escapeHtml: x => x,
+    t: key => key
+  });
+  await c.renderAiProSection();
+  assert.ok(!html.includes('id="aiProActionBtn"'));
+  assert.ok(!html.includes('id="aiCreditsActionBtn"'));
+  assert.match(html, /profile_ai_web_store_only/);
+});
+
+test('android paywall lists monthly and annual store products', async () => {
+  let html = '';
+  const c = front(['renderAiProSection'], {
+    authEpoch: 1,
+    document: { getElementById: id => id === 'aiProSection' ? { set innerHTML(value) { html = value; } } : null, querySelectorAll: () => [] },
+    loadAiSubscription: async () => null,
+    loadAiCredits: async () => 0,
+    isRunningInNativeApp: () => true,
+    iapAvailable: () => false,
+    isAndroidTwa: () => true,
+    androidProductDetails: async () => [
+      { itemId: 'pro_monthly', price: { currency: 'EUR', value: '4.99' } },
+      { itemId: 'pro_annual', price: { currency: 'EUR', value: '39.99' }, freeTrialPeriod: 'P7D' }
+    ],
+    androidPriceString: d => '€' + d.price.value,
+    AppCore,
+    escapeHtml: x => x,
+    t: (key, values = {}) => key + JSON.stringify(values)
+  });
+  await c.renderAiProSection();
+  assert.match(html, /data-android-sku="pro_monthly"/);
+  assert.match(html, /data-android-sku="pro_annual"/);
+  assert.match(html, /P7D/);
+  assert.ok(!html.includes('id="aiProActionBtn"'));
+});
+
+test('streaks count through yesterday and weekly progress is Monday to Sunday', () => {
+  assert.equal(AppCore.workoutStreak(['2026-10-18', '2026-10-19'], '2026-10-20'), 2);
+  assert.equal(AppCore.workoutStreak(['2026-10-18'], '2026-10-20'), 0);
+  assert.equal(AppCore.workoutStreak(['2026-10-20'], '2026-10-20'), 1);
+  assert.equal(AppCore.weekStartIso('2026-10-20'), '2026-10-19');
+  assert.equal(AppCore.weeklyWorkoutCount(['2026-10-19', '2026-10-19', '2026-10-12'], '2026-10-20'), 1);
+  assert.equal(AppCore.shouldPromptForReview(3, null, '2026-10-20'), false);
+  assert.equal(AppCore.shouldPromptForReview(4, null, '2026-10-20'), true);
+  assert.equal(AppCore.shouldPromptForReview(4, '2026-10-01', '2026-10-20'), false);
+});
+
+test('plan repair caps sessions and drops chest-plus-legs on a push day', () => {
+  const repaired = AppCore.repairSession([
+    { id: 'a', cat: 'chest', sets: 8, rest: 30 },
+    { id: 'b', cat: 'legs', sets: 3, rest: 120 },
+    { id: 'c', cat: 'shoulders', sets: 3, rest: 60 },
+    { id: 'd', cat: 'arms', sets: 3, rest: 60 },
+    { id: 'e', cat: 'core', sets: 3, rest: 60 },
+    { id: 'f', cat: 'chest', sets: 3, rest: 90 },
+    { id: 'g', cat: 'back', sets: 3, rest: 90 }
+  ], { dayKey: 'push1', experience: 'intermediate', trainingLocation: 'gym' });
+  assert.ok(repaired.exercises.length <= 5);
+  assert.ok(repaired.exercises.every(ex => ex.cat !== 'legs' && ex.cat !== 'back'));
+  assert.ok(repaired.issues.includes('chest_and_legs') || repaired.issues.includes('forbidden_pairing'));
+  assert.ok(repaired.exercises[0].sets <= 5);
+  assert.ok(repaired.exercises[0].rest >= 90);
+  const home = AppCore.repairSession([
+    { id: '1', cat: 'chest' }, { id: '2', cat: 'back' }, { id: '3', cat: 'legs' },
+    { id: '4', cat: 'core' }, { id: '5', cat: 'shoulders' }, { id: '6', cat: 'arms' }
+  ], { dayKey: 'fullBody1', experience: 'beginner', trainingLocation: 'home' });
+  assert.ok(home.exercises.length <= 4);
+  assert.equal(home.exercises[0].cat, 'legs');
+});
+
+test('nutrition targets stay inside the protein band and calorie floors', () => {
+  const loss = AppCore.computeNutritionTargets({ sex: 'female', weightKg: 60, heightCm: 165, age: 30, activityLevel: 'sedentary', goal: 'fat_loss' });
+  assert.ok(loss.kcal >= 1400);
+  assert.ok(loss.protein >= Math.round(1.6 * 60) && loss.protein <= Math.round(2.2 * 60));
+  const gain = AppCore.computeNutritionTargets({ sex: 'male', weightKg: 80, heightCm: 180, age: 28, activityLevel: 'moderate', goal: 'muscle_gain' });
+  assert.ok(gain.kcal >= 1600);
+  assert.ok(gain.protein >= Math.round(1.6 * 80) && gain.protein <= Math.round(2.2 * 80));
+  const clamped = AppCore.clampNutritionTargets({ kcal: 900, protein: 40 }, { sex: 'male', weightKg: 80 });
+  assert.equal(clamped.kcal, 1600);
+  assert.ok(clamped.protein >= Math.round(1.6 * 80));
+});
+
+test('free monthly allowance is 8 and a free photo does not write a counter', async () => {
+  const writes = [];
+  const c = worker(async (url, opts = {}) => {
+    if (opts.method === 'PATCH') { writes.push(url); return json({}); }
+    if (decodeURIComponent(url).includes('/credits')) return json({}, 404);
+    if (decodeURIComponent(url).includes('ai-usage-free-month:')) {
+      return json({ fields: { value: { stringValue: JSON.stringify({ count: 7 }) } } });
+    }
+    throw new Error('unexpected ' + url);
+  });
+  const allowed = await c.checkAndConsumeQuota('token', 'uid', 'free', false);
+  assert.equal(allowed.ok, true);
+  assert.equal(allowed.limit, 8);
+  assert.equal(allowed.remaining, 0);
+  assert.equal(writes.length, 1);
+  const photo = await c.checkAndConsumeQuota('token', 'uid', 'free', true);
+  assert.equal(photo.ok, false);
+  assert.equal(photo.limit, 0);
+  assert.equal(writes.length, 1);
+});
+
+test('android sync posts the annual product and drops unknown product ids', async () => {
+  const posted = [];
+  const c = worker(async (url, opts = {}) => {
+    if (url.includes('accounts:lookup')) return json({ users: [{ localId: 'user-a' }] });
+    if (url.includes('api.revenuecat.com/v1/receipts')) { posted.push(JSON.parse(opts.body)); return json({}); }
+    if (url.includes('api.revenuecat.com/v1/subscribers/')) {
+      return json({ subscriber: { entitlements: { pro: { expires_date: new Date(Date.now() + 86400000).toISOString(), product_identifier: 'pro_annual' } }, subscriptions: { pro_annual: { store: 'PLAY_STORE' } } } });
+    }
+    if (url.includes('/data/subscription')) return opts.method === 'PATCH' ? json({}) : json({}, 404);
+    throw new Error('unexpected ' + url);
+  });
+  const res = await c.handleAndroidSyncPurchase({
+    idToken: 'token',
+    purchases: [{ token: 'tok-annual', productId: 'pro_annual' }, { token: 'tok-evil', productId: 'com.evil' }],
+    purchaseTokens: ['legacy-token']
+  }, {}, { REVENUECAT_SECRET_KEY: 'sk' });
+  assert.equal(res.status, 200);
+  assert.deepEqual(posted.map(item => item.product_id), ['pro_annual', 'pro_monthly']);
+  assert.equal(posted[0].fetch_token, 'tok-annual');
+  assert.equal(posted[1].fetch_token, 'legacy-token');
+});
+
+test('revenuecat webhook rejects a missing secret and ignores anonymous ids', async () => {
+  const c = worker(async () => { throw new Error('no network'); });
+  const missing = new Request('https://example/revenuecat-webhook', { method: 'POST', headers: { Authorization: 'secret' }, body: '{}' });
+  assert.equal((await c.handleRevenueCatWebhook(missing, {})).status, 401);
+  const anon = new Request('https://example/revenuecat-webhook', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer secret' },
+    body: JSON.stringify({ event: { app_user_id: '$RCAnonymousID:abc' } })
+  });
+  const res = await c.handleRevenueCatWebhook(anon, { REVENUECAT_WEBHOOK_AUTH: 'secret' });
+  assert.equal(res.status, 200);
+  assert.equal(await res.text(), 'ignored');
 });

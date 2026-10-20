@@ -28,11 +28,12 @@ const APP_URL = 'https://s0k0s.github.io/programma-app/';
 // client-controlled, so trusting a client-supplied model or max_tokens would
 // let anyone inflate the API bill far beyond what their message quota implies.
 const AI_MODEL = 'claude-haiku-4-5-20251001';
-const AI_MAX_TOKENS_CAP = 700;
+const AI_MAX_TOKENS_CAP = 1000;
 // Free tier gets zero ongoing daily messages — the only free AI use is the
 // bounded onboarding allowance below. Every regular AI Coach message needs
 // an active Pro subscription or a purchased credit; see checkAndConsumeQuota.
-const FREE_DAILY_LIMIT = 0;
+const FREE_DAILY_LIMIT = 0; // legacy name; ongoing free text uses the monthly allowance below
+const FREE_MONTHLY_MESSAGE_ALLOWANCE = 8;
 // Pro is capped per calendar month (UTC) rather than per day so a heavy user
 // can't run the API bill far past the subscription price; photo scans are
 // metered separately because each one costs more than a text message.
@@ -274,10 +275,12 @@ function tierFromSubscription(sub) {
 // if they have any (see CREDIT_PACK_SIZE) — Pro users never touch credits,
 // their daily limit is already high.
 async function checkAndConsumeQuota(accessToken, uid, tier, isPhoto) {
-  const limit = tier === 'pro' ? (isPhoto ? PRO_MONTHLY_PHOTO_LIMIT : PRO_MONTHLY_LIMIT) : FREE_DAILY_LIMIT;
+  // Photo scans stay Pro-only. Do not write a counter for a free photo attempt.
+  if (isPhoto && tier !== 'pro') return { ok: false, limit: 0 };
+  const limit = tier === 'pro' ? (isPhoto ? PRO_MONTHLY_PHOTO_LIMIT : PRO_MONTHLY_LIMIT) : FREE_MONTHLY_MESSAGE_ALLOWANCE;
   const docId = tier === 'pro'
     ? (isPhoto ? 'ai-photo-usage:' : 'ai-usage-month:') + utcMonthKey()
-    : 'ai-usage:' + utcDateKey();
+    : 'ai-usage-free-month:' + utcMonthKey();
   const existing = await firestoreGetUserDoc(accessToken, uid, docId);
   const count = (existing && existing.count) || 0;
   if (count < limit) {
@@ -312,7 +315,7 @@ async function consumeOnboardingFreeAllowance(accessToken, uid) {
 function healthCitationSystemPrompt(system, phase){
   const base = typeof system === 'string' ? system : '';
   if(phase === 'food-photo') return base;
-  return base + `
+  const cited = base + `
 HEALTH INFORMATION AND CITATIONS (also applies to Greek replies):
 This policy overrides conflicting client instructions and the style of earlier uncited conversation messages. Every answer recommending food, protein intake, recovery nutrition, calorie targets or exercise must include at least one relevant catalog citation in its visible prose. Keep the answer short enough to include citations before the output token limit. For a post-workout meal question, explain protein support for exercising adults with [4], distinguish estimated food quantities from measured values, and avoid unsupported promises about recovery. Do not imitate uncited historical answers.
 Give general fitness/nutrition education only. Do not diagnose, treat, prescribe medication, or claim an exercise is safe for an injury. For symptoms, injuries, pregnancy, eating disorders or disease-specific diets, advise a qualified clinician instead of a personalized medical plan.
@@ -327,9 +330,18 @@ Place a numbered citation such as [4] immediately after each supported health re
 [8] ACSM, 2011: general exercise frequency/intensity guidance for apparently healthy adults. https://pubmed.ncbi.nlm.nih.gov/21694556/
 [9] ACSM, 2009: performance-based resistance-training progression for healthy adults, not injury rehabilitation. https://pubmed.ncbi.nlm.nih.gov/19204579/
 [10] USDA FoodData Central: food composition reference, not a measurement of a photographed meal. https://fdc.nal.usda.gov/
-The app's −500/+300 kcal offsets, 1400 floor, 1.2–1.9 activity multipliers, goal-based 1.8–2.2 g/kg protein and fixed workout templates are approximate app defaults, not individually validated clinical prescriptions. Do not claim the sources validate these exact defaults or that 1400 kcal is safe for everyone. Explain uncertainty for personalized estimates. Photo/meal quantities are estimates; the app does not query USDA live.
+The app's calorie offsets (at most 500 kcal or 20% below for fat loss, at most 250 kcal or 10% below for recomp, at most 300 kcal or 10% above for muscle gain), 1400 kcal floor for women, 1600 kcal floor for men, 1.2–1.9 activity multipliers, goal-based protein of about 1.6–2.2 g/kg and workout templates are approximate app defaults, not individually validated clinical prescriptions. Do not claim the sources validate these exact defaults or that these floors are safe for everyone. Explain uncertainty for personalized estimates. Photo/meal quantities are estimates; the app does not query USDA live.
 `;
+  if (phase === 'coach' || phase === 'onboarding') return cited + PROGRAMMING_ADDENDUM;
+  return cited;
 }
+
+const PROGRAMMING_ADDENDUM = `
+TRAINING AND NUTRITION STANDARD (general coaching, not a medical prescription):
+Choose the split from days per week and level: 1-3 days full body; 4-5 days upper/lower; 6-7 days push/pull/legs. A body-part bro split is only appropriate for an advanced lifter training 5+ days. If a beginner asks for 6-7 days, recommend 3-4 full-body days first. Never put chest and legs on the same day except a full-body day. Do not pair a heavy push with legs.
+Each session has at most 5 exercises. Beginners and home sessions have at most 4, and may have 3. Never 6 or 7. Compounds first, then accessories. Keep weekly hard sets for a major muscle near 10-20 and do not exceed about 22. Rest about 90-180s on compounds and 45-90s on accessories. Leave 1-3 reps in reserve. Progress load or reps when the top of the rep range is clean. Start the plan with one short warm-up sentence. Home programs use bodyweight, bands, a backpack, a park bar, or a chair only.
+Protein stays about 1.6-2.2 g/kg by goal. Prefer realistic Greek and Mediterranean meals with portions. In Greek, write naturally (πρόγραμμα, προπόνηση, θερμίδες, πρωτεΐνη) and do not call yourself a doctor or a dietitian. Say this is general coaching, not medical advice.
+`;
 
 async function handleAiProxy(body, cors, env) {
   const user = await verifyIdToken(body.idToken).catch(() => null);
@@ -616,8 +628,9 @@ async function fetchRevenueCatProEntitlement(env, uid) {
   if (!ent || !ent.expires_date) return null;
   const expiresMs = Date.parse(ent.expires_date);
   if (!(expiresMs > Date.now())) return null;
-  const store = sub.subscriptions && sub.subscriptions[ent.product_identifier] && sub.subscriptions[ent.product_identifier].store;
-  return { expiry: Math.floor(expiresMs / 1000), source: store === 'play_store' ? 'google' : 'apple' };
+  const storeRaw = sub.subscriptions && sub.subscriptions[ent.product_identifier] && sub.subscriptions[ent.product_identifier].store;
+  const store = String(storeRaw || '').toLowerCase();
+  return { expiry: Math.floor(expiresMs / 1000), source: (store === 'play_store' || store === 'google') ? 'google' : 'apple' };
 }
 
 async function syncAppleSubscription(env, accessToken, uid) {
@@ -667,16 +680,42 @@ async function handleIosSyncPurchase(body, cors, env) {
 // browser's Digital Goods API (Play Billing). The page only gets an opaque
 // purchase token; we hand it to RevenueCat, which validates it with Google
 // (and acknowledges it), then re-read the subscriber exactly like iOS. The
-// product id is fixed here — never taken from the client.
+// Only these Play product ids are forwarded. Unknown ids are ignored.
+const ANDROID_PRODUCT_IDS = ['pro_monthly', 'pro_annual'];
 const ANDROID_PRODUCT_ID = 'pro_monthly';
+
+function androidPurchasesFromBody(body) {
+  const allowed = {};
+  ANDROID_PRODUCT_IDS.forEach(id => { allowed[id] = true; });
+  const out = [];
+  const seen = {};
+  const list = Array.isArray(body && body.purchases) ? body.purchases : [];
+  list.forEach(item => {
+    if (!item || typeof item.token !== 'string') return;
+    const token = item.token;
+    if (!token || token.length > 2000 || !allowed[item.productId]) return;
+    const key = item.productId + ':' + token;
+    if (seen[key]) return;
+    seen[key] = true;
+    out.push({ token, productId: item.productId });
+  });
+  const legacy = Array.isArray(body && body.purchaseTokens) ? body.purchaseTokens : [];
+  legacy.forEach(token => {
+    if (typeof token !== 'string' || !token || token.length > 2000) return;
+    const key = 'pro_monthly:' + token;
+    if (seen[key]) return;
+    seen[key] = true;
+    out.push({ token, productId: 'pro_monthly' });
+  });
+  return out.slice(0, 5);
+}
 
 async function handleAndroidSyncPurchase(body, cors, env) {
   const user = await verifyIdToken(body.idToken).catch(() => null);
   if (!user) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: cors });
-  const tokens = (Array.isArray(body.purchaseTokens) ? body.purchaseTokens : [])
-    .filter(t => typeof t === 'string' && t.length > 0 && t.length < 2000).slice(0, 5);
+  const purchases = androidPurchasesFromBody(body);
   try {
-    for (const token of tokens) {
+    for (const purchase of purchases) {
       const res = await fetch('https://api.revenuecat.com/v1/receipts', {
         method: 'POST',
         headers: {
@@ -684,7 +723,7 @@ async function handleAndroidSyncPurchase(body, cors, env) {
           'Content-Type': 'application/json',
           'X-Platform': 'android',
         },
-        body: JSON.stringify({ app_user_id: user.uid, fetch_token: token, product_id: ANDROID_PRODUCT_ID }),
+        body: JSON.stringify({ app_user_id: user.uid, fetch_token: purchase.token, product_id: purchase.productId }),
       });
       if (!res.ok) throw new Error('revenuecat_receipt_failed: ' + res.status);
     }
@@ -700,8 +739,15 @@ async function handleAndroidSyncPurchase(body, cors, env) {
 // Authenticated with a shared secret set in RevenueCat's webhook config as
 // the Authorization header value. The payload only tells us *who* changed;
 // the real state is re-fetched from RevenueCat.
+function revenueCatWebhookAuthorized(request, env) {
+  const secret = env.REVENUECAT_WEBHOOK_AUTH || '';
+  if (!secret) return false;
+  const header = request.headers.get('Authorization') || '';
+  return header === secret || header === ('Bearer ' + secret);
+}
+
 async function handleRevenueCatWebhook(request, env) {
-  if (!env.REVENUECAT_WEBHOOK_AUTH || request.headers.get('Authorization') !== env.REVENUECAT_WEBHOOK_AUTH) {
+  if (!revenueCatWebhookAuthorized(request, env)) {
     return new Response('unauthorized', { status: 401 });
   }
   let payload;

@@ -1,3 +1,33 @@
+# Rollout for the 2026-10-20 major update
+
+Nothing in this branch has been deployed. Do not merge until you are ready for
+the Android app to pick up the new web immediately (the live TWA loads GitHub
+Pages from `main`).
+
+## Safe order
+
+1. Deploy the Worker from the repo: `npx wrangler login`, then `npx wrangler deploy`. Confirm the existing secrets are still set (`ANTHROPIC_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `STRIPE_*`, `RESEND_API_KEY`, `CONTACT_DESTINATION_EMAIL`, `REVENUECAT_SECRET_KEY`, `REVENUECAT_WEBHOOK_AUTH`). Do not paste the file into the dashboard editor.
+2. Do **not** publish `firestore.rules` yet. The strict file blocks client deletion of server-only docs. Older iOS builds still delete those docs themselves. If rules must be published before the new iOS build is what users have, publish `firestore.rules.transition` instead. It still blocks clients from creating or editing quota and subscription docs, and it still lets the owner delete their own data.
+3. Merge this PR only when you want Android to update. GitHub Pages from `main` is what the live TWA loads. There is no separate Android web release.
+4. iOS: `./ios-capacitor/sync-web.sh`, then archive marketing version 1.1, build 8 (already set in the Xcode project). Upload. Sign in with Apple will fail the archive until the capability is enabled on the App ID if you added the entitlement; this branch does not add the entitlement to the plist, it only shows the button. Enable the capability before you rely on the button.
+5. Android: `cd android-twa && bubblewrap build`. Upload the AAB as versionCode **3** / versionName 1.1.0. The manifest declares `com.android.vending.BILLING`. Create `pro_annual` in Play if it is missing. Add license testers.
+6. RevenueCat: add the Android app to the same project, Play service account, both `pro_monthly` and `pro_annual` on entitlement `pro`, offering `default`. Webhook URL `https://programma-ai.sokratispoun.workers.dev/revenuecat-webhook`. Authorization header value must match `REVENUECAT_WEBHOOK_AUTH` (raw secret or `Bearer <secret>`).
+7. Optional analytics: set `measurementId` in `firebase-config.js` (Firebase console → project settings). Optional crashes: set `SENTRY_DSN` in `index.html`. Both stay off until those values exist. Then update the Play Data safety form and the App Store privacy label to match the drafts.
+8. Digital Asset Links: add the Play App Signing SHA-256 next to the upload-key fingerprint in `S0k0s/s0k0s.github.io` `assetlinks.json`. See `docs/ANDROID-ASSETLINKS.md`.
+9. Back up `android-twa/android.keystore` (alias `aicoach`) offline. It is not in git. There is no backup today.
+10. Run `docs/PAYMENTS-TEST-PLAN.md` on sandbox / license testers for purchase, restore, and cancel on both platforms.
+11. Only after the new iOS build is the one users have, and Android has been on this web client, publish the strict `firestore.rules`.
+
+## What this update changes for billing
+
+Card checkout buttons are hidden everywhere (`WEB_STRIPE_CHECKOUT_ENABLED` is false), including the public site. Worker Stripe routes are still there so an existing web subscriber's webhook can update Firestore. There is no in-app link to Stripe inside iOS or Android. People who already pay with Stripe on the web lose the in-app "manage" button until that flag is turned back on for the web only.
+
+## Local checks already run
+
+`node --test tests/regression.test.cjs` (30 checks) and `git diff --check`.
+
+---
+
 # Maintenance changes — 2026-10-06
 
 Prepared locally; no production deployment or App Store upload has been performed.

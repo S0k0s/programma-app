@@ -32,11 +32,16 @@ for advertising. No ad SDKs, no analytics-for-ads.
   app never sees card details).
 
 ## Data Not Linked to You
-None identified — all collected data is tied to the signed-in account.
+**Product Interaction** and **Crash Data**, only if you turn the optional tools on:
+
+- Firebase Analytics, after `measurementId` is added to `firebase-config.js`. Events: sign_up, onboarding_complete, first_workout_logged, paywall_view, purchase_start, purchase_success, restore, app_exception. The app does not set Analytics userId, so declare this as not linked to identity if that matches Apple's definition for your setup. Purpose: Analytics. It is off until the measurement id exists.
+- Sentry, after `SENTRY_DSN` is set in `index.html`. Purpose: App Functionality (diagnostics). It is off while the DSN is empty. Do not enable sendDefaultPii.
+
+Until those ids are set, do not declare an analytics or crash SDK. The code does not load either script without them.
 
 ## Purposes (for each data type above)
 - App Functionality ✓ (all of the above)
-- Analytics ✗
+- Analytics ✓ only after Firebase Analytics is configured. Leave it unchecked until then.
 - Product Personalization ✓ (health/fitness data — used to personalize the
   training/nutrition plan; this is arguably also "App Functionality" since
   it's the core purpose, but Apple's reviewers sometimes want this flagged

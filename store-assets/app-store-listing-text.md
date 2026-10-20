@@ -1,128 +1,76 @@
-# App Store Connect listing text
+# App Store listing — AI Coach: Workout & Diet
 
-Same product as the Play Store listing (see play-listing-text.md), adapted to
-Apple's field names and character limits.
+Add a Greek localization in App Store Connect (the project now declares `el`).
+Do not mention message packs. Do not call the app a doctor or a dietitian.
 
-## App Name (max 30 characters)
-AI Coach
+## English (primary)
 
-(8 characters)
+### Name (30)
+AI Coach: Workout & Diet
 
-## Subtitle (max 30 characters)
-AI Trainer & Nutrition Coach
+### Subtitle (30)
+Workouts, diet & calories
 
-(29 characters)
+(25 characters)
 
-## Promotional text (max 170 characters — can be updated any time without a new review)
-Your AI fitness & nutrition coach: custom workouts, macro targets, and photo meal logging. Free to start — Pro unlocks the AI Coach chat and food photo scanning.
+### Keywords (100)
+γυμναστική,workout,gym,diet,calories,nutrition,strength,macros,πρόγραμμα,δίαιτα,θερμίδες,protein,meal,plan,coach
 
-(~155 characters — verify the exact count in App Store Connect)
+Count this in App Store Connect. Drop words that are already in the name if Apple rejects them. Do not repeat the app name.
 
-## Description (max 4000 characters)
+### Promotional text (170)
+A weekly workout plan, calorie targets, and a coach that can edit the plan. Greek and English. General fitness info, not medical advice.
 
-AI Coach builds you a personal training program and nutrition plan through a
-short conversation with an AI assistant — then keeps adjusting it as you go.
+### Description
 
-HOW IT WORKS
-Answer a few quick questions (gym or home/outdoor training, your goal, stats,
-how many days a week you can train, and any injuries or dietary needs) and AI
-Coach designs a program that actually fits your situation: Full Body, Upper/
-Lower, or Push/Pull/Legs splits with gym equipment — or a bodyweight +
-resistance band program if you train at home or outdoors. It also sets
-personalized daily calorie and macro targets based on your goal.
+AI Coach builds a weekly training plan and calorie targets from a short conversation, then stays with you while you log sets and meals.
 
-TRACK EVERYTHING IN ONE PLACE
-• Training — log your sets, reps and weights, see your progress on each
-  exercise, and get a nudge when it's time to increase the load
-• Nutrition — log meals and track how close you are to your daily targets
-• Snap a photo of your meal (Pro) — AI estimates calories, protein, carbs and
-  fat for you to review and add to your log
-• Progress — weight trends per exercise, personal records on your lifts
+Your plan follows your days and level: full body, upper/lower, or push/pull/legs. Home sessions use bodyweight and simple equipment. Each session stays short enough to finish, with the main lifts first.
 
-AN AI COACH THAT CAN ACTUALLY CHANGE YOUR PROGRAM
-Talk to your AI Coach any time — if your schedule changes, you want to swap
-an exercise you don't like, or your goal shifts, tell it in plain language
-and it updates your actual program and nutrition targets, not just replies
-with advice you'd have to apply yourself.
+Nutrition targets come from your stats and goal. Protein stays in a normal training range. Meal ideas lean Greek and Mediterranean, with portions.
 
-YOUR DATA, EVERYWHERE YOU SIGN IN
-Sign in once with email, and your training history, nutrition log and AI
-Coach conversation follow you across your devices. Available in English and
-Greek (EN / EL).
+You can log sets, see a streak and how many workouts you have done this week, and turn on local workout or meal reminders. The coach can change the live plan when you ask.
 
-PRIVACY
-Your data is used only to run the app for you — to calculate your targets,
-show your history, and let the AI Coach answer based on your own profile. It
-is never sold or shared for advertising. Full details in the in-app Privacy
-Policy.
+Pro is an auto-renewable subscription in the App Store, monthly or yearly. A free trial, if you offer one, is the introductory offer you set in App Store Connect. Free accounts finish setup and then have a small monthly message allowance. Meal photo estimates are part of Pro.
 
-Free to start: the initial onboarding conversation that builds your program
-is free. The AI Coach chat and meal photo scanning are part of AI Coach Pro,
-an auto-renewing monthly subscription.
+Payment is charged to your Apple ID. The subscription renews unless you cancel at least 24 hours before the period ends. Manage or cancel it in Settings → Apple ID → Subscriptions.
 
-SUBSCRIPTION DETAILS
-• AI Coach Pro — monthly or annual, auto-renewing, price shown in the app
-  before you subscribe (set in App Store Connect)
-• Payment is charged to your Apple Account at confirmation of purchase
-• The subscription renews automatically unless cancelled at least 24 hours
-  before the end of the current period
-• Manage or cancel any time in your Apple Account settings
-• Terms of Use and Privacy Policy are available in the app (Profile)
+This is general fitness and nutrition information. It is not medical advice and it does not diagnose or treat any condition.
 
-AI Coach gives general fitness and nutrition guidance generated by an AI. It
-is not medical advice — see the in-app disclaimer and Sources & health information.
+Privacy policy: https://s0k0s.github.io/programma-app/?legal=1
 
-(Adapted from the Play Store description — well under the 4000-char cap.
-NOTE: one-time message packs were dropped; the iOS app sells only the Pro
-subscription.)
+## Ελληνικά
 
-## Keywords (max 100 characters, comma-separated, no spaces after commas)
-fitness,workout,gym,training,nutrition,diet,macros,calories,ai coach,progress,strength,bodyweight
+### Όνομα (30)
+AI Coach: Workout & Diet
 
-(check exact character count in App Store Connect — trim if over 100)
+### Υπότιτλος (30)
+Γυμναστική & θερμίδες
 
-## What's New in This Version (release notes — required on every update)
-Initial release: personal AI training & nutrition coach, workout and meal
-logging, meal photo scanning (Pro), progress tracking, English and Greek.
+(22 χαρακτήρες)
 
-## Support & Marketing URLs
-- Support URL: same as Play Store contact/support page (reuse whatever's in
-  play-listing-text.md / the in-app "Report a problem" flow's destination).
-- Marketing URL: optional — the GitHub Pages app URL works if needed
-  (https://s0k0s.github.io/programma-app/), though it's the app itself
-  rather than a dedicated marketing page.
+### Λέξεις-κλειδιά (100)
+γυμναστική,πρόγραμμα,δίαιτα,θερμίδες,προπόνηση,διατροφή,γυμναστήριο,προπονητής,πρωτεΐνη,γεύμα,δύναμη,μακροθρεπτικά
 
-## Category
-Primary: Health & Fitness
-Secondary (optional): Food & Drink (covers the nutrition side)
+Μέτρα το μήκος στο App Store Connect. Μην επαναλαμβάνεις το όνομα της εφαρμογής.
 
-## Notes for whoever fills this in
-- Apple doesn't have a separate "short description" field like Play's
-  80-char one — the Subtitle above is the closest equivalent and appears
-  right under the app name in search results.
-- Promotional text is the only listing field Apple lets you change without
-  triggering a new review — worth keeping something timely there later
-  (e.g. a seasonal note) once the app has been live a while.
-- Screenshots: Apple currently requires at minimum the 6.9" iPhone size
-  (1320×2868 or 1290×2796, whichever Xcode/App Store Connect asks for at
-  upload time). The app is iPhone-only (TARGETED_DEVICE_FAMILY set to "1"
-  in App.xcodeproj), so no iPad screenshots are needed.
+### Κείμενο προώθησης (170)
+Εβδομαδιαίο πρόγραμμα γυμναστικής, θερμίδες και coach που αλλάζει το πλάνο. Ελληνικά και αγγλικά. Γενικές πληροφορίες, όχι ιατρική συμβουλή.
 
-## Screenshots to capture (6.9" iPhone, e.g. iPhone 17/18 Pro Max simulator)
-Run the bundled app in the simulator (`ios-capacitor/sync-web.sh`, then build)
-and capture ~5–6 screens, with a one-line caption each if you add overlays:
-1. Home / today's workout — "Your plan, every day"
-2. Workout logging (sets, reps, weights) — "Log every set in seconds"
-3. Nutrition tab with targets and progress bars — "Hit your daily macros"
-4. Meal photo scan result pre-filling the food log — "Snap a photo, get the numbers"
-5. AI Coach chat changing the program — "A coach that updates your plan"
-6. Progress / personal records — "See your progress"
-Use a test account with realistic sample data; no real personal data.
+### Περιγραφή
 
-## Subscription metadata (App Store Connect → Subscriptions)
-- Group: AI Coach Pro
-- `pro_monthly` — 1 month — €4.99   ·   `pro_annual` — 1 year (upfront) — €39.99
-- Display name: AI Coach Pro   ·   Description: AI Coach chat and meal photo scanning.
-- Prices are read from the store by the app — changing them later needs no code change.
-- Screenshot sizes App Store Connect asked for: iPhone 6.5" = 1284×2778 (files `*-6.5in.png`).
-- Review screenshot for the subscription: the in-app Pro/Upgrade section.
+Το AI Coach φτιάχνει εβδομαδιαίο πρόγραμμα προπόνησης και στόχους θερμίδων μέσα από μια σύντομη συζήτηση, και μένει μαζί σου όσο καταγράφεις σετ και γεύματα.
+
+Το πρόγραμμα ακολουθεί τις μέρες και το επίπεδό σου: full body, πάνω/κάτω, ή push/pull/legs. Στο σπίτι χρησιμοποιεί το βάρος του σώματος και απλό εξοπλισμό. Κάθε συνεδρία μένει σε μήκος που προλαβαίνεις, με τις βασικές ασκήσεις πρώτα.
+
+Οι στόχοι διατροφής βγαίνουν από τα στοιχεία σου και τον στόχο σου. Η πρωτεΐνη μένει σε φυσιολογικό εύρος για προπόνηση. Οι ιδέες για γεύματα είναι κοντά στην ελληνική και μεσογειακή κουζίνα, με μερίδες.
+
+Μπορείς να καταγράφεις σετ, να βλέπεις τη σειρά ημερών και πόσες προπονήσεις έκλεισες αυτή την εβδομάδα, και να ανοίξεις τοπικές υπενθυμίσεις. Ο coach μπορεί να αλλάξει το ζωντανό πρόγραμμα όταν το ζητήσεις.
+
+Το Pro είναι αυτόματη ανανεούμενη συνδρομή στο App Store, μήνα ή χρόνο. Αν υπάρχει δωρεάν δοκιμή, είναι η εισαγωγική προσφορά που ορίζεις στο App Store Connect. Οι δωρεάν λογαριασμοί τελειώνουν την αρχική ρύθμιση και μετά έχουν λίγα μηνύματα τον μήνα. Η εκτίμηση γεύματος από φωτογραφία είναι μέρος του Pro.
+
+Η χρέωση γίνεται στο Apple ID. Η συνδρομή ανανεώνεται αν δεν την ακυρώσεις τουλάχιστον 24 ώρες πριν λήξει η περίοδος. Τη διαχειρίζεσαι από Ρυθμίσεις → Apple ID → Συνδρομές.
+
+Αυτό είναι γενική πληροφόρηση για γυμναστική και διατροφή. Δεν είναι ιατρική συμβουλή και δεν κάνει διάγνωση ή θεραπεία.
+
+Πολιτική απορρήτου: https://s0k0s.github.io/programma-app/?legal=1
