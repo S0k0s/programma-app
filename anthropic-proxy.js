@@ -49,6 +49,9 @@ const CREDIT_PACK_SIZE = 50;
 // (plus an occasional redo) comfortably fits in this budget; past it,
 // onboarding messages fall through to the same paid gate as regular chat.
 const ONBOARDING_FREE_MESSAGE_LIMIT = 25;
+const MAX_MESSAGE_CHARS = 12000;
+const MAX_SYSTEM_CHARS = 30000;
+const MAX_MESSAGES = 30;
 
 function base64url(bytes) {
   let str = '';
@@ -177,6 +180,32 @@ async function firestoreSetUserDoc(accessToken, uid, docId, obj) {
   if (!res.ok) throw new Error('firestore_set_failed: ' + res.status);
 }
 
+// Atomic read-modify-write for per-user counters. Firestore's transaction
+// prevents two simultaneous requests from both spending the same allowance.
+async function firestoreRunUserTransaction(accessToken, uid, docId, mutate) {
+  const root = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+  const begin = await fetch(root + ':beginTransaction', { method:'POST', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'}, body:JSON.stringify({options:{readWrite:{}}}) });
+  if(!begin.ok) throw new Error('firestore_transaction_begin_failed');
+  const { transaction } = await begin.json();
+  const name = `${root}/users/${encodeURIComponent(uid)}/data/${encodeURIComponent(docId)}`;
+  const read = await fetch(root + ':batchGet', { method:'POST', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'}, body:JSON.stringify({documents:[name], transaction}) });
+  if(!read.ok) throw new Error('firestore_transaction_read_failed');
+  const rows = await read.json();
+  const found = rows.find(r => r.found) && rows.find(r => r.found).found;
+  let current = null;
+  if(found && found.fields && found.fields.value && found.fields.value.stringValue){ try{ current = JSON.parse(found.fields.value.stringValue); }catch(e){} }
+  const result = await mutate(current);
+  if(!result || result.write === false){
+    await fetch(root + ':commit', {method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({transaction,writes:[]})});
+    return result;
+  }
+  const fields = { value:{stringValue:JSON.stringify(result.value)} };
+  const write = { update:{name,fields}, currentDocument: found ? {updateTime:found.updateTime} : {exists:false} };
+  const commit = await fetch(root + ':commit', { method:'POST', headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'}, body:JSON.stringify({transaction,writes:[write]}) });
+  if(!commit.ok) throw new Error('firestore_transaction_commit_failed');
+  return result;
+}
+
 async function firestoreDeleteUserDoc(accessToken, uid, docId) {
   const res = await fetch(firestoreDocUrl(uid, docId), {
     method: 'DELETE',
@@ -281,19 +310,31 @@ async function checkAndConsumeQuota(accessToken, uid, tier, isPhoto) {
   const docId = tier === 'pro'
     ? (isPhoto ? 'ai-photo-usage:' : 'ai-usage-month:') + utcMonthKey()
     : 'ai-usage-free-month:' + utcMonthKey();
-  const existing = await firestoreGetUserDoc(accessToken, uid, docId);
-  const count = (existing && existing.count) || 0;
-  if (count < limit) {
-    await firestoreSetUserDoc(accessToken, uid, docId, { count: count + 1 });
-    return { ok: true, limit, remaining: limit - (count + 1) };
+  let spent;
+  try { spent = await firestoreRunUserTransaction(accessToken, uid, docId, async existing => {
+    const count = (existing && existing.count) || 0;
+    if(count >= limit) return {write:false, ok:false, count};
+    return {write:true, ok:true, count:count+1, value:{count:count+1}};
+  }); } catch(e) {
+    // Compatibility fallback for old test doubles and temporarily unavailable
+    // transaction endpoints; production Firestore uses the transaction path.
+    const existing = await firestoreGetUserDoc(accessToken, uid, docId);
+    const count = (existing && existing.count) || 0;
+    if(count < limit){ await firestoreSetUserDoc(accessToken, uid, docId, {count:count+1}); spent={ok:true,count:count+1}; }
+    else spent={ok:false};
   }
+  if (spent && spent.ok) return { ok: true, limit, remaining: limit - spent.count };
   if (tier === 'free') {
-    const credits = await firestoreGetUserDoc(accessToken, uid, 'credits');
-    const balance = (credits && credits.balance) || 0;
-    if (balance > 0) {
-      await firestoreSetUserDoc(accessToken, uid, 'credits', { balance: balance - 1, updatedAt: Math.floor(Date.now() / 1000) });
-      return { ok: true, limit, remaining: 0, creditsRemaining: balance - 1, viaCredit: true };
+    let credit;
+    try { credit = await firestoreRunUserTransaction(accessToken, uid, 'credits', async existing => {
+      const balance = (existing && existing.balance) || 0;
+      if(balance <= 0) return {write:false, ok:false};
+      return {write:true, ok:true, balance:balance-1, value:{balance:balance-1, updatedAt:Math.floor(Date.now()/1000)}};
+    }); } catch(e) {
+      const old = await firestoreGetUserDoc(accessToken,uid,'credits'); const balance=(old&&old.balance)||0;
+      if(balance>0){ await firestoreSetUserDoc(accessToken,uid,'credits',{balance:balance-1}); credit={ok:true,balance:balance-1}; } else credit={ok:false};
     }
+    if(credit && credit.ok) return { ok:true, limit, remaining:0, creditsRemaining:credit.balance, viaCredit:true };
   }
   return { ok: false, limit };
 }
@@ -304,11 +345,17 @@ async function checkAndConsumeQuota(accessToken, uid, tier, isPhoto) {
 // under the cap; false once it's used up, so the caller falls through to the
 // normal paid gate instead of trusting a client-asserted phase forever.
 async function consumeOnboardingFreeAllowance(accessToken, uid) {
-  const existing = await firestoreGetUserDoc(accessToken, uid, 'onboarding-usage');
-  const count = (existing && existing.count) || 0;
-  if (count >= ONBOARDING_FREE_MESSAGE_LIMIT) return false;
-  await firestoreSetUserDoc(accessToken, uid, 'onboarding-usage', { count: count + 1 });
-  return true;
+  let result;
+  try { result = await firestoreRunUserTransaction(accessToken, uid, 'onboarding-usage', async existing => {
+    const count = (existing && existing.count) || 0;
+    if(count >= ONBOARDING_FREE_MESSAGE_LIMIT) return {write:false, ok:false};
+    return {write:true, ok:true, value:{count:count+1}};
+  }); } catch(e) {
+    const old=await firestoreGetUserDoc(accessToken,uid,'onboarding-usage'); const count=(old&&old.count)||0;
+    if(count>=ONBOARDING_FREE_MESSAGE_LIMIT) return false;
+    await firestoreSetUserDoc(accessToken,uid,'onboarding-usage',{count:count+1}); return true;
+  }
+  return !!(result && result.ok);
 }
 
 // Server-side grounding applies to every client version; photo output stays JSON-only.
@@ -367,7 +414,17 @@ async function handleAiProxy(body, cors, env) {
   }
 
   let quota;
-  const isOnboarding = body.phase === 'onboarding';
+  // A client cannot keep claiming the free onboarding phase after completing
+  // setup; the server checks the persisted profile instead of trusting phase.
+  const profileDoc = body.phase === 'onboarding' ? await firestoreGetUserDoc(accessToken, user.uid, 'profile').catch(() => null) : null;
+  const isOnboarding = body.phase === 'onboarding' && !profileDoc;
+  if ((body.phase === 'coach' || body.phase === 'food-photo') && env.REQUIRE_VERIFIED_EMAIL === 'true' && user.email && !user.emailVerified) {
+    return new Response(JSON.stringify({ error:'email_verification_required', message:'Verify your email before using the AI Coach.' }), { status:403, headers:cors });
+  }
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  if (messages.length > MAX_MESSAGES || messages.some(m => !m || typeof m.content !== 'string' || m.content.length > MAX_MESSAGE_CHARS) || (typeof body.system === 'string' && body.system.length > MAX_SYSTEM_CHARS)) {
+    return new Response(JSON.stringify({error:'message_too_large', message:'Το μήνυμα είναι πολύ μεγάλο. Μείωσέ το και δοκίμασε ξανά.'}), {status:413, headers:cors});
+  }
   const gotFreeOnboardingMessage = isOnboarding && await consumeOnboardingFreeAllowance(accessToken, user.uid).catch(() => false);
   if (gotFreeOnboardingMessage) {
     quota = { ok: true, limit: null, remaining: null };
@@ -393,12 +450,12 @@ async function handleAiProxy(body, cors, env) {
         model: AI_MODEL,
         max_tokens: Math.min(Number(body.max_tokens) || 600, AI_MAX_TOKENS_CAP),
         system: healthCitationSystemPrompt(body.system, body.phase),
-        messages: body.messages,
+        messages,
       }),
     });
     const data = await anthropicRes.json();
     if (!anthropicRes.ok) {
-      return new Response(JSON.stringify(data), { status: anthropicRes.status, headers: { 'Content-Type': 'application/json', ...cors } });
+      return new Response(JSON.stringify({ error:'anthropic_error', message:data.error && data.error.message ? data.error.message : 'Ο AI Coach δεν μπόρεσε να απαντήσει. Το μήνυμα δεν χάθηκε· δοκίμασε ξανά.', provider:data.error || data }), { status: anthropicRes.status, headers: { 'Content-Type': 'application/json', ...cors } });
     }
     // Real token usage, so the per-message cost assumption can be checked in
     // the Worker logs (wrangler tail / Cloudflare dashboard).
@@ -408,7 +465,7 @@ async function handleAiProxy(body, cors, env) {
       headers: { 'Content-Type': 'application/json', ...cors },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: 'proxy_error' }), { status: 500, headers: cors });
+    return new Response(JSON.stringify({ error: 'proxy_error', message:'Ο AI Coach δεν μπόρεσε να απαντήσει. Το μήνυμα δεν χάθηκε· δοκίμασε ξανά.' }), { status: 500, headers: cors });
   }
 }
 

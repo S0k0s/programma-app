@@ -16,6 +16,8 @@
 <script src="firebase-config.js"></script>
 <style>
   :root{
+    color-scheme:dark;
+    --field-border:#697572;
     --bg:#101214;
     --surface:#191D20;
     --surface2:#20262A;
@@ -39,6 +41,8 @@
      lime used as bare TEXT (nav highlight, links) where a pale lime would
      be unreadable on a white surface. */
   :root[data-theme="light"]{
+    color-scheme:light;
+    --field-border:#747e70;
     --bg:#F3F4EE;
     --surface:#FFFFFF;
     --surface2:#EDEFE6;
@@ -54,6 +58,37 @@
   body{min-height:100vh;}
   button, input, textarea{font-family:'Inter',sans-serif;}
   .hidden{display:none !important;}
+  /* Explicit form colors are needed by WKWebView, including native date/time
+     controls and autofill. Keep these tied to the selected app theme. */
+  label{color:var(--text);}
+  input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=file]),
+  select,textarea{
+    color:var(--text);-webkit-text-fill-color:var(--text);
+    background-color:var(--surface2);caret-color:var(--text);
+    border:1px solid var(--field-border);border-color:var(--field-border)!important;
+  }
+  input::placeholder,textarea::placeholder{
+    color:var(--text-soft);-webkit-text-fill-color:var(--text-soft);opacity:1;
+  }
+  input:autofill{color:var(--text);-webkit-text-fill-color:var(--text);}
+  input:-webkit-autofill{
+    -webkit-text-fill-color:var(--text);
+    -webkit-box-shadow:0 0 0 1000px var(--surface2) inset;
+  }
+  input[type=checkbox]{
+    -webkit-appearance:none;appearance:none;flex-shrink:0;
+    min-width:24px;width:24px!important;height:24px;
+    border:2px solid var(--field-border);border-radius:5px;
+    background:var(--surface2);display:inline-grid;place-content:center;
+    vertical-align:middle;
+  }
+  input[type=checkbox]::before{
+    content:'';width:6px;height:12px;border:solid #15181A;
+    border-width:0 3px 3px 0;transform:rotate(45deg) scale(0);
+    margin-top:-3px;
+  }
+  input[type=checkbox]:checked{background:var(--lime);border-color:var(--lime);}
+  input[type=checkbox]:checked::before{transform:rotate(45deg) scale(1);}
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 
   .app-shell{max-width:480px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px 108px;}
@@ -399,7 +434,9 @@
   .auth-hero .auth-primary:active{transform:scale(.98);}
   .auth-forgot{background:none;border:none;color:#101214;font-weight:800;font-size:12px;letter-spacing:.06em;
     text-align:center;cursor:pointer;padding:8px 0 0;text-transform:uppercase;}
-  .auth-consent{font-size:12.5px;color:rgba(16,18,20,.78);line-height:1.4;}
+  .auth-consent{font-size:12.5px;color:var(--text);line-height:1.4;}
+  .auth-hero #registerConsents,.auth-hero #registerConsents label{color:#101214;}
+  .auth-hero #registerFullName{border-radius:999px;padding:15px 18px;}
   .auth-consent input{width:auto;margin-top:2px;}
   .pw-hint{font-size:12px;text-align:center;color:rgba(16,18,20,.7);min-height:1em;margin-top:-4px;}
   .auth-foot{padding:22px 22px calc(18px + env(safe-area-inset-bottom));background:var(--bg);color:var(--text);}
@@ -1005,6 +1042,26 @@ const storage = {
   }
 };
 
+// Workout and food logs are local-first: the UI can acknowledge a write
+// immediately, while a small per-user outbox retries Firestore when online.
+function offlineKey(key){ return 'aicoach-local:'+((currentUser&&currentUser.uid)||'anonymous')+':'+key; }
+function queueOfflineWrite(key, value){
+  try{
+    localStorage.setItem(offlineKey(key), value);
+    const q = JSON.parse(localStorage.getItem(offlineKey('__outbox'))||'[]');
+    if(!q.includes(key)) q.push(key);
+    localStorage.setItem(offlineKey('__outbox'), JSON.stringify(q));
+  }catch(e){ console.error('offline cache error',e); }
+}
+async function flushOfflineWrites(){
+  if(!currentUser || !navigator.onLine) return;
+  let q=[]; try{ q=JSON.parse(localStorage.getItem(offlineKey('__outbox'))||'[]'); }catch(e){ return; }
+  for(const key of q.slice()){
+    try{ const value=localStorage.getItem(offlineKey(key)); if(value===null) continue; await storage.set(key,value); q=q.filter(k=>k!==key); localStorage.setItem(offlineKey('__outbox'),JSON.stringify(q)); }catch(e){ break; }
+  }
+}
+window.addEventListener('online', flushOfflineWrites);
+
 function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -1105,7 +1162,7 @@ const LEGAL_BODY_EL = `
 <h2>Περιεχόμενο από Τεχνητή Νοημοσύνη</h2>
 <p>Οι απαντήσεις του AI Coach παράγονται από ένα σύστημα τεχνητής νοημοσύνης (μοντέλο Claude της Anthropic), όχι από άνθρωπο ειδικό. Μπορεί να περιέχουν ανακρίβειες. Δεν αντικαθιστούν επαγγελματική συμβουλή — δες την «Ιατρική αποποίηση ευθύνης» παραπάνω.</p>
 <h2>Πληρωμές &amp; δικαίωμα υπαναχώρησης</h2>
-<p>Η βασική χρήση της εφαρμογής (πρόγραμμα προπόνησης, καταγραφή διατροφής/προόδου, και ένα οριοθετημένο αρχικό όριο μηνυμάτων στον AI Coach) είναι δωρεάν. Για μεγαλύτερο μηνιαίο όριο μηνυμάτων στον AI Coach, προσφέρονται μια επαναλαμβανόμενη συνδρομή («Pro») ή εφάπαξ πακέτα μηνυμάτων, μέσω του πάροχου πληρωμών Stripe. Στην εφαρμογή iOS η συνδρομή Pro αγοράζεται αντίθετα μέσω του In-App Purchase της Apple και χρεώνεται από την Apple (ο πάροχος συνδρομών RevenueCat επεξεργάζεται την κατάσταση της αγοράς για λογαριασμό μας)· οι αγορές αυτές διέπονται από τους όρους της Apple και τα αιτήματα επιστροφής χρημάτων τα χειρίζεται η Apple. Η συνδρομή ανανεώνεται αυτόματα μέχρι να την ακυρώσεις από την καρτέλα Προφίλ («Διαχείριση συνδρομής»)· τα εφάπαξ πακέτα δεν ανανεώνονται. Ως καταναλωτής/τρια στην Ευρωπαϊκή Ένωση έχεις κατά κανόνα δικαίωμα υπαναχώρησης 14 ημερών από μια εξ αποστάσεως αγορά ψηφιακού περιεχομένου/υπηρεσίας. Επειδή η συνδρομή/το πακέτο μηνυμάτων ενεργοποιείται αμέσως μετά την πληρωμή, με την ολοκλήρωση της αγοράς συναινείς ρητά στην άμεση έναρξη παροχής της υπηρεσίας και αναγνωρίζεις ότι χάνεις το δικαίωμα υπαναχώρησης από τη στιγμή που η υπηρεσία έχει εκτελεστεί πλήρως. Για ερωτήματα σχετικά με χρεώσεις ή επιστροφές, επικοινώνησε στο email παρακάτω.</p>
+<p>Η βασική χρήση της εφαρμογής (πρόγραμμα προπόνησης, καταγραφή διατροφής/προόδου και οριοθετημένο αρχικό όριο μηνυμάτων στον AI Coach) είναι δωρεάν. Η συνδρομή Pro αγοράζεται αποκλειστικά μέσα από το Google Play σε Android ή το App Store σε iOS· δεν προσφέρονται πληρωμές με κάρτα, Stripe ή πακέτα μηνυμάτων μέσα στις εφαρμογές. Η χρέωση, ανανέωση, ακύρωση και τα αιτήματα επιστροφής χρημάτων διαχειρίζονται από το store που χρέωσε τον λογαριασμό: Google Play ή Apple.</p>
 <h2>Αποδεκτή χρήση</h2>
 <p>Η εγγραφή είναι ελεύθερη, αλλά ο διαχειριστής διατηρεί το δικαίωμα να αφαιρέσει την πρόσβαση οποιουδήποτε λογαριασμού χρησιμοποιείται καταχρηστικά (π.χ. υπερβολική χρήση του AI Coach πέρα από τα όρια χρήσης μέσω τεχνικών παρακάμψεων, ή προσπάθεια πρόσβασης σε δεδομένα άλλων χρηστών).</p>
 <h2>Αλλαγές</h2>
@@ -1141,7 +1198,7 @@ const LEGAL_BODY_EN = `
 <h2>AI-generated content</h2>
 <p>AI Coach's replies are generated by an artificial intelligence system (Anthropic's Claude model), not a human expert. They may contain inaccuracies and do not replace professional advice — see "Medical disclaimer" above.</p>
 <h2>Payments &amp; right of withdrawal</h2>
-<p>Core use of the app (your training program, nutrition/progress tracking, and a bounded initial allowance of AI Coach messages) is free. A larger monthly AI Coach message allowance is available either as a recurring "Pro" subscription or as one-time message packs, processed through the payment provider Stripe. In the iOS app, the Pro subscription is instead purchased through Apple's In-App Purchase and billed by Apple (our subscription provider RevenueCat processes the purchase status on our behalf); such purchases are subject to Apple's own terms, and refund requests for them are handled by Apple. The subscription renews automatically until you cancel it from the Profile tab ("Manage subscription"); one-time packs do not renew. As a consumer in the European Union, you generally have a 14-day right of withdrawal from a distance purchase of digital content or a digital service. Because the subscription or message pack is activated immediately upon payment, completing the purchase constitutes your express consent to immediate performance and your acknowledgment that you lose the right of withdrawal once the service has been fully performed. For billing questions or refund requests, contact the email below.</p>
+<p>Core use of the app (your training program, nutrition/progress tracking, and a bounded initial allowance of AI Coach messages) is free. The Pro subscription is purchased only through Google Play on Android or the App Store on iOS; card payments, Stripe and message packs are not offered inside the apps. Billing, renewal, cancellation and refund requests are handled by the store that charged the account: Google Play or Apple.</p>
 <h2>Acceptable use</h2>
 <p>Sign-up is open, but the administrator reserves the right to remove access for any account used abusively (e.g. excessive use of the AI Coach beyond the usage limits through technical workarounds, or attempting to access other users' data).</p>
 <h2>Changes</h2>
@@ -1176,7 +1233,7 @@ const I18N = {
     dash_ai_preview_text:'Χρειάζεσαι ιδέα για το επόμενο γεύμα ή έλεγχο προόδου;', dash_ask_coach:'Ρώτα τον Coach',
     dash_view_history:'Δες την πρόοδό σου →', more_suffix:'ακόμα',
     nav_home:'Αρχική', nav_training:'Προπόνηση', nav_nutrition:'Διατροφή',
-    training_finish:'Ολοκλήρωση προπόνησης', training_logged:'Καταγράφηκε ✓',
+    training_finish:'Ολοκλήρωση προπόνησης', training_logged:'Καταγράφηκε ✓', training_saved_offline:'Αποθηκεύτηκε στη συσκευή · θα συγχρονιστεί',
     rest_label:'Διάλειμμα', completed_tag:'Ολοκληρώθηκε', complete_exercise_aria:'Ολοκλήρωση', weight_label:'Κιλά',
     weight_prev_month_avg:'μ.ό. προηγ. μήνα: {avg}kg',
     tips_title:'Συμβουλές προπόνησης',
@@ -1224,7 +1281,7 @@ const I18N = {
     profile_ai_plan_free_desc:'Η αρχική συνομιλία είναι δωρεάν. Μετά έχεις λίγα δωρεάν μηνύματα τον μήνα. Το Pro ξεκλειδώνει το πλήρες όριο.',
     profile_ai_plan_pro_desc:'200 μηνύματα AI Coach + 40 σαρώσεις φωτογραφίας τον μήνα.',
     profile_ai_google_manage_btn:'Διαχείριση συνδρομής στο Google Play →', profile_ai_google_disclosure:'Η χρέωση γίνεται στον λογαριασμό σου στο Google Play κατά την επιβεβαίωση της αγοράς. Η συνδρομή ανανεώνεται αυτόματα στο τέλος κάθε περιόδου (μήνα ή έτους) μέχρι να την ακυρώσεις. Μπορείς να τη διαχειριστείς ή να την ακυρώσεις οποιαδήποτε στιγμή στο Google Play.',
-    profile_ai_upgrade_btn_ios:'Αναβάθμιση σε Pro', profile_ai_upgrade_btn_ios_price:'Αναβάθμιση σε Pro — {price}/μήνα', profile_ai_restore_btn:'Επαναφορά αγορών', profile_ai_apple_manage_btn:'Διαχείριση συνδρομής στο App Store →', profile_ai_ios_disclosure:'Η πληρωμή χρεώνεται στον λογαριασμό Apple ID σου κατά την επιβεβαίωση της αγοράς. Η συνδρομή ανανεώνεται αυτόματα στο τέλος κάθε περιόδου (μήνα ή έτους), εκτός αν την ακυρώσεις τουλάχιστον 24 ώρες πριν από το τέλος της τρέχουσας περιόδου. Μπορείς να τη διαχειριστείς ή να την ακυρώσεις από τις ρυθμίσεις του Apple ID σου.', profile_ai_ios_terms_link:'Όροι Χρήσης & Πολιτική Απορρήτου', profile_ai_ios_error:'Η αγορά δεν ολοκληρώθηκε. Δοκίμασε ξανά σε λίγο.', profile_ai_ios_restored:'Οι αγορές επαναφέρθηκαν.', profile_ai_ios_nothing:'Δεν βρέθηκε ενεργή συνδρομή για επαναφορά.', profile_ai_ios_unavailable:'Η αγορά δεν είναι διαθέσιμη αυτή τη στιγμή.',
+    profile_ai_upgrade_btn_ios:'Αναβάθμιση σε Pro', profile_ai_upgrade_btn_ios_price:'Αναβάθμιση σε Pro — {price}/μήνα', profile_ai_restore_btn:'Επαναφορά αγορών', profile_ai_apple_manage_btn:'Διαχείριση συνδρομής στο App Store →', profile_ai_ios_disclosure:'Η πληρωμή χρεώνεται στον λογαριασμό Apple ID σου κατά την επιβεβαίωση της αγοράς. Η συνδρομή ανανεώνεται αυτόματα στο τέλος κάθε περιόδου (μήνα ή έτους), εκτός αν την ακυρώσεις τουλάχιστον 24 ώρες πριν από το τέλος της τρέχουσας περιόδου. Μπορείς να τη διαχειριστείς ή να την ακυρώσεις από τις ρυθμίσεις του Apple ID σου.', profile_ai_ios_terms_link:'Όροι Χρήσης & Πολιτική Απορρήτου', profile_ai_ios_error:'Η αγορά δεν ολοκληρώθηκε. Δοκίμασε ξανά σε λίγο.', profile_ai_purchase_sync_error:'Η αγορά έγινε, αλλά δεν επιβεβαιώθηκε η πρόσβαση Pro. Άνοιξε «Επαναφορά αγορών» και δοκίμασε ξανά.', profile_ai_ios_restored:'Οι αγορές επαναφέρθηκαν.', profile_ai_ios_nothing:'Δεν βρέθηκε ενεργή συνδρομή για επαναφορά.', profile_ai_ios_unavailable:'Η αγορά δεν είναι διαθέσιμη αυτή τη στιγμή.',
     profile_ai_upgrade_btn:'Αναβάθμιση σε Pro — €4.99/μήνα',
     profile_ai_manage_btn:'Διαχείριση συνδρομής →',
     profile_ai_buy_credits_btn:'Αγόρασε 50 επιπλέον μηνύματα — €1.99',
@@ -1323,7 +1380,7 @@ const I18N = {
     dash_ai_preview_text:'Need an idea for your next meal, or a progress check?', dash_ask_coach:'Ask the Coach',
     dash_view_history:'See your progress →', more_suffix:'more',
     nav_home:'Home', nav_training:'Training', nav_nutrition:'Nutrition',
-    training_finish:'Finish workout', training_logged:'Logged ✓',
+    training_finish:'Finish workout', training_logged:'Logged ✓', training_saved_offline:'Saved on device · will sync',
     rest_label:'Rest', completed_tag:'Completed', complete_exercise_aria:'Complete', weight_label:'Weight',
     weight_prev_month_avg:'last month avg: {avg}kg',
     tips_title:'Training tips',
@@ -1379,7 +1436,7 @@ const I18N = {
     profile_ai_plan_free_desc:'The setup conversation is free. After that you get a few free messages each month. Pro unlocks the full allowance.',
     profile_ai_plan_pro_desc:'200 AI Coach messages + 40 photo scans per month.',
     profile_ai_google_manage_btn:'Manage subscription in Google Play →', profile_ai_google_disclosure:'Payment is charged to your Google Play account at confirmation of purchase. The subscription renews automatically at the end of each period (month or year) until you cancel it. You can manage or cancel it at any time in Google Play.',
-    profile_ai_upgrade_btn_ios:'Upgrade to Pro', profile_ai_upgrade_btn_ios_price:'Upgrade to Pro — {price}/month', profile_ai_restore_btn:'Restore purchases', profile_ai_apple_manage_btn:'Manage subscription in the App Store →', profile_ai_ios_disclosure:'Payment is charged to your Apple ID account at confirmation of purchase. The subscription renews automatically at the end of each period (month or year) unless it is cancelled at least 24 hours before the end of the current period. You can manage or cancel it in your Apple ID settings.', profile_ai_ios_terms_link:'Terms of Use & Privacy Policy', profile_ai_ios_error:'The purchase could not be completed. Please try again in a moment.', profile_ai_ios_restored:'Purchases restored.', profile_ai_ios_nothing:'No active subscription was found to restore.', profile_ai_ios_unavailable:'Purchasing is not available right now.',
+    profile_ai_upgrade_btn_ios:'Upgrade to Pro', profile_ai_upgrade_btn_ios_price:'Upgrade to Pro — {price}/month', profile_ai_restore_btn:'Restore purchases', profile_ai_apple_manage_btn:'Manage subscription in the App Store →', profile_ai_ios_disclosure:'Payment is charged to your Apple ID account at confirmation of purchase. The subscription renews automatically at the end of each period (month or year) unless it is cancelled at least 24 hours before the end of the current period. You can manage or cancel it in your Apple ID settings.', profile_ai_ios_terms_link:'Terms of Use & Privacy Policy', profile_ai_ios_error:'The purchase could not be completed. Please try again in a moment.', profile_ai_purchase_sync_error:'The purchase was made, but Pro access was not confirmed. Open “Restore purchases” and try again.', profile_ai_ios_restored:'Purchases restored.', profile_ai_ios_nothing:'No active subscription was found to restore.', profile_ai_ios_unavailable:'Purchasing is not available right now.',
     profile_ai_upgrade_btn:'Upgrade to Pro — €4.99/month',
     profile_ai_manage_btn:'Manage subscription →',
     profile_ai_comp_note:'Free access granted by the admin.',
@@ -1746,12 +1803,39 @@ function updatePasswordHint(){
   el.textContent = t('pw_hint_' + AppCore.passwordAssessment(pw.value).level);
 }
 document.getElementById('emailAuthPassword').addEventListener('input', updatePasswordHint);
+// An existing password account can also arrive at SIGN UP. Authenticate it
+// before validating new-account-only fields; never infer or manufacture consent.
+async function signInExistingAccount(email, password){
+  try{
+    await auth.signInWithEmailAndPassword(email, password);
+    return true;
+  }catch(err){
+    if(['auth/invalid-credential','auth/user-not-found','auth/wrong-password'].includes(err.code)) return false;
+    throw err;
+  }
+}
 document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>{
   const email = document.getElementById('emailAuthEmail').value.trim();
   const password = document.getElementById('emailAuthPassword').value;
   document.getElementById('signinError').style.display = 'none';
   if(!email){
     showSigninError(t('signin_invalid_email'));
+    return;
+  }
+  try{
+    if(password && await signInExistingAccount(email, password)) return;
+    const methods = await auth.fetchSignInMethodsForEmail(email);
+    if(methods.includes('password')){
+      setAuthMode('signin');
+      showSigninError(t('auth_email_in_use'));
+      return;
+    }
+    if(methods.includes('google.com')){
+      showSigninError(t('signin_account_exists_google'));
+      return;
+    }
+  }catch(err){
+    showSigninError(authErrorMessage(err));
     return;
   }
   // The two confirmations only appear when someone actually registers —
@@ -1770,7 +1854,6 @@ document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>
     showSigninError(t('signin_health_required'));
     return;
   }
-  healthConsentFromSignup = true;
   const strengthError = passwordStrengthError(password);
   if(strengthError){
     showSigninError(strengthError);
@@ -1788,12 +1871,15 @@ document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>
     }
   }catch(e){ /* lookup unavailable — createUserWithEmailAndPassword below still catches a same-provider duplicate */ }
   try{
+    healthConsentFromSignup = true;
     const cred = await auth.createUserWithEmailAndPassword(email, password);
     try{ track('sign_up', { method: 'password' }); }catch(e){}
     // The name is what the app greets the user with (getFirstName()).
     try{ await cred.user.updateProfile({ displayName: fullName }); }catch(e){ console.error('updateProfile failed', e); }
     try{ await cred.user.sendEmailVerification(); }catch(e){ console.error('verification email failed', e); }
   }catch(err){
+    healthConsentFromSignup = false;
+    if(err.code === 'auth/email-already-in-use') setAuthMode('signin');
     showSigninError(authErrorMessage(err));
   }
 });
@@ -2184,6 +2270,7 @@ async function onAccessApproved(){
   } else {
     applyProfile(profile);
     showGate(null);
+    flushOfflineWrites();
     initApp();
   }
 }
@@ -2845,7 +2932,8 @@ function renderDayButtons(){
 async function loadTodayWorkout(){
   const epoch = authEpoch;
   try{
-    const res = await storage.get('workout-log:'+todayKey());
+    const cache = (typeof localStorage !== 'undefined') ? localStorage.getItem(offlineKey('workout-log:'+todayKey())) : null;
+    const res = cache ? {value:cache} : await storage.get('workout-log:'+todayKey());
     if(authEpoch !== epoch) return;
     const data = JSON.parse(res.value);
     currentDay = (data.day && DAYS[data.day]) ? data.day : currentDay;
@@ -3020,14 +3108,14 @@ function updateProgressLabel(){
 
 async function saveTodayWorkout(){
   const checked = Object.keys(checkedState).filter(id=>checkedState[id]);
-  try{
-    await storage.set('workout-log:'+todayKey(), JSON.stringify({day: currentDay, checked, updatedAt: new Date().toISOString()}));
-  }catch(e){ console.error('storage error', e); }
+  const key='workout-log:'+todayKey(), value=JSON.stringify({day: currentDay, checked, updatedAt: new Date().toISOString()});
+  if(typeof queueOfflineWrite === 'function') queueOfflineWrite(key,value);
+  try{ await storage.set(key,value); return true; }catch(e){ return false; }
 }
 
 document.getElementById('finishBtn').addEventListener('click', async ()=>{
   const epoch = authEpoch;
-  await saveTodayWorkout();
+  const synced = await saveTodayWorkout();
   if(authEpoch !== epoch) return;
   try{
     const idxRes = await storage.get('workout-history-index').catch(()=>null);
@@ -3035,12 +3123,12 @@ document.getElementById('finishBtn').addEventListener('click', async ()=>{
     let idx = [];
     try{ idx = JSON.parse(idxRes.value); }catch(e){ idx = []; }
     if(!idx.includes(todayKey())) idx.push(todayKey());
-    await storage.set('workout-history-index', JSON.stringify(idx));
-  }catch(e){ console.error(e); }
+    const value=JSON.stringify(idx); queueOfflineWrite('workout-history-index',value); if(synced) await storage.set('workout-history-index', value);
+  }catch(e){ /* remains queued for retry */ }
   if(authEpoch !== epoch) return;
   const badge = daypickerEl.querySelector(`button[data-day="${currentDay}"] .donebadge`);
   if(badge) badge.style.display = 'inline';
-  document.getElementById('finishBtn').textContent = t('training_logged');
+  document.getElementById('finishBtn').textContent = t(synced ? 'training_logged' : 'training_saved_offline');
   setTimeout(()=>{ document.getElementById('finishBtn').textContent = t('training_finish'); }, 1800);
   // A quick progressive-overload nudge when every exercise in the session
   // was completed — the core lever for actually getting stronger over time,
@@ -3128,13 +3216,15 @@ document.getElementById('resetMealsBtn').addEventListener('click', async ()=>{
 // ---------- extra food log ----------
 async function loadFoodLog(){
   try{
-    const res = await storage.get('food-log:'+todayKey());
+    const cache = (typeof localStorage !== 'undefined') ? localStorage.getItem(offlineKey('food-log:'+todayKey())) : null;
+    const res = cache ? {value:cache} : await storage.get('food-log:'+todayKey());
     return JSON.parse(res.value);
   }catch(e){ return []; }
 }
 async function saveFoodLog(entries){
   const epoch = authEpoch;
-  try{ await storage.set('food-log:'+todayKey(), JSON.stringify(entries)); }catch(e){ console.error(e); }
+  const key='food-log:'+todayKey(), value=JSON.stringify(entries); if(typeof queueOfflineWrite === 'function') queueOfflineWrite(key,value);
+  let synced=true; try{ await storage.set(key,value); }catch(e){ synced=false; }
   if(authEpoch !== epoch) return;
   try{
     const idxRes = await storage.get('food-history-index').catch(()=>null);
@@ -3142,7 +3232,7 @@ async function saveFoodLog(entries){
     let idx = [];
     try{ idx = JSON.parse(idxRes.value); }catch(e){ idx = []; }
     if(!idx.includes(todayKey())) idx.push(todayKey());
-    await storage.set('food-history-index', JSON.stringify(idx));
+    const indexValue=JSON.stringify(idx); queueOfflineWrite('food-history-index',indexValue); if(synced) await storage.set('food-history-index',indexValue);
   }catch(e){ console.error(e); }
 }
 
@@ -3858,6 +3948,12 @@ function sanitizeExerciseChanges(baseExercises, changes){
   return { list, changed };
 }
 
+function preservesMainMuscleGroups(previous, next){
+  const main = ['chest','back','shoulders','legs'];
+  const required = main.filter(cat => previous.some(ex => ex.cat === cat));
+  return required.every(cat => next.some(ex => ex.cat === cat));
+}
+
 async function applyExerciseUpdate(jsonText){
   const epoch = authEpoch;
   let obj;
@@ -3865,6 +3961,10 @@ async function applyExerciseUpdate(jsonText){
   if(!obj || !obj.day || !DAYS[obj.day] || !Array.isArray(obj.changes) || !obj.changes.length) return false;
   const { list, changed } = sanitizeExerciseChanges(DAYS[obj.day].exercises, obj.changes);
   if(!changed) return false;
+  // A coach replacement may not silently remove a day's primary muscle
+  // group. Keep the previous day intact until the user explicitly asks for
+  // a different split/program.
+  if(!preservesMainMuscleGroups(DAYS[obj.day].exercises, list)) return false;
   if(!currentProfile) currentProfile = defaultProfile();
   const repaired = AppCore.repairSession(list, { dayKey: obj.day, experience: currentProfile.experience, trainingLocation: currentProfile.trainingLocation });
   if(!repaired.exercises.length) return false;
@@ -4137,7 +4237,7 @@ async function askAI(question){
       appendAiBubble('assistant error', t(data.tier==='pro' ? 'ai_daily_limit_hit_pro' : 'ai_daily_limit_hit', {n: data.limit}));
       return;
     }
-    if(!response.ok){ throw new Error('bad status'); }
+    if(!response.ok){ throw new Error(data.message || t('ai_error')); }
     lastAiQuota = { tier: data.tier, limit: data.limit, remaining: data.remaining, viaCredit: data.viaCredit, creditsRemaining: data.creditsRemaining };
     renderAiQuotaHint();
     const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n') || t('ai_no_reply');
@@ -4169,7 +4269,7 @@ async function askAI(question){
     if(authEpoch !== epochAtStart) return;
     loadingEl.remove();
     aiMessages.pop(); // roll back the unanswered question so the next send doesn't break user/assistant alternation
-    appendAiBubble('assistant error', t('ai_error'));
+    appendAiBubble('assistant error', e.message || t('ai_error'));
   }finally{
     if(aiRequestEpoch === epochAtStart) aiRequestEpoch = null;
   }
@@ -4319,7 +4419,7 @@ async function sendOnboardingTurn(userText){
       document.getElementById('onboardInput').focus();
       return;
     }
-    if(!response.ok) throw new Error('bad status');
+    if(!response.ok) throw new Error(data.message || t('ai_error_onboard'));
     const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
     loadingEl.remove();
     const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
@@ -4341,7 +4441,7 @@ async function sendOnboardingTurn(userText){
   }catch(e){
     if(authEpoch !== epochAtStart) return;
     loadingEl.remove();
-    appendChatBubble('assistant error', t('ai_error_onboard'));
+    appendChatBubble('assistant error', e.message || t('ai_error_onboard'));
   }
   if(authEpoch !== epochAtStart) return;
   sendBtn.disabled = false;
@@ -4907,17 +5007,21 @@ async function androidPurchase(btn, sku){
     let response;
     try{ response = await request.show(); }catch(e){ return; } // dismissed the Play sheet
     const token = response.details && response.details.purchaseToken;
-    await response.complete(token ? 'success' : 'fail');
     if(!token) throw new Error('no purchase token');
     if(authEpoch !== epoch) return;
     const active = await androidSyncWithServer([{ token: token, productId: productId }]);
+    // A Play purchase is only completed after the Worker has verified and
+    // mirrored the Pro entitlement. This prevents acknowledging a purchase
+    // that the app could not actually grant.
+    await response.complete(active ? 'success' : 'fail');
+    if(!active) throw new Error('sync_not_active');
     if(active){ try{ track('purchase_success', { platform: 'android', product_id: productId }); }catch(e){} }
     if(authEpoch !== epoch) return;
     await renderAiProSection();
   }catch(e){
     if(authEpoch !== epoch) return;
     console.error('Android purchase failed', e);
-    await customAlert(t('profile_ai_ios_error'));
+    await customAlert(t(e && e.message === 'sync_not_active' ? 'profile_ai_purchase_sync_error' : 'profile_ai_ios_error'));
   }finally{
     btn.disabled = false;
   }
@@ -4939,7 +5043,7 @@ async function androidRestore(btn){
   }catch(e){
     if(authEpoch !== epoch) return;
     console.error('Android restore failed', e);
-    await customAlert(t('profile_ai_ios_error'));
+    await customAlert(t('profile_ai_purchase_sync_error'));
   }finally{
     btn.disabled = false;
   }
@@ -4967,7 +5071,8 @@ async function renderAiProSection(){
   const isGoogle = isPro && sub.source === 'google';
   if(authEpoch !== epoch) return;
   const androidList = (!isPro && isAndroidTwa()) ? await androidProductDetails() : [];
-  const androidIap = Array.isArray(androidList) && androidList.length > 0;
+  const androidAvailable = Array.isArray(androidList) ? androidList.filter(d=>AppCore.androidProductAllowed(d.itemId)) : [];
+  const androidIap = androidAvailable.length > 0;
   if(authEpoch !== epoch) return;
   let iosPkgs = [];
   if(iosIap && !isPro){
@@ -4991,7 +5096,7 @@ async function renderAiProSection(){
     }
     return `<button class="ghost" type="button" data-iap-pkg="${escapeHtml(p.identifier)}" style="margin-top:10px;">${t('profile_ai_plan_monthly_btn', {price})}${trial}</button>`;
   }).join('');
-  const androidButtons = androidIap ? androidList.filter(function(d){ return AppCore.androidProductAllowed(d.itemId); }).map(function(d){
+  const androidButtons = androidIap ? androidAvailable.map(function(d){
     const price = androidPriceString(d);
     const annual = d.itemId === 'pro_annual';
     const label = annual ? t('profile_ai_plan_annual_btn', {price: price}) : t('profile_ai_plan_monthly_btn', {price: price});
@@ -5069,7 +5174,7 @@ function refreshAppData(){
   renderFoodLog();
   Promise.all([loadExerciseWeights(), loadExerciseWeightHistory(), loadPersonalRecords(), loadExerciseProgress()]).then(()=>{ if(authEpoch === epoch && typeof renderExercises === 'function') renderExercises(); });
 }
-const SENTRY_DSN = '';
+const SENTRY_DSN = (typeof TELEMETRY_CONFIG !== 'undefined' && TELEMETRY_CONFIG.sentryDsn) || '';
 function track(name, params){
   try{
     if(!name || !window.__aiAnalytics || typeof firebase === 'undefined' || !firebase.analytics) return;
@@ -5089,7 +5194,7 @@ function initOptionalTelemetry(){
   window.addEventListener('error', (e)=>reportClientError(e.error || e.message));
   window.addEventListener('unhandledrejection', (e)=>reportClientError(e.reason));
   try{
-    if(typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.measurementId){
+    if(typeof TELEMETRY_CONFIG !== 'undefined' && TELEMETRY_CONFIG.measurementId){
       const s = document.createElement('script');
       s.src = 'https://www.gstatic.com/firebasejs/13.0.0/firebase-analytics-compat.js';
       s.onload = function(){ try{ firebase.analytics(); window.__aiAnalytics = true; }catch(err){} };
@@ -5189,6 +5294,11 @@ async function scheduleReminders(){
   }catch(e){}
 }
 function bindReminders(){
+  if(isAndroidTwa()){
+    const block=document.getElementById('reminderBlock');
+    if(block) block.style.display='none';
+    return;
+  }
   const workoutOn = document.getElementById('reminderWorkoutOn');
   const workoutTime = document.getElementById('reminderWorkoutTime');
   const mealOn = document.getElementById('reminderMealOn');

@@ -9,3 +9,11 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "824505400093",
   appId: "1:824505400093:web:c26e4339368c92775cbff4"
 };
+
+// Optional production telemetry. Leave empty until the owner supplies the
+// Firebase Analytics measurement ID and Sentry DSN; the app sends nothing when
+// either value is blank.
+const TELEMETRY_CONFIG = {
+  measurementId: "",
+  sentryDsn: ""
+};

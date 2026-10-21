@@ -27,6 +27,56 @@ function worker(fetch) {
 function json(value, status = 200) { return new Response(JSON.stringify(value), { status }); }
 function deferred() { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; }
 
+test('existing password accounts sign in from signup without new consent or account creation', async () => {
+  let handler, creates = 0;
+  const fields = {
+    emailAuthEmail: { value: 'existing@example.test' }, emailAuthPassword: { value: 'existing-password' },
+    signinError: { style: {} }, emailRegisterBtn: { addEventListener: (_, fn) => { handler = fn; } }
+  };
+  const context = front(['signInExistingAccount'], {
+    auth: { signInWithEmailAndPassword: async () => ({}), createUserWithEmailAndPassword: async () => { creates++; } },
+    document: { getElementById: id => { assert.ok(fields[id], 'must not read registration fields: ' + id); return fields[id]; } }
+  });
+  const start = app.indexOf("document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>{");
+  vm.runInContext(app.slice(start, app.indexOf('\n});', start) + 4), context);
+  await handler();
+  assert.equal(creates, 0);
+});
+
+test('only credential errors permit fallback to signup; network failures stay visible', async () => {
+  for (const code of ['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password', 'auth/network-request-failed']) {
+    const context = front(['signInExistingAccount'], { auth: { signInWithEmailAndPassword: async () => { throw Object.assign(new Error(code), { code }); } } });
+    if(code === 'auth/network-request-failed') await assert.rejects(context.signInExistingAccount('a', 'b'), /network/);
+    else assert.equal(await context.signInExistingAccount('a', 'b'), false);
+  }
+});
+
+test('new accounts still require checked health consent before any account is created', async () => {
+  let handler, message, creates = 0;
+  const fields = {
+    emailAuthEmail: { value: 'new@example.test' }, emailAuthPassword: { value: 'a-strong-password' },
+    registerFullName: { value: 'Test User' }, ageConfirmCheckbox: { checked: true }, healthConsentCheckbox: { checked: false },
+    signinError: { style: {} }, emailRegisterBtn: { addEventListener: (_, fn) => { handler = fn; } }
+  };
+  const context = front(['signInExistingAccount'], {
+    auth: { signInWithEmailAndPassword: async () => { throw { code: 'auth/invalid-credential' }; },
+      fetchSignInMethodsForEmail: async () => [], createUserWithEmailAndPassword: async () => { creates++; } },
+    document: { getElementById: id => fields[id] }, t: key => key, showSigninError: value => { message = value; }
+  });
+  const start = app.indexOf("document.getElementById('emailRegisterBtn').addEventListener('click', async ()=>{");
+  vm.runInContext(app.slice(start, app.indexOf('\n});', start) + 4), context);
+  await handler();
+  assert.equal(message, 'signin_health_required');
+  assert.equal(creates, 0);
+});
+
+test('coach exercise changes cannot remove a primary muscle group from a day', () => {
+  const context = front(['preservesMainMuscleGroups']);
+  const before = [{cat:'chest'},{cat:'back'},{cat:'arms'}];
+  assert.equal(context.preservesMainMuscleGroups(before, [{cat:'back'},{cat:'arms'}]), false);
+  assert.equal(context.preservesMainMuscleGroups(before, [{cat:'chest'},{cat:'back'}]), true);
+});
+
 test('all app and Worker scripts compile', () => {
   for (const file of ['index.html', 'admin.html']) {
     const text = fs.readFileSync(path.join(root, file), 'utf8');
