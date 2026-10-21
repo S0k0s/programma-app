@@ -5009,11 +5009,17 @@ async function androidPurchase(btn, sku){
     const token = response.details && response.details.purchaseToken;
     if(!token) throw new Error('no purchase token');
     if(authEpoch !== epoch) return;
-    const active = await androidSyncWithServer([{ token: token, productId: productId }]);
-    // A Play purchase is only completed after the Worker has verified and
-    // mirrored the Pro entitlement. This prevents acknowledging a purchase
-    // that the app could not actually grant.
-    await response.complete(active ? 'success' : 'fail');
+    let active = false;
+    try{
+      active = await androidSyncWithServer([{ token: token, productId: productId }]);
+      // A Play purchase is only completed after the Worker has verified and
+      // mirrored the Pro entitlement. This prevents acknowledging a purchase
+      // that the app could not actually grant.
+      await response.complete(active ? 'success' : 'fail');
+    }catch(syncErr){
+      try{ await response.complete('fail'); }catch(completeErr){}
+      throw syncErr;
+    }
     if(!active) throw new Error('sync_not_active');
     if(active){ try{ track('purchase_success', { platform: 'android', product_id: productId }); }catch(e){} }
     if(authEpoch !== epoch) return;
