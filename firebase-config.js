@@ -18,6 +18,6 @@ const FIREBASE_CONFIG = {
 // Firebase Analytics measurement ID and Sentry DSN; the app sends nothing when
 // either value is blank.
 const TELEMETRY_CONFIG = {
-  measurementId: "",
+  measurementId: "G-H1RXNKQ7QQ",
   sentryDsn: ""
 };
