@@ -7,7 +7,11 @@ const FIREBASE_CONFIG = {
   projectId: "gym-app-f99d6",
   storageBucket: "gym-app-f99d6.firebasestorage.app",
   messagingSenderId: "824505400093",
-  appId: "1:824505400093:web:c26e4339368c92775cbff4"
+  appId: "1:824505400093:web:c26e4339368c92775cbff4",
+  // Firebase Console → Project settings → Your apps → Web app → SDK setup.
+  measurementId: "G-H1RXNKQ7QQ",
+  // Optional: Sentry browser DSN. Leave empty until a Sentry project is configured.
+  sentryDsn: ""
 };
 
 // Optional production telemetry. Leave empty until the owner supplies the
